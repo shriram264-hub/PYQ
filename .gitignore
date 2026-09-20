@@ -7,3 +7,10 @@ dist/
 .env
 .worktrees/
 .superpowers/
+site/node_modules/
+site/dist/
+site/.astro/
+.impeccable/questions/
+.impeccable/decision-payload.json
+.impeccable/review/
+.impeccable/build/

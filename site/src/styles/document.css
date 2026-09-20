@@ -1,0 +1,217 @@
+@import '@fontsource-variable/archivo';
+@import '@fontsource/literata/400.css';
+@import '@fontsource/literata/600.css';
+@import '@fontsource/courier-prime/400.css';
+@import '@fontsource/courier-prime/700.css';
+
+/*
+  SawaalBox — the examination booklet as a working document.
+  Ground is exam-stationery stock, not cream; the committed green owns whole
+  regions rather than accenting them.
+*/
+
+:root {
+  color-scheme: light;
+
+  --ground: #e6eae3;
+  --paper: #f4f6f1;
+  --paper-edge: #d7ddd3;
+
+  --ink: #14181a;
+  --ink-soft: #4a544f;
+  --ink-faint: #6d7873;
+
+  --rule: #b9c2b8;
+  --rule-strong: #14181a;
+
+  --field: #0f3d2e;
+  --field-deep: #0a2c21;
+  --field-ink: #f4f6f1;
+  --field-ink-soft: #a9c4b7;
+
+  --stamp: #b00d26;
+  --stamp-ink: #ffffff;
+
+  --focus: #0f3d2e;
+
+  --font-structure: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
+  --font-read: 'Literata', Georgia, 'Times New Roman', serif;
+  --font-serial: 'Courier Prime', 'Courier New', monospace;
+
+  --measure: 68ch;
+  --rule-hair: 1px;
+  --rule-heavy: 2px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    color-scheme: dark;
+
+    /* The night sitting: the same document printed on dark stock. */
+    --ground: #15191a;
+    --paper: #1d2224;
+    --paper-edge: #2c3336;
+
+    --ink: #e8ece6;
+    --ink-soft: #a7b2ad;
+    --ink-faint: #7f8a86;
+
+    --rule: #39423f;
+    --rule-strong: #e8ece6;
+
+    --field: #123f30;
+    --field-deep: #0c2c22;
+    --field-ink: #eef3ee;
+    --field-ink-soft: #9dbcae;
+
+    --stamp: #e76678;
+    --stamp-ink: #15191a;
+
+    --focus: #7fd3a6;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-read);
+  font-size: 1rem;
+  line-height: 1.6;
+  font-variant-numeric: tabular-nums;
+}
+
+/* --- browser surfaces: these ship with the design, not with the browser --- */
+
+::selection {
+  background: var(--field);
+  color: var(--field-ink);
+}
+
+:focus-visible {
+  outline: var(--rule-heavy) solid var(--focus);
+  outline-offset: 2px;
+}
+
+html {
+  scrollbar-color: var(--rule) transparent;
+  caret-color: var(--field);
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--ground);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--rule);
+  border: 3px solid var(--ground);
+  border-radius: 0;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--ink-faint);
+}
+
+a {
+  color: inherit;
+  text-decoration-color: var(--rule);
+  text-underline-offset: 0.18em;
+  text-decoration-thickness: 1px;
+}
+
+a:hover {
+  text-decoration-color: currentColor;
+}
+
+/* --- document primitives --- */
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-structure);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  line-height: 1.12;
+  text-wrap: balance;
+  margin: 0;
+}
+
+h1 {
+  font-size: clamp(1.9rem, 1.2rem + 3vw, 3.4rem);
+}
+
+h2 {
+  font-size: clamp(1.25rem, 1rem + 1.1vw, 1.9rem);
+}
+
+h3 {
+  font-size: 1.05rem;
+}
+
+p {
+  margin: 0 0 1em;
+  max-width: var(--measure);
+}
+
+/* The label on a form field of an official document. */
+.field-label {
+  font-family: var(--font-structure);
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+/* Serial and registration numerals, as stamped on the booklet. */
+.serial {
+  font-family: var(--font-serial);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+/* A ruled block, the way an instruction or registration box is ruled. */
+.ruled {
+  border: var(--rule-heavy) solid var(--rule-strong);
+  background: var(--paper);
+}
+
+.hairline {
+  border: var(--rule-hair) solid var(--rule);
+}
+
+.sheet {
+  width: min(100% - 2rem, 76rem);
+  margin-inline: auto;
+}
+
+.reading {
+  font-family: var(--font-read);
+  max-width: var(--measure);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

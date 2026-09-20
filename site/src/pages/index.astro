@@ -1,0 +1,505 @@
+---
+import Document from '../layouts/Document.astro';
+import { CORPUS, SUBJECTS, YEARS } from '../lib/corpus.js';
+
+const digits = (n) => String(n).split('');
+
+const description = `Every UPSC Prelims question from ${CORPUS.minYear} to ${CORPUS.maxYear} — ${CORPUS.total.toLocaleString('en-IN')} questions with answers, searchable by concept. Free, no sign-up.`;
+
+const EXAMPLES = [
+  'El Nino and the monsoon',
+  'Fundamental Rights',
+  'Harappan civilisation',
+  'inflation targeting',
+  'tiger reserves',
+];
+---
+
+<Document title="SawaalBox" description={description}>
+  <header class="masthead">
+    <div class="sheet masthead-inner">
+      <div class="wordmark">
+        <span class="wordmark-latin">SawaalBox</span>
+        <span class="wordmark-deva" lang="hi">सवाल बॉक्स</span>
+      </div>
+      <p class="masthead-line">UPSC Civil Services Prelims · Previous Year Questions</p>
+      <div class="series" aria-label="Coverage 1995 to 2026">
+        <span class="field-label series-label">Years</span>
+        <span class="serial series-code">{CORPUS.minYear}–{CORPUS.maxYear}</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="sheet cover">
+    <section class="instructions ruled" aria-labelledby="search-heading">
+      <div class="box-head">
+        <h1 id="search-heading">Search every question UPSC has asked</h1>
+      </div>
+      <div class="box-body">
+        <p class="reading lede">
+          Describe an idea in your own words. You get the questions that asked about it —
+          including the ones phrased nothing like your search.
+        </p>
+
+        <form class="search" action="/search" method="get" role="search">
+          <label class="field-label" for="q">Enter a topic or concept</label>
+          <div class="search-row">
+            <input
+              id="q"
+              name="q"
+              type="search"
+              autocomplete="off"
+              placeholder="e.g. El Nino and the monsoon"
+              required
+            />
+            <button type="submit">Search</button>
+          </div>
+        </form>
+
+        <ul class="examples" aria-label="Example searches">
+          {
+            EXAMPLES.map((example) => (
+              <li>
+                <a href={`/search?q=${encodeURIComponent(example)}`}>{example}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </div>
+    </section>
+
+    <aside class="registration ruled" aria-label="Corpus record">
+      <div class="box-head">
+        <h2>The record</h2>
+      </div>
+      <dl class="reg-grid">
+        <div class="reg-row">
+          <dt class="field-label">Questions</dt>
+          <dd class="digits">
+            {digits(CORPUS.total).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
+          </dd>
+        </div>
+        <div class="reg-row">
+          <dt class="field-label">Years covered</dt>
+          <dd class="digits">
+            {digits(CORPUS.yearCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
+          </dd>
+        </div>
+        <div class="reg-row">
+          <dt class="field-label">Subjects</dt>
+          <dd class="digits">
+            {digits(CORPUS.subjectCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
+          </dd>
+        </div>
+        <div class="reg-note">
+          <p>
+            Includes {CORPUS.cancelled} questions UPSC later cancelled and {CORPUS.disputed} with
+            disputed answers, marked as such rather than quietly corrected.
+          </p>
+        </div>
+      </dl>
+    </aside>
+  </main>
+
+  <div class="sheet"><hr class="fold" /></div>
+
+  <section class="sheet index-block" aria-labelledby="subjects-heading">
+    <h2 id="subjects-heading">Question index</h2>
+    <ol class="index-list">
+      {
+        SUBJECTS.map((subject, i) => (
+          <li>
+            <a href={`/subject/${subject.slug}`}>
+              <span class="serial idx">{String(i + 1).padStart(2, '0')}</span>
+              <span class="idx-name">{subject.name}</span>
+              <span class="idx-leader" aria-hidden="true" />
+              <span class="serial idx-count">{subject.count.toLocaleString('en-IN')}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ol>
+  </section>
+
+  <section class="sheet index-block" aria-labelledby="years-heading">
+    <h2 id="years-heading">By year</h2>
+    <ul class="year-list">
+      {
+        YEARS.map((y) => (
+          <li>
+            <a href={`/year/${y.year}`}>
+              <span class="serial year-n">{y.year}</span>
+              <span class="year-c">{y.count}</span>
+            </a>
+          </li>
+        ))
+      }
+    </ul>
+  </section>
+
+  <footer class="colophon">
+    <div class="sheet colophon-inner">
+      <p>
+        SawaalBox is free and needs no account. Questions are reproduced from UPSC Civil
+        Services Preliminary Examination papers, {CORPUS.minYear}–{CORPUS.maxYear}.
+      </p>
+      <nav aria-label="Footer">
+        <a href="/subjects">All subjects</a>
+        <a href="/years">All years</a>
+        <a href="/search">Search</a>
+      </nav>
+    </div>
+  </footer>
+</Document>
+
+<style>
+  .masthead {
+    background: var(--field);
+    color: var(--field-ink);
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  .masthead-inner {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    align-items: end;
+    gap: 0.4rem 1.5rem;
+    padding-block: clamp(1.25rem, 3vw, 2.25rem);
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: baseline;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+  }
+
+  .wordmark-latin {
+    font-family: var(--font-structure);
+    font-weight: 800;
+    font-size: clamp(1.6rem, 1rem + 2.4vw, 2.6rem);
+    letter-spacing: -0.035em;
+  }
+
+  .wordmark-deva {
+    font-size: clamp(1rem, 0.8rem + 0.7vw, 1.35rem);
+    color: var(--field-ink-soft);
+  }
+
+  .masthead-line {
+    grid-column: 1;
+    margin: 0;
+    max-width: none;
+    font-family: var(--font-structure);
+    font-size: 0.82rem;
+    letter-spacing: 0.04em;
+    color: var(--field-ink-soft);
+  }
+
+  .series {
+    grid-row: 1 / span 2;
+    grid-column: 2;
+    display: grid;
+    gap: 0.15rem;
+    justify-items: end;
+    border: var(--rule-hair) solid var(--field-ink-soft);
+    padding: 0.4rem 0.7rem;
+  }
+
+  .series-label {
+    color: var(--field-ink-soft);
+  }
+
+  .series-code {
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  /* --- cover --- */
+
+  .cover {
+    display: grid;
+    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
+    gap: 1.25rem;
+    padding-block: clamp(1.5rem, 4vw, 3rem);
+    align-items: start;
+  }
+
+  .box-head {
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+    padding: 0.7rem 1.1rem;
+  }
+
+  .box-head h1,
+  .box-head h2 {
+    font-size: clamp(1.35rem, 0.9rem + 1.8vw, 2.3rem);
+  }
+
+  .registration .box-head h2 {
+    font-size: 1rem;
+    letter-spacing: 0.02em;
+  }
+
+  .box-body {
+    padding: 1.1rem;
+  }
+
+  .lede {
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+  }
+
+  .search {
+    margin-top: 1.4rem;
+  }
+
+  .search-row {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.4rem;
+  }
+
+  .search input {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-read);
+    font-size: 1.05rem;
+    padding: 0.85rem 0.9rem;
+    color: var(--ink);
+    background: var(--ground);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+  }
+
+  .search input::placeholder {
+    color: var(--ink-faint);
+  }
+
+  .search button {
+    font-family: var(--font-structure);
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.02em;
+    padding: 0.85rem 1.5rem;
+    color: var(--field-ink);
+    background: var(--field);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+    transition: background 140ms cubic-bezier(0.2, 0.7, 0.3, 1);
+  }
+
+  .search button:hover {
+    background: var(--field-deep);
+  }
+
+  .examples {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 0.9rem;
+    margin: 1.1rem 0 0;
+    padding: 0;
+    list-style: none;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+
+  /* --- registration grid: digits in boxes, as on the booklet --- */
+
+  .reg-grid {
+    margin: 0;
+    padding: 1rem 1.1rem;
+    display: grid;
+    gap: 0.9rem;
+  }
+
+  .reg-row {
+    display: grid;
+    gap: 0.3rem;
+  }
+
+  .reg-row dt {
+    margin: 0;
+  }
+
+  .digits {
+    margin: 0;
+    display: flex;
+    gap: 0.25rem;
+  }
+
+  .digits b {
+    display: grid;
+    place-items: center;
+    width: 1.9rem;
+    height: 2.4rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--ground);
+    border: var(--rule-hair) solid var(--rule-strong);
+    animation: stamp 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
+    animation-delay: calc(var(--i) * 45ms);
+  }
+
+  @keyframes stamp {
+    from {
+      opacity: 0;
+      transform: translateY(-0.35rem);
+    }
+  }
+
+  .reg-note p {
+    margin: 0;
+    font-size: 0.85rem;
+    line-height: 1.5;
+    color: var(--ink-soft);
+    border-top: var(--rule-hair) solid var(--rule);
+    padding-top: 0.7rem;
+  }
+
+  .fold {
+    border: 0;
+    border-top: var(--rule-hair) dashed var(--rule);
+    margin: 0;
+  }
+
+  /* --- indexes --- */
+
+  .index-block {
+    padding-block: clamp(1.75rem, 4vw, 2.75rem);
+  }
+
+  .index-block h2 {
+    margin-bottom: 1rem;
+  }
+
+  .index-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: none;
+  }
+
+  .index-list a {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: baseline;
+    gap: 0.75rem;
+    padding: 0.62rem 0;
+    border-bottom: var(--rule-hair) solid var(--rule);
+    text-decoration: none;
+  }
+
+  .index-list a:hover .idx-name {
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  .idx {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+  }
+
+  .idx-name {
+    font-family: var(--font-structure);
+    font-weight: 600;
+    font-size: 1.02rem;
+  }
+
+  .idx-leader {
+    border-bottom: var(--rule-hair) dotted var(--rule);
+    transform: translateY(-0.28em);
+  }
+
+  .idx-count {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+
+  .year-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
+    gap: 0.4rem;
+  }
+
+  .year-list a {
+    display: grid;
+    gap: 0.1rem;
+    padding: 0.55rem 0.6rem;
+    border: var(--rule-hair) solid var(--rule);
+    background: var(--paper);
+    text-decoration: none;
+  }
+
+  .year-list a:hover {
+    border-color: var(--rule-strong);
+  }
+
+  .year-n {
+    font-weight: 700;
+    font-size: 1rem;
+  }
+
+  .year-c {
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+  }
+
+  /* --- colophon --- */
+
+  .colophon {
+    background: var(--field);
+    color: var(--field-ink);
+    border-top: var(--rule-heavy) solid var(--rule-strong);
+    margin-top: 1.5rem;
+  }
+
+  .colophon-inner {
+    padding-block: 1.5rem;
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .colophon p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--field-ink-soft);
+    max-width: var(--measure);
+  }
+
+  .colophon nav {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    font-family: var(--font-structure);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  @media (max-width: 62rem) {
+    .cover {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 40rem) {
+    .masthead-inner {
+      grid-template-columns: 1fr;
+    }
+
+    .series {
+      grid-row: auto;
+      grid-column: 1;
+      justify-self: start;
+      justify-items: start;
+    }
+
+    .search-row {
+      flex-direction: column;
+    }
+  }
+</style>
