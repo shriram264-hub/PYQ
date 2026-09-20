@@ -1,0 +1,7 @@
+# Dependencies for the offline data pipeline only (extraction + index building).
+# These run on your machine, not on the server, so the heavy PyTorch-based
+# sentence-transformers stack is fine here. The deployed backend deliberately
+# avoids it (see backend/requirements.txt) to fit in a small memory budget.
+pypdf
+sentence-transformers
+numpy

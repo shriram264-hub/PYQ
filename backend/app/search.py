@@ -3,7 +3,6 @@ import re
 from collections import Counter
 
 import numpy as np
-from sentence_transformers import SentenceTransformer
 
 from app.data import QUESTIONS, VECTORS
 
@@ -29,11 +28,28 @@ _model = None
 
 
 def get_model():
-    """Load the embedding model lazily so tests that don't need it stay fast."""
+    """Load the embedding model lazily.
+
+    fastembed is imported here rather than at module scope so that starting the
+    server costs nothing: /api/meta and filter-only browsing never touch the
+    model, and on a cold start the process binds its port immediately instead of
+    sitting through the import first.
+    """
     global _model
     if _model is None:
-        _model = SentenceTransformer(MODEL_NAME)
+        from fastembed import TextEmbedding
+
+        _model = TextEmbedding(model_name=MODEL_NAME)
     return _model
+
+
+def embed_query(text):
+    """Embed one search query into the same space as data/embeddings.npy.
+
+    fastembed returns L2-normalised vectors, which is what build_index.py asked
+    sentence-transformers for, so the dot product below stays a cosine.
+    """
+    return np.asarray(next(iter(get_model().embed([text]))), dtype=np.float32)
 
 
 def keyword_score(query):
@@ -57,7 +73,7 @@ def search(q="", top=25, min_year=0, max_year=9999, subject="", difficulty=""):
         keep &= DIFFICULTY == difficulty
 
     if q:
-        qvec = get_model().encode(QUERY_PREFIX + q, normalize_embeddings=True)
+        qvec = embed_query(QUERY_PREFIX + q)
         scores = VECTORS @ qvec + KEYWORD_WEIGHT * keyword_score(q)
     else:  # no text: just browse the filtered questions, newest first
         scores = YEARS / 10000.0

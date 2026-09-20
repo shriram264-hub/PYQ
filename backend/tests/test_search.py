@@ -1,8 +1,9 @@
+import numpy as np
 from fastapi.testclient import TestClient
 
-from app.data import QUESTIONS
+from app.data import QUESTIONS, VECTORS
 from app.main import app
-from app.search import keyword_score, meta, search
+from app.search import QUERY_PREFIX, embed_query, keyword_score, meta, search
 
 client = TestClient(app)
 
@@ -56,3 +57,46 @@ def test_search_endpoint_with_real_year_range():
     assert r.status_code == 200
     body = r.json()
     assert all(result["year"] == 2015 for result in body["results"])
+
+
+def test_query_embedding_matches_stored_vector_space():
+    """The query encoder must produce vectors comparable to data/embeddings.npy.
+
+    embeddings.npy was built by sentence-transformers (PyTorch) while queries are
+    now embedded via fastembed (ONNX). Both use BAAI/bge-small-en-v1.5, so the
+    same text must land in the same place - otherwise every score silently
+    becomes meaningless rather than failing loudly.
+    """
+    q = QUESTIONS[0]
+    options = " | ".join(q[k] for k in "abcd" if q[k])
+    # Exactly how data/scripts/build_index.py built the stored vector for this row
+    text = f"{q['subject']} - {q['subtopic']}. {q['question']} Options: {options}"
+
+    vec = embed_query(text)
+    assert np.isclose(np.linalg.norm(vec), 1.0, atol=1e-3), "expected an L2-normalised vector"
+    assert float(vec @ VECTORS[0]) > 0.99
+
+
+def test_text_search_ranks_relevant_questions_first():
+    result = search(q="Harappan civilisation", top=5)
+    assert result["results"], "expected matches for a topic known to be in the bank"
+    assert result["results"] == sorted(
+        result["results"], key=lambda r: r["score"], reverse=True
+    )
+    top_subjects = {r["subject"] for r in result["results"][:3]}
+    assert "Ancient History" in top_subjects
+
+
+def test_search_endpoint_with_text_query():
+    r = client.get("/api/search", params={"q": "tiger reserves", "top": 5})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["query"] == "tiger reserves"
+    assert 0 < len(body["results"]) <= 5
+
+
+def test_embed_query_is_prefixed_consistently():
+    """Query and passage encodings differ for bge models; keep the prefix applied."""
+    plain = embed_query("monsoon")
+    prefixed = embed_query(QUERY_PREFIX + "monsoon")
+    assert float(plain @ prefixed) < 0.9999, "prefix should change the query vector"
