@@ -3,3 +3,4 @@ uvicorn[standard]
 sentence-transformers
 numpy
 pytest
+httpx

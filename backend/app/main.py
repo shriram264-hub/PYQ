@@ -17,16 +17,16 @@ app.add_middleware(
 def api_search(
     q: str = "",
     top: int = 25,
-    min_year: int = 0,
-    max_year: int = 9999,
+    min_year: str = "",
+    max_year: str = "",
     subject: str = "",
     difficulty: str = "",
 ):
     return search_module.search(
         q=q,
         top=top,
-        min_year=min_year,
-        max_year=max_year,
+        min_year=int(min_year) if min_year else 0,
+        max_year=int(max_year) if max_year else 9999,
         subject=subject,
         difficulty=difficulty,
     )

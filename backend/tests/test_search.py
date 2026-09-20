@@ -1,5 +1,10 @@
+from fastapi.testclient import TestClient
+
 from app.data import QUESTIONS
+from app.main import app
 from app.search import keyword_score, meta, search
+
+client = TestClient(app)
 
 
 def test_meta_reports_correct_count_and_year_range():
@@ -31,3 +36,23 @@ def test_keyword_score_counts_matching_words():
     assert scores.shape[0] == len(QUESTIONS)
     assert scores.max() <= 1.0
     assert scores.min() >= 0.0
+
+
+def test_meta_endpoint_returns_expected_shape():
+    body = client.get("/api/meta").json()
+    assert set(body) == {"count", "min_year", "max_year", "subjects"}
+
+
+def test_search_endpoint_with_blank_year_params_returns_200():
+    r = client.get("/api/search", params={"q": "", "min_year": "", "max_year": "", "top": 3})
+    assert r.status_code == 200
+    body = r.json()
+    assert "results" in body
+    assert len(body["results"]) <= 3
+
+
+def test_search_endpoint_with_real_year_range():
+    r = client.get("/api/search", params={"q": "", "min_year": 2015, "max_year": 2015, "top": 200})
+    assert r.status_code == 200
+    body = r.json()
+    assert all(result["year"] == 2015 for result in body["results"])

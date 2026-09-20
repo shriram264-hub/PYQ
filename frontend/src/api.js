@@ -1,7 +1,13 @@
 async function getJSON(path) {
   const res = await fetch(path);
-  const data = await res.json();
-  if (data.error) throw new Error(data.error);
+  const data = await res.json().catch(() => null);
+  if (!res.ok) {
+    const detail = data?.detail ?? data?.error;
+    throw new Error(
+      typeof detail === 'string' ? detail : `${res.status} ${res.statusText}`
+    );
+  }
+  if (data?.error) throw new Error(data.error);
   return data;
 }
 
