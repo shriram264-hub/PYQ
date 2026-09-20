@@ -1,5 +1,7 @@
+const API_BASE = import.meta.env.VITE_API_BASE || '';
+
 async function getJSON(path) {
-  const res = await fetch(path);
+  const res = await fetch(API_BASE + path);
   const data = await res.json().catch(() => null);
   if (!res.ok) {
     const detail = data?.detail ?? data?.error;
