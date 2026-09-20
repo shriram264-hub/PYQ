@@ -6,19 +6,21 @@ Usage:
     pip install sentence-transformers
     python build_index.py
 
-Reads:   questions.json   (made by extract_questions.py)
-Writes:  embeddings.npy   (one row of 384 numbers per question)
+Reads:   ../questions.json   (made by extract_questions.py)
+Writes:  ../embeddings.npy   (one row of 384 numbers per question)
 
 The first run downloads a free model (~130 MB). After that it works offline.
 """
 
 import json
 import time
+from pathlib import Path
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
 MODEL_NAME = "BAAI/bge-small-en-v1.5"  # small, fast, good for English search
+HERE = Path(__file__).resolve().parent.parent
 
 
 def question_to_text(q):
@@ -28,7 +30,7 @@ def question_to_text(q):
 
 
 def main():
-    with open("questions.json", encoding="utf-8") as f:
+    with open(HERE / "questions.json", encoding="utf-8") as f:
         questions = json.load(f)
     print(f"Loaded {len(questions)} questions")
 
@@ -43,7 +45,7 @@ def main():
         show_progress_bar=True,
         normalize_embeddings=True,  # lets us compare with a simple dot product
     )
-    np.save("embeddings.npy", vectors.astype(np.float32))
+    np.save(HERE / "embeddings.npy", vectors.astype(np.float32))
 
     print(f"\nDone in {time.time() - start:.0f}s")
     print(f"Saved embeddings.npy with shape {vectors.shape}")

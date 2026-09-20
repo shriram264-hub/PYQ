@@ -2,7 +2,7 @@
 Step 3: search the questions by concept.
 
 Usage:
-    python search.py
+    python search_cli.py
 
 Then type a topic, e.g.  Harappan civilisation
 Optional filters you can add to any search:
@@ -18,6 +18,7 @@ Type  q  to quit.
 import json
 import re
 import textwrap
+from pathlib import Path
 
 import numpy as np
 from sentence_transformers import SentenceTransformer
@@ -25,6 +26,7 @@ from sentence_transformers import SentenceTransformer
 MODEL_NAME = "BAAI/bge-small-en-v1.5"
 # bge models work best when a search query starts with this instruction
 QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+HERE = Path(__file__).resolve().parent.parent
 
 
 def parse_query(raw):
@@ -79,9 +81,9 @@ def show(results):
 
 
 def main():
-    with open("questions.json", encoding="utf-8") as f:
+    with open(HERE / "questions.json", encoding="utf-8") as f:
         questions = json.load(f)
-    vectors = np.load("embeddings.npy")
+    vectors = np.load(HERE / "embeddings.npy")
     assert len(vectors) == len(questions), "Run build_index.py again"
 
     print("Loading model ...")

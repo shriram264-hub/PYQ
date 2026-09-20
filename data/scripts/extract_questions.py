@@ -146,7 +146,7 @@ def main():
     if len(sys.argv) != 2:
         sys.exit('Usage: python extract_questions.py "question_bank.pdf"')
     pdf_path = sys.argv[1]
-    out = Path(__file__).parent
+    out = Path(__file__).resolve().parent.parent
 
     print(f"Reading {pdf_path} ...")
     questions = parse(read_lines(pdf_path))
