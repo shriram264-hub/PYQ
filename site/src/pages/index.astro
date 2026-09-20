@@ -91,12 +91,6 @@ const EXAMPLES = [
             {digits(CORPUS.subjectCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
           </dd>
         </div>
-        <div class="reg-note">
-          <p>
-            Includes {CORPUS.cancelled} questions UPSC later cancelled and {CORPUS.disputed} with
-            disputed answers, marked as such rather than quietly corrected.
-          </p>
-        </div>
       </dl>
     </aside>
   </main>
@@ -347,15 +341,6 @@ const EXAMPLES = [
       opacity: 0;
       transform: translateY(-0.35rem);
     }
-  }
-
-  .reg-note p {
-    margin: 0;
-    font-size: 0.85rem;
-    line-height: 1.5;
-    color: var(--ink-soft);
-    border-top: var(--rule-hair) solid var(--rule);
-    padding-top: 0.7rem;
   }
 
   .fold {
