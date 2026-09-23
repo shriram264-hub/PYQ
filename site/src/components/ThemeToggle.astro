@@ -1,0 +1,98 @@
+---
+// Three states, cycled in this order: follow the system, force light, force dark.
+// "System" is the default so a reader who never touches this keeps whatever
+// their device already decided.
+---
+
+<button
+  id="theme-toggle"
+  class="theme-toggle"
+  type="button"
+  aria-live="polite"
+  title="Change theme"
+>
+  <span class="tt-icon" aria-hidden="true"></span>
+  <span class="tt-text">Theme</span>
+</button>
+
+<script is:inline>
+  (() => {
+    const btn = document.getElementById('theme-toggle');
+    if (!btn) return;
+
+    const ORDER = ['system', 'light', 'dark'];
+    const LABEL = { system: 'System', light: 'Light', dark: 'Dark' };
+    const ICON = { system: '◐', light: '☀', dark: '☾' };
+
+    const read = () => {
+      try {
+        return localStorage.getItem('sawaalbox-theme') || 'system';
+      } catch {
+        return 'system';
+      }
+    };
+
+    function paint(choice) {
+      const root = document.documentElement;
+      if (choice === 'system') root.removeAttribute('data-theme');
+      else root.setAttribute('data-theme', choice);
+
+      btn.querySelector('.tt-icon').textContent = ICON[choice];
+      btn.querySelector('.tt-text').textContent = LABEL[choice];
+      btn.setAttribute('aria-label', `Theme: ${LABEL[choice]}. Click to change.`);
+    }
+
+    paint(read());
+
+    btn.addEventListener('click', () => {
+      const next = ORDER[(ORDER.indexOf(read()) + 1) % ORDER.length];
+      try {
+        next === 'system'
+          ? localStorage.removeItem('sawaalbox-theme')
+          : localStorage.setItem('sawaalbox-theme', next);
+      } catch {
+        /* private mode: the choice still applies for this page */
+      }
+      paint(next);
+    });
+  })();
+</script>
+
+<style>
+  .theme-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.25rem 0.6rem;
+    background: transparent;
+    color: inherit;
+    border: var(--rule-hair) solid currentColor;
+    border-radius: 0;
+    font-family: var(--font-structure);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    opacity: 0.85;
+  }
+
+  .theme-toggle:hover {
+    opacity: 1;
+  }
+
+  .tt-icon {
+    font-size: 0.9rem;
+    line-height: 1;
+  }
+
+  @media (max-width: 30rem) {
+    .tt-text {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+</style>

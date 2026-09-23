@@ -11,29 +11,24 @@
   regions rather than accenting them.
 */
 
+/* Palette values live here once. The blocks below only choose between them,
+   so a colour is never defined in two places and cannot drift. */
 :root {
-  color-scheme: light;
-
-  --ground: #e6eae3;
-  --paper: #f4f6f1;
-  --paper-edge: #d7ddd3;
-
-  --ink: #14181a;
-  --ink-soft: #4a544f;
-  --ink-faint: #6d7873;
-
-  --rule: #b9c2b8;
-  --rule-strong: #14181a;
-
-  --field: #0f3d2e;
-  --field-deep: #0a2c21;
-  --field-ink: #f4f6f1;
-  --field-ink-soft: #a9c4b7;
-
-  --stamp: #b00d26;
-  --stamp-ink: #ffffff;
-
-  --focus: #0f3d2e;
+  --l-ground: #e6eae3;   --d-ground: #15191a;
+  --l-paper: #f4f6f1;    --d-paper: #1d2224;
+  --l-paper-edge: #d7ddd3; --d-paper-edge: #2c3336;
+  --l-ink: #14181a;      --d-ink: #e8ece6;
+  --l-ink-soft: #4a544f; --d-ink-soft: #a7b2ad;
+  --l-ink-faint: #6d7873; --d-ink-faint: #7f8a86;
+  --l-rule: #b9c2b8;     --d-rule: #39423f;
+  --l-rule-strong: #14181a; --d-rule-strong: #e8ece6;
+  --l-field: #0f3d2e;    --d-field: #123f30;
+  --l-field-deep: #0a2c21; --d-field-deep: #0c2c22;
+  --l-field-ink: #f4f6f1; --d-field-ink: #eef3ee;
+  --l-field-ink-soft: #a9c4b7; --d-field-ink-soft: #9dbcae;
+  --l-stamp: #b00d26;    --d-stamp: #e76678;
+  --l-stamp-ink: #ffffff; --d-stamp-ink: #15191a;
+  --l-focus: #0f3d2e;    --d-focus: #7fd3a6;
 
   --font-structure: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
   --font-read: 'Literata', Georgia, 'Times New Roman', serif;
@@ -44,32 +39,67 @@
   --rule-heavy: 2px;
 }
 
+/* Light is the default: the document is a printed paper. */
+:root,
+:root[data-theme='light'] {
+  color-scheme: light;
+  --ground: var(--l-ground);
+  --paper: var(--l-paper);
+  --paper-edge: var(--l-paper-edge);
+  --ink: var(--l-ink);
+  --ink-soft: var(--l-ink-soft);
+  --ink-faint: var(--l-ink-faint);
+  --rule: var(--l-rule);
+  --rule-strong: var(--l-rule-strong);
+  --field: var(--l-field);
+  --field-deep: var(--l-field-deep);
+  --field-ink: var(--l-field-ink);
+  --field-ink-soft: var(--l-field-ink-soft);
+  --stamp: var(--l-stamp);
+  --stamp-ink: var(--l-stamp-ink);
+  --focus: var(--l-focus);
+}
+
+/* The night sitting: the same document printed on dark stock. Applied when the
+   reader's system asks for it, or when they pick it explicitly. */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     color-scheme: dark;
-
-    /* The night sitting: the same document printed on dark stock. */
-    --ground: #15191a;
-    --paper: #1d2224;
-    --paper-edge: #2c3336;
-
-    --ink: #e8ece6;
-    --ink-soft: #a7b2ad;
-    --ink-faint: #7f8a86;
-
-    --rule: #39423f;
-    --rule-strong: #e8ece6;
-
-    --field: #123f30;
-    --field-deep: #0c2c22;
-    --field-ink: #eef3ee;
-    --field-ink-soft: #9dbcae;
-
-    --stamp: #e76678;
-    --stamp-ink: #15191a;
-
-    --focus: #7fd3a6;
+    --ground: var(--d-ground);
+    --paper: var(--d-paper);
+    --paper-edge: var(--d-paper-edge);
+    --ink: var(--d-ink);
+    --ink-soft: var(--d-ink-soft);
+    --ink-faint: var(--d-ink-faint);
+    --rule: var(--d-rule);
+    --rule-strong: var(--d-rule-strong);
+    --field: var(--d-field);
+    --field-deep: var(--d-field-deep);
+    --field-ink: var(--d-field-ink);
+    --field-ink-soft: var(--d-field-ink-soft);
+    --stamp: var(--d-stamp);
+    --stamp-ink: var(--d-stamp-ink);
+    --focus: var(--d-focus);
   }
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --ground: var(--d-ground);
+  --paper: var(--d-paper);
+  --paper-edge: var(--d-paper-edge);
+  --ink: var(--d-ink);
+  --ink-soft: var(--d-ink-soft);
+  --ink-faint: var(--d-ink-faint);
+  --rule: var(--d-rule);
+  --rule-strong: var(--d-rule-strong);
+  --field: var(--d-field);
+  --field-deep: var(--d-field-deep);
+  --field-ink: var(--d-field-ink);
+  --field-ink-soft: var(--d-field-ink-soft);
+  --stamp: var(--d-stamp);
+  --stamp-ink: var(--d-stamp-ink);
+  --focus: var(--d-focus);
 }
 
 *,

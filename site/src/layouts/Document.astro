@@ -29,6 +29,15 @@ const fullTitle = title === 'SawaalBox' ? title : `${title} | SawaalBox`;
     <meta property="og:url" content={canonical} />
     <meta name="twitter:card" content="summary" />
 
+    {/* Applies a stored theme before first paint, so a reader who chose light
+        never sees a dark flash on the way in. */}
+    <script is:inline>
+      try {
+        const t = localStorage.getItem('sawaalbox-theme');
+        if (t === 'light' || t === 'dark') document.documentElement.setAttribute('data-theme', t);
+      } catch {}
+    </script>
+
     <meta name="theme-color" content="#0f3d2e" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#15191a" media="(prefers-color-scheme: dark)" />
 

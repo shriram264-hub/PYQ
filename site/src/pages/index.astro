@@ -1,6 +1,7 @@
 ---
 import Document from '../layouts/Document.astro';
 import Colophon from '../components/Colophon.astro';
+import ThemeToggle from '../components/ThemeToggle.astro';
 import { CORPUS, SUBJECTS, YEARS } from '../lib/corpus.js';
 
 const digits = (n) => String(n).split('');
@@ -24,6 +25,7 @@ const EXAMPLES = [
         <span class="wordmark-deva" lang="hi">सवाल बॉक्स</span>
       </div>
       <p class="masthead-line">UPSC Civil Services Prelims · Previous Year Questions</p>
+      <div class="mast-actions"><ThemeToggle /></div>
       <div class="series" aria-label="Coverage 1995 to 2026">
         <span class="field-label series-label">Years</span>
         <span class="serial series-code">{CORPUS.minYear}–{CORPUS.maxYear}</span>
@@ -179,8 +181,14 @@ const EXAMPLES = [
     color: var(--field-ink-soft);
   }
 
+  .mast-actions {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: end;
+  }
+
   .series {
-    grid-row: 1 / span 2;
+    grid-row: 2;
     grid-column: 2;
     display: grid;
     gap: 0.15rem;
