@@ -15,9 +15,17 @@ services:
   - type: web
     name: upsc-pyq-search
     runtime: static
-    rootDir: frontend
-    buildCommand: npm install && npm run build
+    # The Astro site in site/ replaces the old single-page app in frontend/.
+    # Same service, so the public URL and the backend's CORS allowlist are
+    # unchanged. Reverting is this one value.
+    rootDir: site
+    buildCommand: npm install && npm run build && node scripts/check-links.mjs
     staticPublishPath: dist
     envVars:
-      - key: VITE_API_BASE
+      # Baked into the client at build time; the search island calls this.
+      - key: PUBLIC_API_BASE
         value: https://upsc-pyq-search-api.onrender.com
+      # Canonical origin for canonical tags, OG urls and the sitemap.
+      # Change this one value when sawaalbox.com is registered.
+      - key: SITE_URL
+        value: https://upsc-pyq-search-s778.onrender.com
