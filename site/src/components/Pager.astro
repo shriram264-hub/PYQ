@@ -1,7 +1,9 @@
 ---
 const { page, basePath } = Astro.props;
 
-const href = (n) => (n === 1 ? basePath : `${basePath}/page/${n}`);
+// Must match what Astro's paginate() actually emits: /base for page 1 and
+// /base/<n> after that. Anything else 404s.
+const href = (n) => (n === 1 ? basePath : `${basePath}/${n}`);
 
 // A compact window around the current page, always including first and last.
 const total = page.lastPage;

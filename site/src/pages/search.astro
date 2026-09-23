@@ -1,0 +1,414 @@
+---
+import Document from '../layouts/Document.astro';
+import Masthead from '../components/Masthead.astro';
+import Colophon from '../components/Colophon.astro';
+import { SUBJECTS, YEARS, CORPUS } from '../lib/corpus.js';
+
+const API_BASE = process.env.PUBLIC_API_BASE || 'https://upsc-pyq-search-api.onrender.com';
+
+const description = `Search ${CORPUS.total.toLocaleString('en-IN')} UPSC Prelims questions by concept, not just keywords. Free, no sign-up.`;
+---
+
+<Document title="Search" description={description} noindex={true}>
+  <Masthead />
+
+  <main class="sheet searchpage">
+    <div class="listing-head">
+      <h1>Search</h1>
+      <p class="standfirst">
+        Describe an idea in your own words — you get questions about it, including ones
+        phrased nothing like your search.
+      </p>
+    </div>
+
+    <form id="sform" class="sform" role="search">
+      <div class="sform-row">
+        <label class="field-label" for="q">Topic or concept</label>
+        <div class="sform-input">
+          <input id="q" name="q" type="search" autocomplete="off" placeholder="e.g. El Nino and the monsoon" />
+          <button type="submit">Search</button>
+        </div>
+      </div>
+
+      <div class="sform-filters">
+        <label>
+          <span class="field-label">Subject</span>
+          <select id="subject" name="subject">
+            <option value="">All subjects</option>
+            {SUBJECTS.map((s) => <option value={s.name}>{s.name}</option>)}
+          </select>
+        </label>
+        <label>
+          <span class="field-label">From</span>
+          <select id="min_year" name="min_year">
+            {YEARS.slice().reverse().map((y) => <option value={y.year}>{y.year}</option>)}
+          </select>
+        </label>
+        <label>
+          <span class="field-label">To</span>
+          <select id="max_year" name="max_year">
+            {YEARS.map((y) => <option value={y.year}>{y.year}</option>)}
+          </select>
+        </label>
+        <label>
+          <span class="field-label">Difficulty</span>
+          <select id="difficulty" name="difficulty">
+            <option value="">Any</option>
+            <option value="easy">Easy</option>
+            <option value="moderate">Moderate</option>
+            <option value="difficult">Difficult</option>
+          </select>
+        </label>
+      </div>
+    </form>
+
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <div id="results" class="qlist"></div>
+    <nav id="pager" class="pager" aria-label="Pagination"></nav>
+  </main>
+
+  <Colophon />
+</Document>
+
+<script define:vars={{ API_BASE }}>
+  const PAGE_SIZE = 25;
+  const $ = (id) => document.getElementById(id);
+  const form = $('sform');
+  const statusEl = $('status');
+  const resultsEl = $('results');
+  const pagerEl = $('pager');
+
+  const esc = (s) =>
+    String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+
+  const slugify = (v) =>
+    String(v).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+
+  // The extraction emitted several labels for one subject; the static pages are
+  // built from the canonical names, so links must use the same mapping.
+  const ALIASES = {
+    Polity: 'Indian Polity',
+    Economy: 'Indian Economy',
+    Environment: 'Environment & Ecology',
+    'Science and Technology': 'Science & Technology',
+    Science: 'Science & Technology',
+  };
+  const canonical = (s) => ALIASES[s] || s;
+
+  function questionHTML(q) {
+    const subject = canonical(q.subject);
+    const sSlug = slugify(subject);
+    const tSlug = slugify(q.subtopic);
+    const qSlug = `${q.year}-q${q.q_no}-${slugify(String(q.question).slice(0, 60))}`;
+    const opts = ['a', 'b', 'c', 'd']
+      .map(
+        (k) =>
+          `<li class="${q.answer === k ? 'is-answer' : ''}"><span class="serial qopt-key">(${k})</span><span class="qopt-text">${esc(q[k])}</span></li>`
+      )
+      .join('');
+
+    const flags = [
+      q.status === 'cancelled' ? '<span class="qflag">Cancelled by UPSC</span>' : '',
+      q.status === 'disputed' ? '<span class="qflag qflag-warn">Answer disputed</span>' : '',
+    ].join('');
+
+    const answer = q.answer
+      ? `<details class="qanswer"><summary><span class="lbl-show">Show answer</span><span class="lbl-hide">Hide answer</span></summary>
+         <div class="qanswer-body"><p><span class="field-label">Official answer</span><strong class="serial">(${q.answer})</strong> ${esc(q[q.answer])}</p>
+         ${q.answer_note ? `<p class="qnote">${esc(q.answer_note)}</p>` : ''}</div></details>`
+      : `<p class="qanswer-none">No answer is recorded for this question.</p>`;
+
+    return `<article class="qblock">
+      <div class="qhead">
+        <span class="serial qref">${q.year} · Q${q.q_no}</span>
+        <a href="/upsc/subject/${sSlug}">${esc(subject)}</a>
+        <span class="qsep" aria-hidden="true">›</span>
+        <a href="/upsc/topic/${sSlug}/${tSlug}">${esc(q.subtopic)}</a>
+        <span class="qdiff qdiff-${esc(q.difficulty)}">${esc(q.difficulty)}</span>
+        ${flags}
+      </div>
+      <h2 class="qtext"><a href="/upsc/question/${qSlug}">${esc(q.question)}</a></h2>
+      <ol class="qopts">${opts}</ol>
+      ${answer}
+    </article>`;
+  }
+
+  function pagerHTML(offset, total) {
+    const current = Math.floor(offset / PAGE_SIZE) + 1;
+    const last = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (last <= 1) return '';
+
+    const want = new Set([1, last, current]);
+    for (let i = current - 2; i <= current + 2; i += 1) if (i >= 1 && i <= last) want.add(i);
+    const nums = [...want].sort((a, b) => a - b);
+
+    let items = '';
+    nums.forEach((n, i) => {
+      if (i > 0 && n - nums[i - 1] > 1) items += '<li class="pager-gap" aria-hidden="true">…</li>';
+      items +=
+        n === current
+          ? `<li><span class="pager-n is-current serial" aria-current="page">${n}</span></li>`
+          : `<li><button class="pager-n serial" data-page="${n}">${n}</button></li>`;
+    });
+
+    const from = offset + 1;
+    const to = Math.min(offset + PAGE_SIZE, total);
+
+    return `<p class="pager-count serial">Showing ${from.toLocaleString('en-IN')}–${to.toLocaleString('en-IN')} of ${total.toLocaleString('en-IN')}</p>
+      <ul class="pager-list">
+        <li>${current > 1 ? `<button class="pager-step" data-page="${current - 1}">Previous</button>` : '<span class="pager-step is-off" aria-disabled="true">Previous</span>'}</li>
+        ${items}
+        <li>${current < last ? `<button class="pager-step" data-page="${current + 1}">Next</button>` : '<span class="pager-step is-off" aria-disabled="true">Next</span>'}</li>
+      </ul>`;
+  }
+
+  function readForm() {
+    return {
+      q: $('q').value.trim(),
+      subject: $('subject').value,
+      min_year: $('min_year').value,
+      max_year: $('max_year').value,
+      difficulty: $('difficulty').value,
+    };
+  }
+
+  function writeUrl(params, offset) {
+    const u = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => v && u.set(k, v));
+    if (offset) u.set('offset', offset);
+    history.replaceState(null, '', u.toString() ? `?${u}` : location.pathname);
+  }
+
+  let inFlight = 0;
+
+  async function run(offset = 0, push = true) {
+    const params = readForm();
+    if (push) writeUrl(params, offset);
+
+    const ticket = ++inFlight;
+    statusEl.textContent = 'Searching…';
+    pagerEl.innerHTML = '';
+
+    const url = new URL(`${API_BASE}/api/search`);
+    Object.entries(params).forEach(([k, v]) => v && url.searchParams.set(k, v));
+    url.searchParams.set('top', PAGE_SIZE);
+    url.searchParams.set('offset', offset);
+
+    try {
+      const res = await fetch(url);
+      const data = await res.json().catch(() => null);
+      if (ticket !== inFlight) return; // a newer search already replaced this one
+      if (!res.ok) {
+        const detail = data?.detail ?? data?.error;
+        throw new Error(typeof detail === 'string' ? detail : `${res.status} ${res.statusText}`);
+      }
+
+      const total = data.total_results ?? data.total_filtered ?? data.results.length;
+      if (!data.results.length) {
+        statusEl.textContent = 'No questions match those filters.';
+        resultsEl.innerHTML = '';
+        return;
+      }
+
+      statusEl.textContent = '';
+      resultsEl.innerHTML = data.results.map(questionHTML).join('');
+      pagerEl.innerHTML = pagerHTML(offset, total);
+      if (offset > 0) resultsEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      if (ticket !== inFlight) return;
+      resultsEl.innerHTML = '';
+      statusEl.innerHTML = `Search is unavailable right now (${esc(err.message)}). The question bank is still browsable by <a href="/upsc/subjects">subject</a> and <a href="/upsc/years">year</a>. The server sleeps when idle, so a first search can take up to a minute — try again shortly.`;
+    }
+  }
+
+  form.addEventListener('submit', (e) => {
+    e.preventDefault();
+    run(0);
+  });
+
+  form.addEventListener('change', (e) => {
+    if (e.target.tagName === 'SELECT') run(0);
+  });
+
+  pagerEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-page]');
+    if (btn) run((Number(btn.dataset.page) - 1) * PAGE_SIZE);
+  });
+
+  // Deep links from the landing page and example searches land here.
+  const incoming = new URLSearchParams(location.search);
+  if (incoming.has('q') || incoming.has('subject')) {
+    $('q').value = incoming.get('q') || '';
+    ['subject', 'min_year', 'max_year', 'difficulty'].forEach((k) => {
+      if (incoming.get(k)) $(k).value = incoming.get(k);
+    });
+    run(Number(incoming.get('offset') || 0), false);
+  }
+</script>
+
+<style>
+  .searchpage {
+    padding-block: clamp(1.5rem, 4vw, 2.75rem);
+  }
+
+  .listing-head {
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .standfirst {
+    margin: 0.6rem 0 0;
+    color: var(--ink-soft);
+  }
+
+  .sform {
+    display: grid;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .sform-input {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 0.3rem;
+  }
+
+  .sform-input input {
+    flex: 1;
+    min-width: 0;
+    font-family: var(--font-read);
+    font-size: 1.05rem;
+    padding: 0.8rem 0.9rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+  }
+
+  .sform-input input::placeholder {
+    color: var(--ink-faint);
+  }
+
+  .sform-input button {
+    font-family: var(--font-structure);
+    font-weight: 700;
+    font-size: 0.95rem;
+    padding: 0.8rem 1.5rem;
+    color: var(--field-ink);
+    background: var(--field);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+
+  .sform-input button:hover {
+    background: var(--field-deep);
+  }
+
+  .sform-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.9rem 1.25rem;
+  }
+
+  .sform-filters label {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .sform-filters select {
+    font-family: var(--font-structure);
+    font-size: 0.9rem;
+    padding: 0.45rem 0.5rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
+    border-radius: 0;
+  }
+
+  .status {
+    min-height: 1.5rem;
+    margin-bottom: 0.75rem;
+    color: var(--ink-soft);
+    font-size: 0.95rem;
+  }
+
+  .qlist {
+    display: grid;
+    gap: 0.75rem;
+  }
+
+  .pager:empty {
+    display: none;
+  }
+
+  .pager {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 1.75rem;
+    padding-top: 1rem;
+    border-top: var(--rule-hair) solid var(--rule);
+  }
+
+  .pager-count {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .pager-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pager-n,
+  .pager-step {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.2rem;
+    height: 2.2rem;
+    padding-inline: 0.55rem;
+    border: var(--rule-hair) solid var(--rule);
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--font-structure);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .pager-n:hover,
+  .pager-step:hover {
+    border-color: var(--rule-strong);
+  }
+
+  .pager-n.is-current {
+    background: var(--field);
+    border-color: var(--field);
+    color: var(--field-ink);
+    cursor: default;
+  }
+
+  .pager-step.is-off {
+    color: var(--ink-faint);
+    border-style: dashed;
+    cursor: not-allowed;
+  }
+
+  .pager-gap {
+    padding-inline: 0.2rem;
+    color: var(--ink-faint);
+  }
+
+  @media (max-width: 40rem) {
+    .sform-input {
+      flex-direction: column;
+    }
+  }
+</style>

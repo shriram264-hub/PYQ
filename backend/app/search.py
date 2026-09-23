@@ -64,8 +64,10 @@ def keyword_score(query):
     return hits / len(words)
 
 
-def search(q="", top=25, min_year=0, max_year=9999, subject="", difficulty=""):
-    top = min(top, 200)
+def search(q="", top=25, offset=0, min_year=0, max_year=9999, subject="", difficulty=""):
+    top = min(max(top, 1), 200)
+    offset = max(offset, 0)
+
     keep = (YEARS >= min_year) & (YEARS <= max_year)
     if subject:
         keep &= SUBJECTS == subject
@@ -79,16 +81,25 @@ def search(q="", top=25, min_year=0, max_year=9999, subject="", difficulty=""):
         scores = YEARS / 10000.0
 
     scores = np.where(keep, scores, -np.inf)
-    order = np.argsort(-scores)[:top]
+
+    # Rank everything that passed the filters, then hand back one window of it.
+    # Ranking the whole set is what makes paging past the first page possible.
+    order = np.argsort(-scores)
+    matched = int(keep.sum())
+    window = order[offset : offset + top]
+
     results = []
-    for i in order:
+    for i in window:
         if not np.isfinite(scores[i]):
             break
         results.append({**QUESTIONS[i], "score": round(float(scores[i]), 3)})
 
     return {
         "query": q,
-        "total_filtered": int(keep.sum()),
+        "total_filtered": matched,
+        "total_results": matched,
+        "offset": offset,
+        "page_size": top,
         "results": results,
         "years_in_results": dict(sorted(Counter(r["year"] for r in results).items())),
     }

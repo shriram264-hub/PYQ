@@ -26,14 +26,14 @@ export async function GET({ site }) {
   for (const subject of INDEXABLE_SUBJECTS) {
     const pages = Math.ceil(subject.count / PAGE_SIZE);
     for (let p = 1; p <= pages; p += 1) {
-      add(p === 1 ? `/upsc/subject/${subject.slug}` : `/upsc/subject/${subject.slug}/page/${p}`, '0.8');
+      add(p === 1 ? `/upsc/subject/${subject.slug}` : `/upsc/subject/${subject.slug}/${p}`, '0.8');
     }
   }
 
   for (const { year, count } of YEARS) {
     const pages = Math.ceil(count / PAGE_SIZE);
     for (let p = 1; p <= pages; p += 1) {
-      add(p === 1 ? `/upsc/year/${year}` : `/upsc/year/${year}/page/${p}`, '0.8');
+      add(p === 1 ? `/upsc/year/${year}` : `/upsc/year/${year}/${p}`, '0.8');
     }
   }
 
@@ -41,7 +41,7 @@ export async function GET({ site }) {
     const pages = Math.ceil(topic.count / PAGE_SIZE);
     for (let p = 1; p <= pages; p += 1) {
       const base = `/upsc/topic/${topic.subjectSlug}/${topic.slug}`;
-      add(p === 1 ? base : `${base}/page/${p}`, '0.7');
+      add(p === 1 ? base : `${base}/${p}`, '0.7');
     }
   }
 

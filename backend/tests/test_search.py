@@ -95,6 +95,40 @@ def test_search_endpoint_with_text_query():
     assert 0 < len(body["results"]) <= 5
 
 
+def test_offset_returns_the_next_window_without_overlap():
+    first = search(q="", top=5, offset=0)
+    second = search(q="", top=5, offset=5)
+
+    first_ids = [r["id"] for r in first["results"]]
+    second_ids = [r["id"] for r in second["results"]]
+
+    assert len(first_ids) == 5
+    assert len(second_ids) == 5
+    assert set(first_ids).isdisjoint(second_ids), "paging must not repeat questions"
+
+
+def test_offset_reports_the_full_match_count_not_the_page_size():
+    """Without this the UI cannot know how many pages exist."""
+    result = search(q="", top=5, offset=0)
+    assert result["total_results"] > 5
+    assert result["page_size"] == 5
+    assert result["offset"] == 0
+
+
+def test_offset_beyond_the_end_returns_no_results_rather_than_failing():
+    result = search(q="", top=25, offset=10_000)
+    assert result["results"] == []
+    assert result["total_results"] > 0
+
+
+def test_offset_paging_is_reachable_through_the_endpoint():
+    r = client.get("/api/search", params={"q": "", "top": 3, "offset": 3})
+    assert r.status_code == 200
+    body = r.json()
+    assert body["offset"] == 3
+    assert len(body["results"]) == 3
+
+
 def test_embed_query_is_prefixed_consistently():
     """Query and passage encodings differ for bge models; keep the prefix applied."""
     plain = embed_query("monsoon")
