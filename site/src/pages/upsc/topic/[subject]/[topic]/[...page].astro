@@ -2,10 +2,14 @@
 import Listing from '../../../../../layouts/Listing.astro';
 import QuestionBlock from '../../../../../components/QuestionBlock.astro';
 import Pager from '../../../../../components/Pager.astro';
-import { SUBSTANTIAL_SUBTOPICS, questionsForSubtopic } from '../../../../../lib/corpus.js';
+import { SUBTOPICS, questionsForSubtopic } from '../../../../../lib/corpus.js';
 
+// Every subtopic gets a page, including the thin ones: each question links to
+// its own subtopic, so generating only the substantial ones left 82 dead links.
+// Thin pages are kept out of the index instead (see `noindex` below) and out of
+// the sitemap.
 export async function getStaticPaths({ paginate }) {
-  return SUBSTANTIAL_SUBTOPICS.flatMap((topic) => {
+  return SUBTOPICS.flatMap((topic) => {
     const questions = questionsForSubtopic(topic.subjectSlug, topic.slug).sort(
       (a, b) => b.year - a.year || a.q_no - b.q_no
     );
@@ -31,7 +35,8 @@ const description = `${topic.count} UPSC Prelims questions on ${topic.subtopic} 
   title={title}
   description={description}
   heading={topic.subtopic}
-  standfirst={`${topic.count} questions in ${topic.subject}.`}
+  standfirst={`${topic.count} question${topic.count === 1 ? '' : 's'} in ${topic.subject}.`}
+  noindex={topic.count < 5}
   crumbs={[
     { name: 'Subjects', href: '/upsc/subjects' },
     { name: topic.subject, href: `/upsc/subject/${topic.subjectSlug}` },
