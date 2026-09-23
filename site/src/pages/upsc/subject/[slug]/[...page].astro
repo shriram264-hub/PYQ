@@ -1,0 +1,114 @@
+---
+import Listing from '../../../../layouts/Listing.astro';
+import QuestionBlock from '../../../../components/QuestionBlock.astro';
+import Pager from '../../../../components/Pager.astro';
+import { SUBJECTS, SUBTOPICS, questionsForSubject } from '../../../../lib/corpus.js';
+
+export const PAGE_SIZE = 25;
+
+export async function getStaticPaths({ paginate }) {
+  return SUBJECTS.flatMap((subject) => {
+    const questions = questionsForSubject(subject.slug).sort(
+      (a, b) => b.year - a.year || a.q_no - b.q_no
+    );
+    return paginate(questions, {
+      params: { slug: subject.slug },
+      props: { subject },
+      pageSize: PAGE_SIZE,
+    });
+  });
+}
+
+const { page, subject } = Astro.props;
+
+const topics = SUBTOPICS.filter((t) => t.subjectSlug === subject.slug && t.count >= 5);
+const basePath = `/upsc/subject/${subject.slug}`;
+
+// A subject with almost nothing in it would be a thin page; keep it reachable
+// but out of the index rather than publishing filler.
+const noindex = subject.count < 5;
+
+const pageSuffix = page.currentPage > 1 ? ` — page ${page.currentPage}` : '';
+const title = `${subject.name} — UPSC Prelims Questions${pageSuffix}`;
+const description = `All ${subject.count.toLocaleString('en-IN')} ${subject.name} questions asked in UPSC Civil Services Prelims, with official answers.`;
+---
+
+<Listing
+  title={title}
+  description={description}
+  heading={subject.name}
+  standfirst={`${subject.count.toLocaleString('en-IN')} questions asked in UPSC Prelims.`}
+  noindex={noindex}
+  crumbs={[
+    { name: 'Subjects', href: '/upsc/subjects' },
+    { name: subject.name, href: basePath },
+  ]}
+>
+  {
+    topics.length > 0 && (
+      <nav class="topics" aria-label="Topics in this subject">
+        <h2 class="field-label">Topics</h2>
+        <ul>
+          {topics.map((t) => (
+            <li>
+              <a href={`/upsc/topic/${t.subjectSlug}/${t.slug}`}>
+                {t.subtopic} <span class="serial tcount">{t.count}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    )
+  }
+
+  <div class="qlist">
+    {page.data.map((q) => <QuestionBlock q={q} />)}
+  </div>
+
+  <Pager page={page} basePath={basePath} />
+</Listing>
+
+<style>
+  .topics {
+    margin-bottom: 1.75rem;
+  }
+
+  .topics h2 {
+    margin: 0 0 0.5rem;
+  }
+
+  .topics ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .topics a {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.4rem;
+    padding: 0.3rem 0.6rem;
+    border: var(--rule-hair) solid var(--rule);
+    background: var(--paper);
+    font-family: var(--font-structure);
+    font-size: 0.85rem;
+    text-decoration: none;
+  }
+
+  .topics a:hover {
+    border-color: var(--rule-strong);
+  }
+
+  .tcount {
+    color: var(--ink-faint);
+    font-size: 0.78rem;
+  }
+
+  .qlist {
+    display: grid;
+    gap: 0.75rem;
+  }
+</style>

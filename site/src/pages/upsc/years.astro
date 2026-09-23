@@ -1,0 +1,60 @@
+---
+import Listing from '../../layouts/Listing.astro';
+import { YEARS, CORPUS } from '../../lib/corpus.js';
+---
+
+<Listing
+  title="All Years — UPSC Prelims Question Papers"
+  description={`Every UPSC Civil Services Prelims paper from ${CORPUS.minYear} to ${CORPUS.maxYear}, with the number of questions in each.`}
+  heading="All years"
+  standfirst={`${CORPUS.yearCount} papers, ${CORPUS.minYear}–${CORPUS.maxYear}.`}
+  crumbs={[{ name: 'Years', href: '/upsc/years' }]}
+>
+  <ul class="ylist">
+    {
+      YEARS.map((y) => (
+        <li>
+          <a href={`/upsc/year/${y.year}`}>
+            <span class="serial yn">{y.year}</span>
+            <span class="yc">{y.count} questions</span>
+          </a>
+        </li>
+      ))
+    }
+  </ul>
+</Listing>
+
+<style>
+  .ylist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+    gap: 0.5rem;
+  }
+
+  .ylist a {
+    display: grid;
+    gap: 0.15rem;
+    padding: 0.7rem 0.8rem;
+    border: var(--rule-hair) solid var(--rule);
+    background: var(--paper);
+    text-decoration: none;
+  }
+
+  .ylist a:hover {
+    border-color: var(--rule-strong);
+  }
+
+  .yn {
+    font-family: var(--font-structure);
+    font-weight: 700;
+    font-size: 1.15rem;
+  }
+
+  .yc {
+    font-size: 0.8rem;
+    color: var(--ink-soft);
+  }
+</style>

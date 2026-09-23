@@ -1,0 +1,101 @@
+---
+import Document from '../../../layouts/Document.astro';
+import Masthead from '../../../components/Masthead.astro';
+import Colophon from '../../../components/Colophon.astro';
+import QuestionBlock from '../../../components/QuestionBlock.astro';
+import { ALL_QUESTIONS, questionsForSubtopic } from '../../../lib/corpus.js';
+
+export async function getStaticPaths() {
+  return ALL_QUESTIONS.map((q) => ({ params: { slug: q.slug }, props: { q } }));
+}
+
+const { q } = Astro.props;
+
+const related = questionsForSubtopic(q.subjectSlug, q.subtopicSlug)
+  .filter((other) => other.slug !== q.slug)
+  .sort((a, b) => b.year - a.year)
+  .slice(0, 6);
+
+// A search engine result shows roughly 150 characters; lead with the question.
+const flat = q.question.replace(/\s+/g, ' ').trim();
+const description = `UPSC Prelims ${q.year}, Question ${q.q_no} (${q.subject}): ${flat}`.slice(0, 180);
+const title = `${flat.slice(0, 70)}${flat.length > 70 ? '…' : ''} — UPSC ${q.year}`;
+
+const crumbs = [
+  { name: 'Subjects', href: '/upsc/subjects' },
+  { name: q.subject, href: `/upsc/subject/${q.subjectSlug}` },
+  { name: q.subtopic, href: `/upsc/topic/${q.subjectSlug}/${q.subtopicSlug}` },
+  { name: `${q.year} Q${q.q_no}`, href: `/upsc/question/${q.slug}` },
+];
+---
+
+<Document title={title} description={description} breadcrumbs={crumbs}>
+  <Masthead crumbs={crumbs} />
+
+  <main class="sheet paper">
+    <QuestionBlock q={q} headingLevel="h1" linked={false} open={true} />
+
+    <nav class="jump" aria-label="This question in context">
+      <a href={`/upsc/year/${q.year}`}>All {q.year} questions</a>
+      <a href={`/upsc/subject/${q.subjectSlug}`}>All {q.subject}</a>
+      <a href={`/upsc/topic/${q.subjectSlug}/${q.subtopicSlug}`}>More on {q.subtopic}</a>
+    </nav>
+
+    {
+      related.length > 0 && (
+        <section class="related" aria-labelledby="related-heading">
+          <h2 id="related-heading">Other questions on {q.subtopic}</h2>
+          <div class="qlist">
+            {related.map((other) => (
+              <QuestionBlock q={other} />
+            ))}
+          </div>
+        </section>
+      )
+    }
+  </main>
+
+  <Colophon />
+</Document>
+
+<style>
+  .paper {
+    padding-block: clamp(1.5rem, 4vw, 2.75rem);
+  }
+
+  .jump {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 1.25rem;
+  }
+
+  .jump a {
+    padding: 0.4rem 0.75rem;
+    border: var(--rule-hair) solid var(--rule);
+    background: var(--paper);
+    font-family: var(--font-structure);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .jump a:hover {
+    border-color: var(--rule-strong);
+  }
+
+  .related {
+    margin-top: 2.5rem;
+    border-top: var(--rule-heavy) solid var(--rule-strong);
+    padding-top: 1.25rem;
+  }
+
+  .related h2 {
+    margin-bottom: 1rem;
+  }
+
+  .qlist {
+    display: grid;
+    gap: 0.75rem;
+  }
+</style>

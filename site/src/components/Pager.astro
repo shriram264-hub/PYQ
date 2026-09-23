@@ -1,0 +1,140 @@
+---
+const { page, basePath } = Astro.props;
+
+const href = (n) => (n === 1 ? basePath : `${basePath}/page/${n}`);
+
+// A compact window around the current page, always including first and last.
+const total = page.lastPage;
+const current = page.currentPage;
+const window = new Set([1, total, current]);
+for (let i = current - 2; i <= current + 2; i += 1) {
+  if (i >= 1 && i <= total) window.add(i);
+}
+const numbers = [...window].sort((a, b) => a - b);
+
+const withGaps = [];
+numbers.forEach((n, i) => {
+  if (i > 0 && n - numbers[i - 1] > 1) withGaps.push('gap');
+  withGaps.push(n);
+});
+
+const from = (current - 1) * page.size + 1;
+const to = Math.min(current * page.size, page.total);
+---
+
+{
+  total > 1 && (
+    <nav class="pager" aria-label="Pagination">
+      <p class="pager-count serial">
+        Showing {from.toLocaleString('en-IN')}–{to.toLocaleString('en-IN')} of{' '}
+        {page.total.toLocaleString('en-IN')}
+      </p>
+      <ul class="pager-list">
+        <li>
+          {page.url.prev ? (
+            <a class="pager-step" href={page.url.prev} rel="prev">
+              Previous
+            </a>
+          ) : (
+            <span class="pager-step is-off" aria-disabled="true">
+              Previous
+            </span>
+          )}
+        </li>
+        {withGaps.map((n) =>
+          n === 'gap' ? (
+            <li class="pager-gap" aria-hidden="true">
+              …
+            </li>
+          ) : (
+            <li>
+              {n === current ? (
+                <span class="pager-n is-current serial" aria-current="page">
+                  {n}
+                </span>
+              ) : (
+                <a class="pager-n serial" href={href(n)}>
+                  {n}
+                </a>
+              )}
+            </li>
+          )
+        )}
+        <li>
+          {page.url.next ? (
+            <a class="pager-step" href={page.url.next} rel="next">
+              Next
+            </a>
+          ) : (
+            <span class="pager-step is-off" aria-disabled="true">
+              Next
+            </span>
+          )}
+        </li>
+      </ul>
+    </nav>
+  )
+}
+
+<style>
+  .pager {
+    display: grid;
+    gap: 0.7rem;
+    margin-top: 1.75rem;
+    padding-top: 1rem;
+    border-top: var(--rule-hair) solid var(--rule);
+  }
+
+  .pager-count {
+    margin: 0;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .pager-list {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .pager-n,
+  .pager-step {
+    display: inline-grid;
+    place-items: center;
+    min-width: 2.2rem;
+    height: 2.2rem;
+    padding-inline: 0.55rem;
+    border: var(--rule-hair) solid var(--rule);
+    background: var(--paper);
+    font-family: var(--font-structure);
+    font-size: 0.85rem;
+    font-weight: 600;
+    text-decoration: none;
+  }
+
+  .pager-n:hover,
+  .pager-step:hover {
+    border-color: var(--rule-strong);
+  }
+
+  .pager-n.is-current {
+    background: var(--field);
+    border-color: var(--field);
+    color: var(--field-ink);
+  }
+
+  .pager-step.is-off {
+    color: var(--ink-faint);
+    border-style: dashed;
+    cursor: not-allowed;
+  }
+
+  .pager-gap {
+    padding-inline: 0.2rem;
+    color: var(--ink-faint);
+  }
+</style>

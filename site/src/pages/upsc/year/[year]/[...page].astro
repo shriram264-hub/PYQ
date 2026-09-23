@@ -1,0 +1,48 @@
+---
+import Listing from '../../../../layouts/Listing.astro';
+import QuestionBlock from '../../../../components/QuestionBlock.astro';
+import Pager from '../../../../components/Pager.astro';
+import { YEARS, questionsForYear } from '../../../../lib/corpus.js';
+
+export async function getStaticPaths({ paginate }) {
+  return YEARS.flatMap(({ year, count }) => {
+    const questions = questionsForYear(year).sort((a, b) => a.q_no - b.q_no);
+    return paginate(questions, {
+      params: { year: String(year) },
+      props: { year, count },
+      pageSize: 25,
+    });
+  });
+}
+
+const { page, year, count } = Astro.props;
+const basePath = `/upsc/year/${year}`;
+
+const pageSuffix = page.currentPage > 1 ? ` — page ${page.currentPage}` : '';
+const title = `UPSC Prelims ${year} Question Paper${pageSuffix}`;
+const description = `All ${count} questions from the UPSC Civil Services Prelims ${year} paper, with official answers.`;
+---
+
+<Listing
+  title={title}
+  description={description}
+  heading={`UPSC Prelims ${year}`}
+  standfirst={`${count} questions, in the order they were asked.`}
+  crumbs={[
+    { name: 'Years', href: '/upsc/years' },
+    { name: String(year), href: basePath },
+  ]}
+>
+  <div class="qlist">
+    {page.data.map((q) => <QuestionBlock q={q} />)}
+  </div>
+
+  <Pager page={page} basePath={basePath} />
+</Listing>
+
+<style>
+  .qlist {
+    display: grid;
+    gap: 0.75rem;
+  }
+</style>

@@ -1,0 +1,113 @@
+---
+const { crumbs = [] } = Astro.props;
+---
+
+<header class="masthead">
+  <div class="sheet masthead-inner">
+    <a class="wordmark" href="/">
+      <span class="wordmark-latin">SawaalBox</span>
+      <span class="wordmark-deva" lang="hi">सवाल बॉक्स</span>
+    </a>
+    <nav class="masthead-nav" aria-label="Sections">
+      <a href="/upsc/subjects">Subjects</a>
+      <a href="/upsc/years">Years</a>
+      <a href="/search">Search</a>
+    </nav>
+  </div>
+  {
+    crumbs.length > 0 && (
+      <nav class="crumbs" aria-label="Breadcrumb">
+        <ol class="sheet crumbs-inner">
+          {crumbs.map((crumb, i) => (
+            <li>
+              {i < crumbs.length - 1 ? (
+                <a href={crumb.href}>{crumb.name}</a>
+              ) : (
+                <span aria-current="page">{crumb.name}</span>
+              )}
+            </li>
+          ))}
+        </ol>
+      </nav>
+    )
+  }
+</header>
+
+<style>
+  .masthead {
+    background: var(--field);
+    color: var(--field-ink);
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  .masthead-inner {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem 1.5rem;
+    flex-wrap: wrap;
+    padding-block: 0.9rem;
+  }
+
+  .wordmark {
+    display: flex;
+    align-items: baseline;
+    gap: 0.6rem;
+    text-decoration: none;
+  }
+
+  .wordmark-latin {
+    font-family: var(--font-structure);
+    font-weight: 800;
+    font-size: 1.3rem;
+    letter-spacing: -0.035em;
+  }
+
+  .wordmark-deva {
+    font-size: 0.95rem;
+    color: var(--field-ink-soft);
+  }
+
+  .masthead-nav {
+    display: flex;
+    gap: 1.2rem;
+    font-family: var(--font-structure);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+
+  .masthead-nav a {
+    text-decoration-color: transparent;
+  }
+
+  .masthead-nav a:hover {
+    text-decoration-color: currentColor;
+  }
+
+  .crumbs {
+    background: var(--field-deep);
+    border-top: var(--rule-hair) solid rgb(255 255 255 / 0.12);
+  }
+
+  .crumbs-inner {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    list-style: none;
+    margin: 0;
+    padding-block: 0.5rem;
+    font-family: var(--font-structure);
+    font-size: 0.78rem;
+    color: var(--field-ink-soft);
+  }
+
+  .crumbs-inner li + li::before {
+    content: '/';
+    margin-right: 0.4rem;
+    opacity: 0.55;
+  }
+
+  .crumbs-inner [aria-current='page'] {
+    color: var(--field-ink);
+  }
+</style>

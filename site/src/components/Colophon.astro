@@ -1,0 +1,48 @@
+---
+import { CORPUS } from '../lib/corpus.js';
+---
+
+<footer class="colophon">
+  <div class="sheet colophon-inner">
+    <p>
+      SawaalBox is free and needs no account. Questions are reproduced from UPSC Civil Services
+      Preliminary Examination papers, {CORPUS.minYear}–{CORPUS.maxYear}.
+    </p>
+    <nav aria-label="Footer">
+      <a href="/upsc/subjects">All subjects</a>
+      <a href="/upsc/years">All years</a>
+      <a href="/search">Search</a>
+    </nav>
+  </div>
+</footer>
+
+<style>
+  .colophon {
+    background: var(--field);
+    color: var(--field-ink);
+    border-top: var(--rule-heavy) solid var(--rule-strong);
+    margin-top: 2.5rem;
+  }
+
+  .colophon-inner {
+    padding-block: 1.5rem;
+    display: grid;
+    gap: 0.8rem;
+  }
+
+  .colophon p {
+    margin: 0;
+    font-size: 0.88rem;
+    color: var(--field-ink-soft);
+    max-width: var(--measure);
+  }
+
+  .colophon nav {
+    display: flex;
+    gap: 1.2rem;
+    flex-wrap: wrap;
+    font-family: var(--font-structure);
+    font-size: 0.88rem;
+    font-weight: 600;
+  }
+</style>

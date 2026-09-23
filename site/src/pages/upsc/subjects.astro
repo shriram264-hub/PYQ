@@ -1,0 +1,99 @@
+---
+import Listing from '../../layouts/Listing.astro';
+import { SUBJECTS, SUBSTANTIAL_SUBTOPICS, CORPUS } from '../../lib/corpus.js';
+---
+
+<Listing
+  title="All Subjects — UPSC Prelims Questions"
+  description={`Every UPSC Prelims subject, ${CORPUS.minYear}–${CORPUS.maxYear}, with the number of questions asked in each.`}
+  heading="All subjects"
+  standfirst={`${CORPUS.total.toLocaleString('en-IN')} questions across ${CORPUS.subjectCount} subjects.`}
+  crumbs={[{ name: 'Subjects', href: '/upsc/subjects' }]}
+>
+  <ol class="slist">
+    {
+      SUBJECTS.map((subject, i) => {
+        const topics = SUBSTANTIAL_SUBTOPICS.filter((t) => t.subjectSlug === subject.slug);
+        return (
+          <li>
+            <a class="srow" href={`/upsc/subject/${subject.slug}`}>
+              <span class="serial sidx">{String(i + 1).padStart(2, '0')}</span>
+              <span class="sname">{subject.name}</span>
+              <span class="sleader" aria-hidden="true" />
+              <span class="serial scount">{subject.count.toLocaleString('en-IN')}</span>
+            </a>
+            {topics.length > 0 && (
+              <p class="stopics">
+                {topics.slice(0, 6).map((t, j) => (
+                  <>
+                    {j > 0 && <span aria-hidden="true"> · </span>}
+                    <a href={`/upsc/topic/${t.subjectSlug}/${t.slug}`}>{t.subtopic}</a>
+                  </>
+                ))}
+                {topics.length > 6 && <span class="smore"> +{topics.length - 6} more</span>}
+              </p>
+            )}
+          </li>
+        );
+      })
+    }
+  </ol>
+</Listing>
+
+<style>
+  .slist {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 1.1rem;
+  }
+
+  .srow {
+    display: grid;
+    grid-template-columns: auto auto 1fr auto;
+    align-items: baseline;
+    gap: 0.75rem;
+    text-decoration: none;
+    padding-bottom: 0.35rem;
+  }
+
+  .srow:hover .sname {
+    text-decoration: underline;
+    text-underline-offset: 0.18em;
+  }
+
+  .sidx {
+    color: var(--ink-faint);
+    font-size: 0.85rem;
+  }
+
+  .sname {
+    font-family: var(--font-structure);
+    font-weight: 700;
+    font-size: 1.08rem;
+  }
+
+  .sleader {
+    border-bottom: var(--rule-hair) dotted var(--rule);
+    transform: translateY(-0.28em);
+  }
+
+  .scount {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+
+  .stopics {
+    margin: 0;
+    padding-left: 2.1rem;
+    max-width: none;
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    line-height: 1.7;
+  }
+
+  .smore {
+    color: var(--ink-faint);
+  }
+</style>

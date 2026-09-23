@@ -1,0 +1,63 @@
+---
+import Listing from '../../../../../layouts/Listing.astro';
+import QuestionBlock from '../../../../../components/QuestionBlock.astro';
+import Pager from '../../../../../components/Pager.astro';
+import { SUBSTANTIAL_SUBTOPICS, questionsForSubtopic } from '../../../../../lib/corpus.js';
+
+export async function getStaticPaths({ paginate }) {
+  return SUBSTANTIAL_SUBTOPICS.flatMap((topic) => {
+    const questions = questionsForSubtopic(topic.subjectSlug, topic.slug).sort(
+      (a, b) => b.year - a.year || a.q_no - b.q_no
+    );
+    return paginate(questions, {
+      params: { subject: topic.subjectSlug, topic: topic.slug },
+      props: { topic },
+      pageSize: 25,
+    });
+  });
+}
+
+const { page, topic } = Astro.props;
+const basePath = `/upsc/topic/${topic.subjectSlug}/${topic.slug}`;
+
+const years = [...new Set(page.data.map((q) => q.year))].sort((a, b) => b - a);
+
+const pageSuffix = page.currentPage > 1 ? ` — page ${page.currentPage}` : '';
+const title = `${topic.subtopic} — UPSC Prelims Questions${pageSuffix}`;
+const description = `${topic.count} UPSC Prelims questions on ${topic.subtopic} (${topic.subject}), with official answers.`;
+---
+
+<Listing
+  title={title}
+  description={description}
+  heading={topic.subtopic}
+  standfirst={`${topic.count} questions in ${topic.subject}.`}
+  crumbs={[
+    { name: 'Subjects', href: '/upsc/subjects' },
+    { name: topic.subject, href: `/upsc/subject/${topic.subjectSlug}` },
+    { name: topic.subtopic, href: basePath },
+  ]}
+>
+  <p slot="meta" class="years-line serial">
+    Asked in {years.join(', ')}
+  </p>
+
+  <div class="qlist">
+    {page.data.map((q) => <QuestionBlock q={q} />)}
+  </div>
+
+  <Pager page={page} basePath={basePath} />
+</Listing>
+
+<style>
+  .years-line {
+    margin: 0.7rem 0 0;
+    font-size: 0.85rem;
+    color: var(--ink-soft);
+  }
+
+  .qlist {
+    display: grid;
+    gap: 0.75rem;
+  }
+</style>
