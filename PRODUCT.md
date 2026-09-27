@@ -8,13 +8,13 @@ web
 
 ## Stack
 
-Existing: FastAPI backend (Python) serving a semantic search API, deployed on Render's free tier. Frontend is currently React + Vite (single page); **confirmed decision to migrate the frontend to Astro** so that subject, year, topic and individual-question pages are generated as real static HTML at build time for search engines, with the interactive search kept as a client-side island.
+FastAPI backend (Python) serving a semantic search API on Render's free tier. Astro static site (`site/`) generating every subject, year, topic and question page as real HTML; interactive search is a client-side island. Accounts (in design) use Supabase directly from the browser, secured by row-level security.
 
 ## Users
 
 Indian UPSC Civil Services Prelims aspirants, studying or revising on their own. The typical moment: they have just finished reading about a topic and want to see how UPSC has actually asked about it across past years — or they want to work through a subject or a specific year systematically.
 
-Secondary: aspirants of other Indian competitive exams, once the corpus expands beyond UPSC (confirmed as a later intention, not current scope).
+Other Indian competitive-exam aspirants are a confirmed future audience. The product is presented as exam-neutral from the homepage down, with UPSC as the first exam; no other exam is named publicly until its corpus exists.
 
 ## Product Purpose
 
