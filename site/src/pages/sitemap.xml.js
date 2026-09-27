@@ -20,6 +20,7 @@ export async function GET({ site }) {
   const add = (path, priority) => urls.push({ loc: `${origin}${path}`, priority });
 
   add('', '1.0');
+  add('/upsc', '0.95');
   add('/upsc/subjects', '0.9');
   add('/upsc/years', '0.9');
 

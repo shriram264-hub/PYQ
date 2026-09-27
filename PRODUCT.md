@@ -33,7 +33,7 @@ Semantic search over a complete, dated corpus of past questions. Competing mater
 
 ## Capabilities and Constraints
 
-**Confirmed corpus:** 3,959 questions spanning 1995–2026, across 13 subjects (after canonicalising duplicate extraction labels — `Polity`→`Indian Polity`, `Economy`→`Indian Economy`, `Environment`→`Environment & Ecology`, `Science and Technology`/`Science`→`Science & Technology`) and 208 subject+subtopic pairs. 87 of those subtopics hold fewer than 5 questions.
+**Confirmed corpus:** 3,959 questions spanning 1995–2026, across 13 subjects (after canonicalising duplicate extraction labels — `Polity`→`Indian Polity`, `Economy`→`Indian Economy`, `Environment`→`Environment & Ecology`, `Science and Technology`/`Science`→`Science & Technology`) and 203 subject+subtopic pairs after canonicalisation. 82 of those hold fewer than 5 questions; they get pages but are kept out of the search index.
 
 **Search:** all question vectors are precomputed in `data/embeddings.npy`; the server embeds only the user's query at request time, via ONNX Runtime (`fastembed`, `BAAI/bge-small-en-v1.5`), blended with a small exact-keyword boost.
 
@@ -41,11 +41,11 @@ Semantic search over a complete, dated corpus of past questions. Competing mater
 - The backend runs on Render's free tier with a 512MB memory ceiling. PyTorch cannot be reintroduced to the server — it exceeds the ceiling and previously prevented the service from starting at all.
 - That free instance sleeps after 15 minutes of inactivity; the first request after a sleep is slow, and the first text search afterwards re-downloads the 65MB model because the filesystem is ephemeral.
 
-**Accounts:** none exist. Progress tracking in this build is browser-local only (localStorage) — per-device, lost if the user clears their browser. Real cross-device tracking is deliberately deferred until accounts exist.
+**Accounts:** designed, not built (`docs/superpowers/specs/2026-09-27-accounts-design.md`): Google sign-in via Supabase, synced progress and bookmark lists, launching as a free beta. Until then nothing is stored per user.
 
-**Pagination:** the current interface caps results rather than paginating, so questions beyond the cap are unreachable. Fixing this is committed scope.
+**Pagination:** every listing and search result set is fully paginated; nothing in the corpus is unreachable.
 
-**Undecided:** the `sawaalbox.com` domain is not yet registered. Monetization is intended to be subscription or paid features rather than advertising (advertising is ruled out), but the specific model, price and gating are undecided.
+**Undecided:** the `sawaalbox.com` domain is not yet registered. Monetization is a one-time pass valid until an exam date, not an auto-renewing subscription; advertising is ruled out. The price is undecided. Payments will run through Razorpay, since Stripe does not take UPI or domestic INR for Indian merchants.
 
 ## Brand Commitments
 

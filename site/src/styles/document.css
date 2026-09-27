@@ -29,6 +29,9 @@
   --l-stamp: #b00d26;    --d-stamp: #e76678;
   --l-stamp-ink: #ffffff; --d-stamp-ink: #15191a;
   --l-focus: #0f3d2e;    --d-focus: #7fd3a6;
+  /* The field green is a background colour; on dark pages it is too dark to
+     read as text. Text that should read as green uses this instead. */
+  --l-field-text: #0f3d2e; --d-field-text: #7fd3a6;
 
   --font-structure: 'Archivo Variable', 'Archivo', system-ui, sans-serif;
   --font-read: 'Literata', Georgia, 'Times New Roman', serif;
@@ -58,6 +61,7 @@
   --stamp: var(--l-stamp);
   --stamp-ink: var(--l-stamp-ink);
   --focus: var(--l-focus);
+  --field-text: var(--l-field-text);
 }
 
 /* The night sitting: the same document printed on dark stock. Applied when the
@@ -80,6 +84,7 @@
     --stamp: var(--d-stamp);
     --stamp-ink: var(--d-stamp-ink);
     --focus: var(--d-focus);
+    --field-text: var(--d-field-text);
   }
 }
 
@@ -100,6 +105,7 @@
   --stamp: var(--d-stamp);
   --stamp-ink: var(--d-stamp-ink);
   --focus: var(--d-focus);
+  --field-text: var(--d-field-text);
 }
 
 *,
@@ -136,7 +142,7 @@ body {
 
 html {
   scrollbar-color: var(--rule) transparent;
-  caret-color: var(--field);
+  caret-color: var(--field-text);
 }
 
 ::-webkit-scrollbar {

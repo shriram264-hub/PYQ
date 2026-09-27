@@ -2,456 +2,643 @@
 import Document from '../layouts/Document.astro';
 import Colophon from '../components/Colophon.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
-import { CORPUS, SUBJECTS, YEARS } from '../lib/corpus.js';
+import QuestionBlock from '../components/QuestionBlock.astro';
+import { EXAMS } from '../lib/exams.js';
+import { ALL_QUESTIONS } from '../lib/corpus.js';
 
-const digits = (n) => String(n).split('');
+const upsc = EXAMS.find((e) => e.slug === 'upsc');
+const c = upsc.corpus;
 
-const description = `Every UPSC Prelims question from ${CORPUS.minYear} to ${CORPUS.maxYear} — ${CORPUS.total.toLocaleString('en-IN')} questions with answers, searchable by concept. Free, no sign-up.`;
+// A real question whose own wording never names the civilisation it belongs
+// to: a text search of the paper for these words would not find it. Verified
+// against the corpus when this page was written; see the homepage surface brief.
+const SPECIMEN_QUERY = 'Indus Valley civilisation';
+const specimen = ALL_QUESTIONS.find((q) => q.year === 2021 && q.q_no === 32);
 
-const EXAMPLES = [
-  'El Nino and the monsoon',
-  'Fundamental Rights',
-  'Harappan civilisation',
-  'inflation targeting',
-  'tiger reserves',
+const LIVE = [
+  {
+    title: 'Search by what a question is about',
+    body: 'Describe a topic in your own words and get the questions that asked about it, ranked by how closely they match.',
+    href: '/search',
+  },
+  {
+    title: 'Browse every subject, year and topic',
+    body: `${c.subjectCount} subjects and ${c.yearCount} years of papers, each with its own page.`,
+    href: '/upsc/subjects',
+  },
+  {
+    title: 'Official answers, flagged honestly',
+    body: 'Every recorded answer, with questions UPSC later cancelled or disputed marked as such.',
+    href: '/upsc/years',
+  },
+  { title: 'Free, with no sign-up', body: 'Nothing here sits behind an account or a payment.' },
+  { title: 'Light or dark reading', body: 'Follows your device, or switch it from the header.' },
 ];
+
+const COMING = [
+  { title: 'Sign in with Google', body: 'Your progress follows you from phone to laptop.' },
+  { title: 'Revision lists', body: 'Save questions into named lists and revise from them.' },
+  { title: "Sit a full year's paper", body: 'Timed, scored with the exam’s real negative marking.' },
+  { title: 'See where you are weak', body: 'Accuracy by subject and topic, from your own attempts.' },
+];
+
+const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYear} — ${c.total.toLocaleString('en-IN')} with official answers, searchable by what they're about. Free, no sign-up. More exams in preparation.`;
 ---
 
-<Document title="SawaalBox" description={description}>
-  <header class="masthead">
-    <div class="sheet masthead-inner">
-      <div class="wordmark">
+<Document title="Past Exam Questions, Searchable by Concept" description={description}>
+  <header class="mast">
+    <div class="sheet mast-inner">
+      <a class="wordmark" href="/">
         <span class="wordmark-latin">SawaalBox</span>
         <span class="wordmark-deva" lang="hi">सवाल बॉक्स</span>
-      </div>
-      <p class="masthead-line">UPSC Civil Services Prelims · Previous Year Questions</p>
-      <div class="mast-actions"><ThemeToggle /></div>
-      <div class="series" aria-label="Coverage 1995 to 2026">
-        <span class="field-label series-label">Years</span>
-        <span class="serial series-code">{CORPUS.minYear}–{CORPUS.maxYear}</span>
-      </div>
+      </a>
+      <nav class="mast-nav" aria-label="Sections">
+        <a href="#exams">Exams</a>
+        <a href="#contents">What's inside</a>
+        <a href="/search">Search</a>
+        <ThemeToggle />
+      </nav>
+      <h1 class="mast-line">Past exam questions, searchable by what they're about.</h1>
     </div>
   </header>
 
-  <main class="sheet cover">
-    <section class="instructions ruled" aria-labelledby="search-heading">
-      <div class="box-head">
-        <h1 id="search-heading">Search every question UPSC has asked</h1>
-      </div>
-      <div class="box-body">
-        <p class="reading lede">
-          Describe an idea in your own words. You get the questions that asked about it —
-          including the ones phrased nothing like your search.
-        </p>
+  <main>
+    <section class="sheet strip" aria-label="Search">
+      <form class="strip-form ruled" action="/search" method="get" role="search">
+        <label class="field-label" for="q">Search {upsc.name} questions</label>
+        <div class="strip-row">
+          <input id="q" name="q" type="search" autocomplete="off" placeholder="e.g. monsoon and El Nino" required />
+          <button type="submit">Search</button>
+        </div>
+      </form>
+    </section>
 
-        <form class="search" action="/search" method="get" role="search">
-          <label class="field-label" for="q">Enter a topic or concept</label>
-          <div class="search-row">
-            <input
-              id="q"
-              name="q"
-              type="search"
-              autocomplete="off"
-              placeholder="e.g. El Nino and the monsoon"
-              required
-            />
-            <button type="submit">Search</button>
+    <section id="exams" class="sheet rack" aria-labelledby="rack-heading">
+      <h2 id="rack-heading" class="visually-hidden">Exams</h2>
+      <div class="rack-shelf">
+        <article class="cover cover-open">
+          <div class="cover-band">
+            <span class="field-label band-label">Series</span>
+            <span class="serial band-code">{upsc.series}</span>
           </div>
-        </form>
+          <div class="cover-body">
+            <h3 class="cover-title">{upsc.name}</h3>
+            <dl class="cover-fields">
+              <div>
+                <dt class="field-label">Questions</dt>
+                <dd class="serial">{c.total.toLocaleString('en-IN')}</dd>
+              </div>
+              <div>
+                <dt class="field-label">Years</dt>
+                <dd class="serial">{c.minYear}–{c.maxYear}</dd>
+              </div>
+              <div>
+                <dt class="field-label">Subjects</dt>
+                <dd class="serial">{c.subjectCount}</dd>
+              </div>
+            </dl>
+            <p class="cover-links">
+              {upsc.topSubjects.map((s, i) => (
+                <>
+                  {i > 0 && <span aria-hidden="true"> · </span>}
+                  <a href={`${upsc.path}/subject/${s.slug}`}>{s.name}</a>
+                </>
+              ))}
+            </p>
+            <a class="cover-open-cta" href={upsc.path}>Open the booklet</a>
+          </div>
+        </article>
 
-        <ul class="examples" aria-label="Example searches">
-          {
-            EXAMPLES.map((example) => (
-              <li>
-                <a href={`/search?q=${encodeURIComponent(example)}`}>{example}</a>
-              </li>
-            ))
-          }
-        </ul>
+        <div class="cover cover-sealed" role="note" aria-label="More exams, in preparation">
+          <div class="cover-band cover-band-blank">
+            <span class="field-label band-label">Series</span>
+            <span class="serial band-code">—</span>
+          </div>
+          <div class="cover-body">
+            <p class="cover-title">More exams</p>
+            <p class="sealed-line">In preparation. This one opens when its questions are ready.</p>
+          </div>
+          <span class="seal" aria-hidden="true">Sealed</span>
+        </div>
       </div>
     </section>
 
-    <aside class="registration ruled" aria-label="Corpus record">
-      <div class="box-head">
-        <h2>The record</h2>
+    <section class="sheet specimen" aria-labelledby="specimen-heading">
+      <h2 id="specimen-heading">A search that reads past the wording</h2>
+      <p class="reading specimen-lede">
+        Search <a class="query" href={`/search?q=${encodeURIComponent(SPECIMEN_QUERY)}`}>{SPECIMEN_QUERY}</a>
+        and among the results is this {specimen.year} question. Its wording never names the
+        civilisation, so searching the paper for those words would miss it. Try it before you open
+        the answer.
+      </p>
+      <QuestionBlock q={specimen} />
+      <p class="specimen-run">
+        <a href={`/search?q=${encodeURIComponent(SPECIMEN_QUERY)}`}>Run this search yourself</a>
+      </p>
+    </section>
+
+    <section id="contents" class="sheet contents" aria-labelledby="contents-heading">
+      <h2 id="contents-heading">What's inside</h2>
+
+      <div class="contents-grid">
+        <div>
+          <h3 class="contents-group">Available now</h3>
+          <ol class="entries">
+            {
+              LIVE.map((item) => (
+                <li>
+                  <div class="entry-head">
+                    {item.href ? (
+                      <a class="entry-title" href={item.href}>{item.title}</a>
+                    ) : (
+                      <span class="entry-title">{item.title}</span>
+                    )}
+                    <span class="entry-leader" aria-hidden="true" />
+                    <span class="entry-state">Open</span>
+                  </div>
+                  <p class="entry-body">{item.body}</p>
+                </li>
+              ))
+            }
+          </ol>
+        </div>
+
+        <div>
+          <h3 class="contents-group">In preparation, free during the beta</h3>
+          <ol class="entries" start={LIVE.length + 1}>
+            {
+              COMING.map((item) => (
+                <li class="entry-coming">
+                  <div class="entry-head">
+                    <span class="entry-title">{item.title}</span>
+                    <span class="entry-leader" aria-hidden="true" />
+                    <span class="entry-state entry-state-coming">Coming</span>
+                  </div>
+                  <p class="entry-body">{item.body}</p>
+                </li>
+              ))
+            }
+          </ol>
+        </div>
       </div>
-      <dl class="reg-grid">
-        <div class="reg-row">
-          <dt class="field-label">Questions</dt>
-          <dd class="digits">
-            {digits(CORPUS.total).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
-          </dd>
-        </div>
-        <div class="reg-row">
-          <dt class="field-label">Years covered</dt>
-          <dd class="digits">
-            {digits(CORPUS.yearCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
-          </dd>
-        </div>
-        <div class="reg-row">
-          <dt class="field-label">Subjects</dt>
-          <dd class="digits">
-            {digits(CORPUS.subjectCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
-          </dd>
-        </div>
-      </dl>
-    </aside>
+    </section>
   </main>
-
-  <div class="sheet"><hr class="fold" /></div>
-
-  <section class="sheet index-block" aria-labelledby="subjects-heading">
-    <h2 id="subjects-heading">Question index</h2>
-    <ol class="index-list">
-      {
-        SUBJECTS.map((subject, i) => (
-          <li>
-            <a href={`/upsc/subject/${subject.slug}`}>
-              <span class="serial idx">{String(i + 1).padStart(2, '0')}</span>
-              <span class="idx-name">{subject.name}</span>
-              <span class="idx-leader" aria-hidden="true" />
-              <span class="serial idx-count">{subject.count.toLocaleString('en-IN')}</span>
-            </a>
-          </li>
-        ))
-      }
-    </ol>
-  </section>
-
-  <section class="sheet index-block" aria-labelledby="years-heading">
-    <h2 id="years-heading">By year</h2>
-    <ul class="year-list">
-      {
-        YEARS.map((y) => (
-          <li>
-            <a href={`/upsc/year/${y.year}`}>
-              <span class="serial year-n">{y.year}</span>
-              <span class="year-c">{y.count}</span>
-            </a>
-          </li>
-        ))
-      }
-    </ul>
-  </section>
 
   <Colophon />
 </Document>
 
 <style>
-  .masthead {
+  .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* --- masthead: the green field, carrying the page's one-line thesis --- */
+
+  .mast {
     background: var(--field);
     color: var(--field-ink);
     border-bottom: var(--rule-heavy) solid var(--rule-strong);
   }
 
-  .masthead-inner {
+  .mast-inner {
     display: grid;
     grid-template-columns: 1fr auto;
-    align-items: end;
-    gap: 0.4rem 1.5rem;
-    padding-block: clamp(1.25rem, 3vw, 2.25rem);
+    align-items: baseline;
+    gap: 1.25rem 1.5rem;
+    padding-block: clamp(1.25rem, 3vw, 2rem) clamp(1.75rem, 5vw, 3rem);
   }
 
   .wordmark {
     display: flex;
     align-items: baseline;
-    gap: 0.75rem;
-    flex-wrap: wrap;
+    gap: 0.65rem;
+    text-decoration: none;
   }
 
   .wordmark-latin {
     font-family: var(--font-structure);
     font-weight: 800;
-    font-size: clamp(1.6rem, 1rem + 2.4vw, 2.6rem);
+    font-size: clamp(1.45rem, 1rem + 1.6vw, 2rem);
     letter-spacing: -0.035em;
   }
 
   .wordmark-deva {
-    font-size: clamp(1rem, 0.8rem + 0.7vw, 1.35rem);
+    font-size: 1rem;
     color: var(--field-ink-soft);
   }
 
-  .masthead-line {
-    grid-column: 1;
-    margin: 0;
-    max-width: none;
+  .mast-nav {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
     font-family: var(--font-structure);
-    font-size: 0.82rem;
-    letter-spacing: 0.04em;
-    color: var(--field-ink-soft);
+    font-size: 0.88rem;
+    font-weight: 600;
   }
 
-  .mast-actions {
-    grid-column: 2;
-    grid-row: 1;
-    justify-self: end;
+  .mast-nav a {
+    text-decoration-color: transparent;
   }
 
-  .series {
-    grid-row: 2;
-    grid-column: 2;
-    display: grid;
-    gap: 0.15rem;
-    justify-items: end;
-    border: var(--rule-hair) solid var(--field-ink-soft);
-    padding: 0.4rem 0.7rem;
+  .mast-nav a:hover {
+    text-decoration-color: currentColor;
   }
 
-  .series-label {
-    color: var(--field-ink-soft);
+  .mast-line {
+    grid-column: 1 / -1;
+    max-width: 22ch;
+    font-size: clamp(2rem, 1.1rem + 4.2vw, 4.25rem);
+    font-weight: 800;
+    letter-spacing: -0.035em;
+    line-height: 1.02;
+    color: var(--field-ink);
   }
 
-  .series-code {
-    font-size: 1rem;
-    font-weight: 700;
+  /* --- search strip: the primary action --- */
+
+  .strip {
+    margin-top: clamp(-1.25rem, -2vw, -0.75rem);
   }
 
-  /* --- cover --- */
-
-  .cover {
-    display: grid;
-    grid-template-columns: minmax(0, 1.75fr) minmax(0, 1fr);
-    gap: 1.25rem;
-    padding-block: clamp(1.5rem, 4vw, 3rem);
-    align-items: start;
+  .strip-form {
+    padding: 1rem 1.1rem;
   }
 
-  .box-head {
-    border-bottom: var(--rule-heavy) solid var(--rule-strong);
-    padding: 0.7rem 1.1rem;
-  }
-
-  .box-head h1,
-  .box-head h2 {
-    font-size: clamp(1.35rem, 0.9rem + 1.8vw, 2.3rem);
-  }
-
-  .registration .box-head h2 {
-    font-size: 1rem;
-    letter-spacing: 0.02em;
-  }
-
-  .box-body {
-    padding: 1.1rem;
-  }
-
-  .lede {
-    color: var(--ink-soft);
-    font-size: 1.02rem;
-  }
-
-  .search {
-    margin-top: 1.4rem;
-  }
-
-  .search-row {
+  .strip-row {
     display: flex;
     gap: 0.6rem;
     margin-top: 0.4rem;
   }
 
-  .search input {
+  .strip-row input {
     flex: 1;
     min-width: 0;
     font-family: var(--font-read);
-    font-size: 1.05rem;
-    padding: 0.85rem 0.9rem;
+    font-size: 1.08rem;
+    padding: 0.85rem 0.95rem;
     color: var(--ink);
     background: var(--ground);
     border: var(--rule-heavy) solid var(--rule-strong);
     border-radius: 0;
   }
 
-  .search input::placeholder {
+  .strip-row input::placeholder {
     color: var(--ink-faint);
   }
 
-  .search button {
+  .strip-row button {
     font-family: var(--font-structure);
     font-weight: 700;
     font-size: 0.95rem;
-    letter-spacing: 0.02em;
-    padding: 0.85rem 1.5rem;
+    padding: 0.85rem 1.6rem;
     color: var(--field-ink);
     background: var(--field);
     border: var(--rule-heavy) solid var(--rule-strong);
     border-radius: 0;
     cursor: pointer;
-    transition: background 140ms cubic-bezier(0.2, 0.7, 0.3, 1);
   }
 
-  .search button:hover {
+  .strip-row button:hover {
     background: var(--field-deep);
   }
 
-  .examples {
+  /* --- the rack --- */
+
+  .rack {
+    padding-block: clamp(2rem, 5vw, 3.25rem) 0;
+  }
+
+  .rack-shelf {
+    display: grid;
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    gap: 1.25rem;
+    align-items: stretch;
+    padding-bottom: 1rem;
+    /* the shelf the booklets stand on */
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+    perspective: 1400px;
+  }
+
+  .cover {
+    position: relative;
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.4rem 0.9rem;
-    margin: 1.1rem 0 0;
-    padding: 0;
-    list-style: none;
-    font-size: 0.92rem;
+    flex-direction: column;
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  .cover-band {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+    padding: 0.55rem 1rem;
+    background: var(--field);
+    color: var(--field-ink);
+  }
+
+  .band-label {
+    color: var(--field-ink-soft);
+  }
+
+  .band-code {
+    font-size: 1rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+  }
+
+  .cover-band-blank {
+    background: var(--ground);
+    color: var(--ink-faint);
+    border-bottom: var(--rule-hair) solid var(--rule);
+  }
+
+  .cover-band-blank .band-label {
+    color: var(--ink-faint);
+  }
+
+  .cover-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    padding: 1.15rem 1.1rem 1.25rem;
+    flex: 1;
+  }
+
+  .cover-title {
+    margin: 0;
+    font-family: var(--font-structure);
+    font-size: clamp(1.3rem, 0.95rem + 1.3vw, 1.85rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    max-width: 18ch;
+  }
+
+  .cover-fields {
+    display: grid;
+    grid-template-columns: repeat(3, auto);
+    justify-content: start;
+    margin: 0;
+    border: var(--rule-hair) solid var(--rule-strong);
+  }
+
+  .cover-fields div {
+    padding: 0.45rem 0.8rem;
+  }
+
+  .cover-fields div + div {
+    border-left: var(--rule-hair) solid var(--rule-strong);
+  }
+
+  .cover-fields dt {
+    margin: 0;
+  }
+
+  .cover-fields dd {
+    margin: 0.1rem 0 0;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  .cover-links {
+    margin: 0;
+    max-width: none;
+    font-family: var(--font-structure);
+    font-size: 0.88rem;
     color: var(--ink-soft);
   }
 
-  /* --- registration grid: digits in boxes, as on the booklet --- */
-
-  .reg-grid {
-    margin: 0;
-    padding: 1rem 1.1rem;
-    display: grid;
-    gap: 0.9rem;
-  }
-
-  .reg-row {
-    display: grid;
-    gap: 0.3rem;
-  }
-
-  .reg-row dt {
-    margin: 0;
-  }
-
-  .digits {
-    margin: 0;
-    display: flex;
-    gap: 0.25rem;
-  }
-
-  .digits b {
-    display: grid;
-    place-items: center;
-    width: 1.9rem;
-    height: 2.4rem;
-    font-size: 1.25rem;
+  .cover-open-cta {
+    margin-top: auto;
+    align-self: flex-start;
+    padding: 0.7rem 1.25rem;
+    font-family: var(--font-structure);
     font-weight: 700;
-    color: var(--ink);
-    background: var(--ground);
+    font-size: 0.95rem;
+    text-decoration: none;
+    color: var(--field-ink);
+    background: var(--field);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  .cover-open-cta:hover {
+    background: var(--field-deep);
+  }
+
+  /*
+    The signature moment: the open booklet lifts at its spine, showing the edge
+    of its first page behind. Pointer hover and keyboard focus both trigger it.
+    The sealed cover has no counterpart — it cannot be opened.
+  */
+  .cover-open {
+    transform-origin: left center;
+    transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1),
+      box-shadow 420ms cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .cover-open::after {
+    content: '';
+    position: absolute;
+    inset: 0.35rem -0.45rem 0.35rem auto;
+    width: 0.45rem;
+    background: var(--paper-edge);
     border: var(--rule-hair) solid var(--rule-strong);
-    animation: stamp 320ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
-    animation-delay: calc(var(--i) * 45ms);
+    border-left: 0;
+    opacity: 0;
+    transition: opacity 420ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
-  @keyframes stamp {
-    from {
-      opacity: 0;
-      transform: translateY(-0.35rem);
-    }
+  .cover-open:hover,
+  .cover-open:focus-within {
+    transform: rotateY(-5deg);
+    box-shadow: 10px 12px 24px -14px rgb(0 0 0 / 0.45);
   }
 
-  .fold {
-    border: 0;
-    border-top: var(--rule-hair) dashed var(--rule);
+  .cover-open:hover::after,
+  .cover-open:focus-within::after {
+    opacity: 1;
+  }
+
+  .cover-sealed {
+    color: var(--ink-soft);
+    overflow: hidden;
+  }
+
+  .cover-sealed .cover-body {
+    padding-bottom: 5rem;
+  }
+
+  .cover-sealed .cover-title {
+    color: var(--ink);
+  }
+
+  .sealed-line {
     margin: 0;
+    max-width: 30ch;
+    font-size: 0.95rem;
   }
 
-  /* --- indexes --- */
-
-  .index-block {
-    padding-block: clamp(1.75rem, 4vw, 2.75rem);
+  /* A paper seal pasted across the cover, in the red real papers reserve for seals. */
+  .seal {
+    position: absolute;
+    left: -10%;
+    right: -10%;
+    bottom: 1.6rem;
+    transform: rotate(-7deg);
+    padding: 0.35rem 0;
+    text-align: center;
+    font-family: var(--font-structure);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.4em;
+    text-transform: uppercase;
+    color: var(--stamp-ink);
+    background: var(--stamp);
+    pointer-events: none;
   }
 
-  .index-block h2 {
-    margin-bottom: 1rem;
+  /* --- the specimen: proof, not a claim --- */
+
+  .specimen {
+    padding-block: clamp(2.5rem, 6vw, 4rem) 0;
   }
 
-  .index-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    counter-reset: none;
+  .specimen h2 {
+    margin-bottom: 0.8rem;
   }
 
-  .index-list a {
-    display: grid;
-    grid-template-columns: auto auto 1fr auto;
-    align-items: baseline;
-    gap: 0.75rem;
-    padding: 0.62rem 0;
-    border-bottom: var(--rule-hair) solid var(--rule);
+  .specimen-lede {
+    color: var(--ink-soft);
+    margin-bottom: 1.25rem;
+  }
+
+  .query {
+    font-family: var(--font-structure);
+    font-weight: 600;
+    color: var(--ink);
+    padding: 0.05rem 0.4rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
     text-decoration: none;
   }
 
-  .index-list a:hover .idx-name {
-    text-decoration: underline;
-    text-underline-offset: 0.18em;
-  }
-
-  .idx {
-    color: var(--ink-faint);
-    font-size: 0.85rem;
-  }
-
-  .idx-name {
+  .specimen-run {
+    margin: 0.9rem 0 0;
     font-family: var(--font-structure);
+    font-size: 0.92rem;
     font-weight: 600;
+  }
+
+  /* --- contents page --- */
+
+  .contents {
+    padding-block: clamp(2.5rem, 6vw, 4rem) 0;
+  }
+
+  .contents h2 {
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.7rem;
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  .contents-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 2rem 2.5rem;
+  }
+
+  .contents-group {
+    margin: 0 0 0.75rem;
+    font-size: 1rem;
+    color: var(--ink-soft);
+  }
+
+  .entries {
+    margin: 0;
+    padding: 0 0 0 1.75rem;
+    display: grid;
+    gap: 1rem;
+  }
+
+  .entries li::marker {
+    font-family: var(--font-serial);
+    color: var(--ink-faint);
+  }
+
+  .entry-head {
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: baseline;
+    gap: 0.6rem;
+  }
+
+  .entry-title {
+    font-family: var(--font-structure);
+    font-weight: 700;
     font-size: 1.02rem;
   }
 
-  .idx-leader {
+  .entry-leader {
     border-bottom: var(--rule-hair) dotted var(--rule);
     transform: translateY(-0.28em);
   }
 
-  .idx-count {
-    font-size: 0.95rem;
-    color: var(--ink-soft);
-  }
-
-  .year-list {
-    list-style: none;
-    margin: 0;
-    padding: 0;
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(5.5rem, 1fr));
-    gap: 0.4rem;
-  }
-
-  .year-list a {
-    display: grid;
-    gap: 0.1rem;
-    padding: 0.55rem 0.6rem;
-    border: var(--rule-hair) solid var(--rule);
-    background: var(--paper);
-    text-decoration: none;
-  }
-
-  .year-list a:hover {
-    border-color: var(--rule-strong);
-  }
-
-  .year-n {
+  .entry-state {
+    font-family: var(--font-structure);
+    font-size: 0.7rem;
     font-weight: 700;
-    font-size: 1rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--field-text);
   }
 
-  .year-c {
-    font-size: 0.78rem;
+  .entry-state-coming {
+    color: var(--ink-faint);
+  }
+
+  .entry-body {
+    margin: 0.2rem 0 0;
+    font-size: 0.93rem;
     color: var(--ink-soft);
   }
 
+  .entry-coming .entry-title {
+    color: var(--ink-soft);
+  }
 
-  @media (max-width: 62rem) {
-    .cover {
+  @media (max-width: 52rem) {
+    .rack-shelf,
+    .contents-grid {
       grid-template-columns: minmax(0, 1fr);
     }
   }
 
   @media (max-width: 40rem) {
-    .masthead-inner {
+    .mast-inner {
       grid-template-columns: 1fr;
     }
 
-    .series {
-      grid-row: auto;
-      grid-column: 1;
-      justify-self: start;
-      justify-items: start;
+    .mast-nav {
+      flex-wrap: wrap;
     }
 
-    .search-row {
+    .strip-row {
       flex-direction: column;
+    }
+
+    .cover-fields {
+      grid-template-columns: 1fr;
+    }
+
+    .cover-fields div + div {
+      border-left: 0;
+      border-top: var(--rule-hair) solid var(--rule-strong);
     }
   }
 </style>

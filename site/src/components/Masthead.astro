@@ -1,7 +1,8 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
+import { withExamCrumb } from '../lib/exams.js';
 
-const { crumbs = [] } = Astro.props;
+const crumbs = withExamCrumb(Astro.url.pathname, Astro.props.crumbs ?? []);
 ---
 
 <header class="masthead">
