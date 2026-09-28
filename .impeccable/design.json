@@ -1,0 +1,933 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-28T19:10:57.849Z",
+  "title": "Design System: SawaalBox",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Stationery Ground",
+        "canonical": "#e6eae3",
+        "oklch": "oklch(93.2% 0.01 131.4)",
+        "theme": "light",
+        "cssVar": "--ground",
+        "tonalRamp": [
+          "oklch(15% 0.01 131.4)",
+          "oklch(26% 0.01 131.4)",
+          "oklch(37% 0.01 131.4)",
+          "oklch(48% 0.01 131.4)",
+          "oklch(59% 0.01 131.4)",
+          "oklch(70% 0.01 131.4)",
+          "oklch(82% 0.01 131.4)",
+          "oklch(95% 0.01 131.4)"
+        ]
+      },
+      "ground-dark": {
+        "role": "neutral",
+        "displayName": "Stationery Ground (night)",
+        "canonical": "#15191a",
+        "oklch": "oklch(21% 0.006 214.4)",
+        "theme": "dark",
+        "cssVar": "--ground",
+        "tonalRamp": [
+          "oklch(15% 0.006 214.4)",
+          "oklch(26% 0.006 214.4)",
+          "oklch(37% 0.006 214.4)",
+          "oklch(48% 0.006 214.4)",
+          "oklch(59% 0.006 214.4)",
+          "oklch(70% 0.006 214.4)",
+          "oklch(82% 0.006 214.4)",
+          "oklch(95% 0.006 214.4)"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper Plate",
+        "canonical": "#f4f6f1",
+        "oklch": "oklch(97% 0.007 124.4)",
+        "theme": "light",
+        "cssVar": "--paper",
+        "tonalRamp": [
+          "oklch(15% 0.007 124.4)",
+          "oklch(26% 0.007 124.4)",
+          "oklch(37% 0.007 124.4)",
+          "oklch(48% 0.007 124.4)",
+          "oklch(59% 0.007 124.4)",
+          "oklch(70% 0.007 124.4)",
+          "oklch(82% 0.007 124.4)",
+          "oklch(95% 0.007 124.4)"
+        ]
+      },
+      "paper-dark": {
+        "role": "neutral",
+        "displayName": "Paper Plate (night)",
+        "canonical": "#1d2224",
+        "oklch": "oklch(24.8% 0.008 223.8)",
+        "theme": "dark",
+        "cssVar": "--paper",
+        "tonalRamp": [
+          "oklch(15% 0.008 223.8)",
+          "oklch(26% 0.008 223.8)",
+          "oklch(37% 0.008 223.8)",
+          "oklch(48% 0.008 223.8)",
+          "oklch(59% 0.008 223.8)",
+          "oklch(70% 0.008 223.8)",
+          "oklch(82% 0.008 223.8)",
+          "oklch(95% 0.008 223.8)"
+        ]
+      },
+      "paper-edge": {
+        "role": "neutral",
+        "displayName": "Page Edge",
+        "canonical": "#d7ddd3",
+        "oklch": "oklch(89% 0.015 132.5)",
+        "theme": "light",
+        "cssVar": "--paper-edge",
+        "tonalRamp": [
+          "oklch(15% 0.015 132.5)",
+          "oklch(26% 0.015 132.5)",
+          "oklch(37% 0.015 132.5)",
+          "oklch(48% 0.015 132.5)",
+          "oklch(59% 0.015 132.5)",
+          "oklch(70% 0.015 132.5)",
+          "oklch(82% 0.015 132.5)",
+          "oklch(95% 0.015 132.5)"
+        ]
+      },
+      "paper-edge-dark": {
+        "role": "neutral",
+        "displayName": "Page Edge (night)",
+        "canonical": "#2c3336",
+        "oklch": "oklch(31.6% 0.011 225.4)",
+        "theme": "dark",
+        "cssVar": "--paper-edge",
+        "tonalRamp": [
+          "oklch(15% 0.011 225.4)",
+          "oklch(26% 0.011 225.4)",
+          "oklch(37% 0.011 225.4)",
+          "oklch(48% 0.011 225.4)",
+          "oklch(59% 0.011 225.4)",
+          "oklch(70% 0.011 225.4)",
+          "oklch(82% 0.011 225.4)",
+          "oklch(95% 0.011 225.4)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Offset Ink",
+        "canonical": "#14181a",
+        "oklch": "oklch(20.6% 0.007 229.3)",
+        "theme": "light",
+        "cssVar": "--ink",
+        "tonalRamp": [
+          "oklch(15% 0.007 229.3)",
+          "oklch(26% 0.007 229.3)",
+          "oklch(37% 0.007 229.3)",
+          "oklch(48% 0.007 229.3)",
+          "oklch(59% 0.007 229.3)",
+          "oklch(70% 0.007 229.3)",
+          "oklch(82% 0.007 229.3)",
+          "oklch(95% 0.007 229.3)"
+        ]
+      },
+      "ink-dark": {
+        "role": "neutral",
+        "displayName": "Offset Ink (night)",
+        "canonical": "#e8ece6",
+        "oklch": "oklch(93.8% 0.009 134.9)",
+        "theme": "dark",
+        "cssVar": "--ink",
+        "tonalRamp": [
+          "oklch(15% 0.009 134.9)",
+          "oklch(26% 0.009 134.9)",
+          "oklch(37% 0.009 134.9)",
+          "oklch(48% 0.009 134.9)",
+          "oklch(59% 0.009 134.9)",
+          "oklch(70% 0.009 134.9)",
+          "oklch(82% 0.009 134.9)",
+          "oklch(95% 0.009 134.9)"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Soft Ink",
+        "canonical": "#4a544f",
+        "oklch": "oklch(43.5% 0.015 164.2)",
+        "theme": "light",
+        "cssVar": "--ink-soft",
+        "tonalRamp": [
+          "oklch(15% 0.015 164.2)",
+          "oklch(26% 0.015 164.2)",
+          "oklch(37% 0.015 164.2)",
+          "oklch(48% 0.015 164.2)",
+          "oklch(59% 0.015 164.2)",
+          "oklch(70% 0.015 164.2)",
+          "oklch(82% 0.015 164.2)",
+          "oklch(95% 0.015 164.2)"
+        ]
+      },
+      "ink-soft-dark": {
+        "role": "neutral",
+        "displayName": "Soft Ink (night)",
+        "canonical": "#a7b2ad",
+        "oklch": "oklch(75.3% 0.014 167)",
+        "theme": "dark",
+        "cssVar": "--ink-soft",
+        "tonalRamp": [
+          "oklch(15% 0.014 167)",
+          "oklch(26% 0.014 167)",
+          "oklch(37% 0.014 167)",
+          "oklch(48% 0.014 167)",
+          "oklch(59% 0.014 167)",
+          "oklch(70% 0.014 167)",
+          "oklch(82% 0.014 167)",
+          "oklch(95% 0.014 167)"
+        ]
+      },
+      "ink-faint": {
+        "role": "neutral",
+        "displayName": "Faint Ink",
+        "canonical": "#5a6560",
+        "oklch": "oklch(49.6% 0.016 166.7)",
+        "theme": "light",
+        "cssVar": "--ink-faint",
+        "tonalRamp": [
+          "oklch(15% 0.016 166.7)",
+          "oklch(26% 0.016 166.7)",
+          "oklch(37% 0.016 166.7)",
+          "oklch(48% 0.016 166.7)",
+          "oklch(59% 0.016 166.7)",
+          "oklch(70% 0.016 166.7)",
+          "oklch(82% 0.016 166.7)",
+          "oklch(95% 0.016 166.7)"
+        ]
+      },
+      "ink-faint-dark": {
+        "role": "neutral",
+        "displayName": "Faint Ink (night)",
+        "canonical": "#88938f",
+        "oklch": "oklch(65.3% 0.014 172.1)",
+        "theme": "dark",
+        "cssVar": "--ink-faint",
+        "tonalRamp": [
+          "oklch(15% 0.014 172.1)",
+          "oklch(26% 0.014 172.1)",
+          "oklch(37% 0.014 172.1)",
+          "oklch(48% 0.014 172.1)",
+          "oklch(59% 0.014 172.1)",
+          "oklch(70% 0.014 172.1)",
+          "oklch(82% 0.014 172.1)",
+          "oklch(95% 0.014 172.1)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "canonical": "#b9c2b8",
+        "oklch": "oklch(80.4% 0.017 142.5)",
+        "theme": "light",
+        "cssVar": "--rule",
+        "tonalRamp": [
+          "oklch(15% 0.017 142.5)",
+          "oklch(26% 0.017 142.5)",
+          "oklch(37% 0.017 142.5)",
+          "oklch(48% 0.017 142.5)",
+          "oklch(59% 0.017 142.5)",
+          "oklch(70% 0.017 142.5)",
+          "oklch(82% 0.017 142.5)",
+          "oklch(95% 0.017 142.5)"
+        ]
+      },
+      "rule-dark": {
+        "role": "neutral",
+        "displayName": "Hairline Rule (night)",
+        "canonical": "#39423f",
+        "oklch": "oklch(37% 0.013 173.5)",
+        "theme": "dark",
+        "cssVar": "--rule",
+        "tonalRamp": [
+          "oklch(15% 0.013 173.5)",
+          "oklch(26% 0.013 173.5)",
+          "oklch(37% 0.013 173.5)",
+          "oklch(48% 0.013 173.5)",
+          "oklch(59% 0.013 173.5)",
+          "oklch(70% 0.013 173.5)",
+          "oklch(82% 0.013 173.5)",
+          "oklch(95% 0.013 173.5)"
+        ]
+      },
+      "rule-strong": {
+        "role": "neutral",
+        "displayName": "Heavy Rule",
+        "canonical": "#14181a",
+        "oklch": "oklch(20.6% 0.007 229.3)",
+        "theme": "light",
+        "cssVar": "--rule-strong",
+        "tonalRamp": [
+          "oklch(15% 0.007 229.3)",
+          "oklch(26% 0.007 229.3)",
+          "oklch(37% 0.007 229.3)",
+          "oklch(48% 0.007 229.3)",
+          "oklch(59% 0.007 229.3)",
+          "oklch(70% 0.007 229.3)",
+          "oklch(82% 0.007 229.3)",
+          "oklch(95% 0.007 229.3)"
+        ]
+      },
+      "rule-strong-dark": {
+        "role": "neutral",
+        "displayName": "Heavy Rule (night)",
+        "canonical": "#e8ece6",
+        "oklch": "oklch(93.8% 0.009 134.9)",
+        "theme": "dark",
+        "cssVar": "--rule-strong",
+        "tonalRamp": [
+          "oklch(15% 0.009 134.9)",
+          "oklch(26% 0.009 134.9)",
+          "oklch(37% 0.009 134.9)",
+          "oklch(48% 0.009 134.9)",
+          "oklch(59% 0.009 134.9)",
+          "oklch(70% 0.009 134.9)",
+          "oklch(82% 0.009 134.9)",
+          "oklch(95% 0.009 134.9)"
+        ]
+      },
+      "field": {
+        "role": "primary",
+        "displayName": "Institutional Green",
+        "canonical": "#0f3d2e",
+        "oklch": "oklch(32.4% 0.056 167.5)",
+        "theme": "light",
+        "cssVar": "--field",
+        "tonalRamp": [
+          "oklch(15% 0.056 167.5)",
+          "oklch(26% 0.056 167.5)",
+          "oklch(37% 0.056 167.5)",
+          "oklch(48% 0.056 167.5)",
+          "oklch(59% 0.056 167.5)",
+          "oklch(70% 0.056 167.5)",
+          "oklch(82% 0.056 167.5)",
+          "oklch(95% 0.056 167.5)"
+        ]
+      },
+      "field-dark": {
+        "role": "primary",
+        "displayName": "Institutional Green (night)",
+        "canonical": "#123f30",
+        "oklch": "oklch(33.2% 0.056 167.5)",
+        "theme": "dark",
+        "cssVar": "--field",
+        "tonalRamp": [
+          "oklch(15% 0.056 167.5)",
+          "oklch(26% 0.056 167.5)",
+          "oklch(37% 0.056 167.5)",
+          "oklch(48% 0.056 167.5)",
+          "oklch(59% 0.056 167.5)",
+          "oklch(70% 0.056 167.5)",
+          "oklch(82% 0.056 167.5)",
+          "oklch(95% 0.056 167.5)"
+        ]
+      },
+      "field-deep": {
+        "role": "primary",
+        "displayName": "Deep Field",
+        "canonical": "#0a2c21",
+        "oklch": "oklch(26.5% 0.044 168.1)",
+        "theme": "light",
+        "cssVar": "--field-deep",
+        "tonalRamp": [
+          "oklch(15% 0.044 168.1)",
+          "oklch(26% 0.044 168.1)",
+          "oklch(37% 0.044 168.1)",
+          "oklch(48% 0.044 168.1)",
+          "oklch(59% 0.044 168.1)",
+          "oklch(70% 0.044 168.1)",
+          "oklch(82% 0.044 168.1)",
+          "oklch(95% 0.044 168.1)"
+        ]
+      },
+      "field-deep-dark": {
+        "role": "primary",
+        "displayName": "Deep Field (night)",
+        "canonical": "#0c2c22",
+        "oklch": "oklch(26.6% 0.042 169.4)",
+        "theme": "dark",
+        "cssVar": "--field-deep",
+        "tonalRamp": [
+          "oklch(15% 0.042 169.4)",
+          "oklch(26% 0.042 169.4)",
+          "oklch(37% 0.042 169.4)",
+          "oklch(48% 0.042 169.4)",
+          "oklch(59% 0.042 169.4)",
+          "oklch(70% 0.042 169.4)",
+          "oklch(82% 0.042 169.4)",
+          "oklch(95% 0.042 169.4)"
+        ]
+      },
+      "field-ink": {
+        "role": "primary",
+        "displayName": "Field Ink",
+        "canonical": "#f4f6f1",
+        "oklch": "oklch(97% 0.007 124.4)",
+        "theme": "light",
+        "cssVar": "--field-ink",
+        "tonalRamp": [
+          "oklch(15% 0.007 124.4)",
+          "oklch(26% 0.007 124.4)",
+          "oklch(37% 0.007 124.4)",
+          "oklch(48% 0.007 124.4)",
+          "oklch(59% 0.007 124.4)",
+          "oklch(70% 0.007 124.4)",
+          "oklch(82% 0.007 124.4)",
+          "oklch(95% 0.007 124.4)"
+        ]
+      },
+      "field-ink-dark": {
+        "role": "primary",
+        "displayName": "Field Ink (night)",
+        "canonical": "#eef3ee",
+        "oklch": "oklch(95.9% 0.008 145.5)",
+        "theme": "dark",
+        "cssVar": "--field-ink",
+        "tonalRamp": [
+          "oklch(15% 0.008 145.5)",
+          "oklch(26% 0.008 145.5)",
+          "oklch(37% 0.008 145.5)",
+          "oklch(48% 0.008 145.5)",
+          "oklch(59% 0.008 145.5)",
+          "oklch(70% 0.008 145.5)",
+          "oklch(82% 0.008 145.5)",
+          "oklch(95% 0.008 145.5)"
+        ]
+      },
+      "field-ink-soft": {
+        "role": "primary",
+        "displayName": "Field Ink Soft",
+        "canonical": "#a9c4b7",
+        "oklch": "oklch(79.6% 0.034 164.9)",
+        "theme": "light",
+        "cssVar": "--field-ink-soft",
+        "tonalRamp": [
+          "oklch(15% 0.034 164.9)",
+          "oklch(26% 0.034 164.9)",
+          "oklch(37% 0.034 164.9)",
+          "oklch(48% 0.034 164.9)",
+          "oklch(59% 0.034 164.9)",
+          "oklch(70% 0.034 164.9)",
+          "oklch(82% 0.034 164.9)",
+          "oklch(95% 0.034 164.9)"
+        ]
+      },
+      "field-ink-soft-dark": {
+        "role": "primary",
+        "displayName": "Field Ink Soft (night)",
+        "canonical": "#9dbcae",
+        "oklch": "oklch(76.8% 0.039 166.2)",
+        "theme": "dark",
+        "cssVar": "--field-ink-soft",
+        "tonalRamp": [
+          "oklch(15% 0.039 166.2)",
+          "oklch(26% 0.039 166.2)",
+          "oklch(37% 0.039 166.2)",
+          "oklch(48% 0.039 166.2)",
+          "oklch(59% 0.039 166.2)",
+          "oklch(70% 0.039 166.2)",
+          "oklch(82% 0.039 166.2)",
+          "oklch(95% 0.039 166.2)"
+        ]
+      },
+      "field-text": {
+        "role": "primary",
+        "displayName": "Green Text Ink",
+        "canonical": "#0f3d2e",
+        "oklch": "oklch(32.4% 0.056 167.5)",
+        "theme": "light",
+        "cssVar": "--field-text",
+        "tonalRamp": [
+          "oklch(15% 0.056 167.5)",
+          "oklch(26% 0.056 167.5)",
+          "oklch(37% 0.056 167.5)",
+          "oklch(48% 0.056 167.5)",
+          "oklch(59% 0.056 167.5)",
+          "oklch(70% 0.056 167.5)",
+          "oklch(82% 0.056 167.5)",
+          "oklch(95% 0.056 167.5)"
+        ]
+      },
+      "field-text-dark": {
+        "role": "primary",
+        "displayName": "Green Text Ink (night)",
+        "canonical": "#7fd3a6",
+        "oklch": "oklch(80.1% 0.105 159.4)",
+        "theme": "dark",
+        "cssVar": "--field-text",
+        "tonalRamp": [
+          "oklch(15% 0.105 159.4)",
+          "oklch(26% 0.105 159.4)",
+          "oklch(37% 0.105 159.4)",
+          "oklch(48% 0.105 159.4)",
+          "oklch(59% 0.105 159.4)",
+          "oklch(70% 0.105 159.4)",
+          "oklch(82% 0.105 159.4)",
+          "oklch(95% 0.105 159.4)"
+        ]
+      },
+      "stamp": {
+        "role": "secondary",
+        "displayName": "Stamp Red",
+        "canonical": "#b00d26",
+        "oklch": "oklch(48.2% 0.189 22.7)",
+        "theme": "light",
+        "cssVar": "--stamp",
+        "tonalRamp": [
+          "oklch(15% 0.189 22.7)",
+          "oklch(26% 0.189 22.7)",
+          "oklch(37% 0.189 22.7)",
+          "oklch(48% 0.189 22.7)",
+          "oklch(59% 0.189 22.7)",
+          "oklch(70% 0.189 22.7)",
+          "oklch(82% 0.189 22.7)",
+          "oklch(95% 0.189 22.7)"
+        ]
+      },
+      "stamp-dark": {
+        "role": "secondary",
+        "displayName": "Stamp Red (night)",
+        "canonical": "#e76678",
+        "oklch": "oklch(67.3% 0.16 13.9)",
+        "theme": "dark",
+        "cssVar": "--stamp",
+        "tonalRamp": [
+          "oklch(15% 0.16 13.9)",
+          "oklch(26% 0.16 13.9)",
+          "oklch(37% 0.16 13.9)",
+          "oklch(48% 0.16 13.9)",
+          "oklch(59% 0.16 13.9)",
+          "oklch(70% 0.16 13.9)",
+          "oklch(82% 0.16 13.9)",
+          "oklch(95% 0.16 13.9)"
+        ]
+      },
+      "seal": {
+        "role": "secondary",
+        "displayName": "Seal Red",
+        "canonical": "#b00d26",
+        "oklch": "oklch(48.2% 0.189 22.7)",
+        "theme": "light",
+        "cssVar": "--seal",
+        "tonalRamp": [
+          "oklch(15% 0.189 22.7)",
+          "oklch(26% 0.189 22.7)",
+          "oklch(37% 0.189 22.7)",
+          "oklch(48% 0.189 22.7)",
+          "oklch(59% 0.189 22.7)",
+          "oklch(70% 0.189 22.7)",
+          "oklch(82% 0.189 22.7)",
+          "oklch(95% 0.189 22.7)"
+        ]
+      },
+      "seal-dark": {
+        "role": "secondary",
+        "displayName": "Seal Red (night)",
+        "canonical": "#c41e3a",
+        "oklch": "oklch(53.1% 0.197 19.5)",
+        "theme": "dark",
+        "cssVar": "--seal",
+        "tonalRamp": [
+          "oklch(15% 0.197 19.5)",
+          "oklch(26% 0.197 19.5)",
+          "oklch(37% 0.197 19.5)",
+          "oklch(48% 0.197 19.5)",
+          "oklch(59% 0.197 19.5)",
+          "oklch(70% 0.197 19.5)",
+          "oklch(82% 0.197 19.5)",
+          "oklch(95% 0.197 19.5)"
+        ]
+      },
+      "seal-ink": {
+        "role": "secondary",
+        "displayName": "Seal Ink",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100% 0 89.9)",
+        "theme": "light",
+        "cssVar": "--seal-ink",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(59% 0 89.9)",
+          "oklch(70% 0 89.9)",
+          "oklch(82% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "seal-ink-dark": {
+        "role": "secondary",
+        "displayName": "Seal Ink (night)",
+        "canonical": "#ffffff",
+        "oklch": "oklch(100% 0 89.9)",
+        "theme": "dark",
+        "cssVar": "--seal-ink",
+        "tonalRamp": [
+          "oklch(15% 0 89.9)",
+          "oklch(26% 0 89.9)",
+          "oklch(37% 0 89.9)",
+          "oklch(48% 0 89.9)",
+          "oklch(59% 0 89.9)",
+          "oklch(70% 0 89.9)",
+          "oklch(82% 0 89.9)",
+          "oklch(95% 0 89.9)"
+        ]
+      },
+      "focus": {
+        "role": "neutral",
+        "displayName": "Focus",
+        "canonical": "#0f3d2e",
+        "oklch": "oklch(32.4% 0.056 167.5)",
+        "theme": "light",
+        "cssVar": "--focus",
+        "tonalRamp": [
+          "oklch(15% 0.056 167.5)",
+          "oklch(26% 0.056 167.5)",
+          "oklch(37% 0.056 167.5)",
+          "oklch(48% 0.056 167.5)",
+          "oklch(59% 0.056 167.5)",
+          "oklch(70% 0.056 167.5)",
+          "oklch(82% 0.056 167.5)",
+          "oklch(95% 0.056 167.5)"
+        ]
+      },
+      "focus-dark": {
+        "role": "neutral",
+        "displayName": "Focus (night)",
+        "canonical": "#7fd3a6",
+        "oklch": "oklch(80.1% 0.105 159.4)",
+        "theme": "dark",
+        "cssVar": "--focus",
+        "tonalRamp": [
+          "oklch(15% 0.105 159.4)",
+          "oklch(26% 0.105 159.4)",
+          "oklch(37% 0.105 159.4)",
+          "oklch(48% 0.105 159.4)",
+          "oklch(59% 0.105 159.4)",
+          "oklch(70% 0.105 159.4)",
+          "oklch(82% 0.105 159.4)",
+          "oklch(95% 0.105 159.4)"
+        ]
+      }
+    },
+    "themes": {
+      "default": "light",
+      "dark": "Applied by prefers-color-scheme: dark unless data-theme='light' is set on :root, or forced by data-theme='dark'. Values live once as --l-*/--d-* pairs in site/src/styles/document.css and are mapped to semantic tokens in three blocks (default light, the dark media guard, forced dark).",
+      "toggleStorageKey": "sawaalbox-theme",
+      "toggleOrder": [
+        "system",
+        "light",
+        "dark"
+      ],
+      "themeColorMeta": {
+        "light": "#0f3d2e",
+        "dark": "#15191a"
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The one-line thesis in a green masthead, max 22ch. The wordmark shares weight 800 and -0.035em tracking."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Page h1 on listing pages and cover boxes; balanced wrap."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Section h2."
+      },
+      "subtitle": {
+        "displayName": "Subtitle",
+        "purpose": "h3 and group headings."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running prose in Literata with tabular numerals, 68ch measure."
+      },
+      "question": {
+        "displayName": "Question",
+        "purpose": "Question text, pre-wrapped, 68ch measure."
+      },
+      "control": {
+        "displayName": "Control",
+        "purpose": "Button labels."
+      },
+      "nav": {
+        "displayName": "Nav",
+        "purpose": "Masthead, colophon and structural links; pager cells."
+      },
+      "label": {
+        "displayName": "Field Label",
+        "purpose": "Uppercase printed label naming the field or box beneath it. Never an eyebrow over a headline."
+      },
+      "serial": {
+        "displayName": "Serial",
+        "purpose": "Courier Prime for serials, series codes, counts, years, option keys and list markers only."
+      }
+    },
+    "fonts": {
+      "source": "Self-hosted via fontsource",
+      "packages": [
+        "@fontsource-variable/archivo",
+        "@fontsource/literata (400, 600)",
+        "@fontsource/courier-prime (400, 700)"
+      ]
+    },
+    "ruleWeights": [
+      {
+        "name": "rule-hair",
+        "value": "1px",
+        "purpose": "Grouping: question blocks, cells, tiles, pager; dotted for leaders, dashed for folds and seal lines."
+      },
+      {
+        "name": "rule-heavy",
+        "value": "2px",
+        "purpose": "Frames and edges: ruled boxes, covers, inputs, buttons, masthead and colophon edges, focus outline."
+      }
+    ],
+    "measure": {
+      "name": "measure",
+      "value": "68ch",
+      "purpose": "Maximum width of any reading text."
+    },
+    "container": {
+      "name": "sheet",
+      "value": "min(100% - 2rem, 76rem)",
+      "purpose": "The single centred sheet used by every band."
+    },
+    "focus": {
+      "value": "outline: 2px solid var(--focus); outline-offset: 2px",
+      "purpose": "Sitewide :focus-visible treatment."
+    },
+    "shadows": [
+      {
+        "name": "spine-lift",
+        "value": "10px 12px 24px -14px rgb(0 0 0 / 0.45)",
+        "purpose": "Only while the open booklet cover is lifted on hover or focus. No resting shadows exist."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-document",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "The shared curve for both system motions."
+      },
+      {
+        "name": "cover-lift",
+        "value": "rotateY(-5deg) about left center, 420ms ease-document; page edges revealed by clip-path inset(0 40% 0 0) to inset(0)",
+        "purpose": "The open booklet cover lifting at its spine on hover and focus-within. Sealed covers never move."
+      },
+      {
+        "name": "answer-lift",
+        "value": "from opacity 0, rotateX(-16deg) translateY(-0.3rem); origin top center; 260ms ease-document",
+        "purpose": "The answer sheet lifting when its seal breaks; the sitewide reveal on every question block."
+      },
+      {
+        "name": "digit-stamp (page-local)",
+        "value": "from opacity 0, translateY(-0.35rem); 320ms ease-document; 45ms stagger per digit",
+        "purpose": "UPSC cover registration digits on load only. Not a system pattern."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation and transition durations 0.01ms under prefers-reduced-motion: reduce",
+        "purpose": "Disables all motion sitewide."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "toggle-compact",
+        "value": "30rem",
+        "purpose": "Theme toggle hides its text label."
+      },
+      {
+        "name": "stack",
+        "value": "40rem",
+        "purpose": "Mastheads single-column; input and button stack; cover fields stack."
+      },
+      {
+        "name": "rack",
+        "value": "52rem",
+        "purpose": "Rack and contents collapse to one column; each cover gets its own plank."
+      },
+      {
+        "name": "cover",
+        "value": "62rem",
+        "purpose": "UPSC cover instruction and registration boxes stack."
+      }
+    ],
+    "sanctionedExceptions": [
+      {
+        "rule": "detector side-tab",
+        "file": "site/src/pages/index.astro",
+        "element": "shelf plank (.slot::after)",
+        "reason": "A full-width neutral plank under the covers, not a one-side card accent. Ignore recorded in .impeccable/config.json."
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Primary Button (Search)",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The single filled-green action on a page: the search submit.",
+      "html": "<button class=\"ds-btn-primary\" type=\"submit\">Search</button>",
+      "css": ".ds-btn-primary { font-family: var(--font-structure, 'Archivo', system-ui, sans-serif); font-weight: 700; font-size: 0.95rem; padding: 0.85rem 1.6rem; color: var(--field-ink, #f4f6f1); background: var(--field, #0f3d2e); border: 2px solid var(--rule-strong, #14181a); border-radius: 0; cursor: pointer; } .ds-btn-primary:hover { background: var(--field-deep, #0a2c21); } .ds-btn-primary:focus-visible { outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button (Open the booklet)",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Outlined secondary action: green text on paper in a heavy frame.",
+      "html": "<a class=\"ds-btn-secondary\" href=\"#\">Open the booklet</a>",
+      "css": ".ds-btn-secondary { display: inline-block; padding: 0.7rem 1.25rem; font-family: var(--font-structure, 'Archivo', system-ui, sans-serif); font-weight: 700; font-size: 0.95rem; text-decoration: none; color: var(--field-text, #0f3d2e); background: var(--paper, #f4f6f1); border: 2px solid var(--rule-strong, #14181a); } .ds-btn-secondary:hover { background: var(--ground, #e6eae3); } .ds-btn-secondary:focus-visible { background: var(--ground, #e6eae3); outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Strip",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Ruled box with a printed field label, a recessed input and the primary button.",
+      "html": "<form class=\"ds-strip\" role=\"search\"><label class=\"ds-label\" for=\"ds-q\">Search UPSC Civil Services Prelims questions</label><div class=\"ds-strip-row\"><input id=\"ds-q\" type=\"search\" placeholder=\"e.g. monsoon and El Nino\"><button type=\"submit\">Search</button></div></form>",
+      "css": ".ds-strip { padding: 1rem 1.1rem; background: var(--paper, #f4f6f1); border: 2px solid var(--rule-strong, #14181a); } .ds-label { font-family: var(--font-structure, 'Archivo', sans-serif); font-size: 0.68rem; font-weight: 600; letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-soft, #4a544f); } .ds-strip-row { display: flex; gap: 0.6rem; margin-top: 0.4rem; } .ds-strip-row input { flex: 1; min-width: 0; font-family: var(--font-read, 'Literata', Georgia, serif); font-size: 1.08rem; padding: 0.85rem 0.95rem; color: var(--ink, #14181a); background: var(--ground, #e6eae3); border: 2px solid var(--rule-strong, #14181a); border-radius: 0; caret-color: var(--field-text, #0f3d2e); } .ds-strip-row input::placeholder { color: var(--ink-faint, #5a6560); } .ds-strip-row input:focus-visible, .ds-strip-row button:focus-visible { outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; } .ds-strip-row button { font-family: var(--font-structure, 'Archivo', sans-serif); font-weight: 700; font-size: 0.95rem; padding: 0.85rem 1.6rem; color: var(--field-ink, #f4f6f1); background: var(--field, #0f3d2e); border: 2px solid var(--rule-strong, #14181a); border-radius: 0; cursor: pointer; } .ds-strip-row button:hover { background: var(--field-deep, #0a2c21); }"
+    },
+    {
+      "name": "Masthead with Theme Toggle",
+      "kind": "nav",
+      "refersTo": "theme-toggle",
+      "description": "Green field with wordmark, Devanagari name, nav links and the outlined theme toggle with a drawn SVG icon.",
+      "html": "<header class=\"ds-mast\"><a class=\"ds-wordmark\" href=\"#\"><span class=\"ds-latin\">SawaalBox</span><span class=\"ds-deva\" lang=\"hi\">सवाल बॉक्स</span></a><nav class=\"ds-nav\"><a href=\"#\">Subjects</a><a href=\"#\">Years</a><a href=\"#\">Search</a><button class=\"ds-toggle\" type=\"button\"><svg viewBox=\"0 0 16 16\" aria-hidden=\"true\"><circle cx=\"8\" cy=\"8\" r=\"5.5\"/><path d=\"M8 2.5v11a5.5 5.5 0 0 0 0-11z\" class=\"fill\"/></svg>System</button></nav></header>",
+      "css": ".ds-mast { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 1rem 1.5rem; padding: 0.9rem 1rem; background: var(--field, #0f3d2e); color: var(--field-ink, #f4f6f1); border-bottom: 2px solid var(--rule-strong, #14181a); } .ds-wordmark { display: flex; align-items: baseline; gap: 0.6rem; color: inherit; text-decoration: none; } .ds-latin { font-family: var(--font-structure, 'Archivo', sans-serif); font-weight: 800; font-size: 1.3rem; letter-spacing: -0.035em; } .ds-deva { font-size: 0.95rem; color: var(--field-ink-soft, #a9c4b7); } .ds-nav { display: flex; align-items: center; gap: 1.2rem; font-family: var(--font-structure, 'Archivo', sans-serif); font-size: 0.88rem; font-weight: 600; } .ds-nav a { color: inherit; text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 0.18em; } .ds-nav a:hover { text-decoration-color: currentColor; } .ds-nav a:focus-visible, .ds-toggle:focus-visible { outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; } .ds-toggle { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.25rem 0.6rem; background: transparent; color: inherit; border: 1px solid currentColor; border-radius: 0; font: 600 0.78rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.04em; cursor: pointer; opacity: 0.85; } .ds-toggle:hover { opacity: 1; } .ds-toggle svg { width: 0.95rem; height: 0.95rem; fill: none; stroke: currentColor; stroke-width: 1.4; stroke-linecap: round; } .ds-toggle svg .fill { fill: currentColor; stroke: none; }"
+    },
+    {
+      "name": "Question Block",
+      "kind": "card",
+      "refersTo": "question-block",
+      "description": "Serially numbered question with options and a sealed answer; shared by static pages and client-rendered search results.",
+      "html": "<article class=\"ds-q\"><div class=\"ds-qhead\"><a class=\"ds-qref\" href=\"#\">2021 · Q32</a><a href=\"#\">Ancient History</a><span class=\"ds-sep\">›</span><a href=\"#\">Indus Valley Civilization</a><span class=\"ds-diff\">easy</span></div><h3 class=\"ds-qtext\"><a href=\"#\">Which one of the following ancient towns is well-known for its elaborate system of water harvesting and management?</a></h3><ol class=\"ds-opts\"><li class=\"is-answer\"><span class=\"ds-key\">(a)</span><span>Dholavira</span></li><li><span class=\"ds-key\">(b)</span><span>Kalibangan</span></li></ol><details class=\"ds-ans\"><summary>Show answer</summary><p><span class=\"ds-flabel\">Official answer</span> <strong class=\"ds-serial\">(a)</strong> Dholavira</p></details></article>",
+      "css": ".ds-q { background: var(--paper, #f4f6f1); color: var(--ink, #14181a); border: 1px solid var(--rule, #b9c2b8); padding: 1rem 1.1rem; } .ds-qhead { display: flex; flex-wrap: wrap; align-items: baseline; gap: 0.35rem 0.6rem; font-family: var(--font-structure, 'Archivo', sans-serif); font-size: 0.78rem; color: var(--ink-soft, #4a544f); margin-bottom: 0.65rem; } .ds-qhead a { color: inherit; text-decoration-color: var(--rule, #b9c2b8); text-underline-offset: 0.18em; } .ds-qhead a:hover { text-decoration-color: currentColor; } .ds-qhead .ds-qref { font-family: var(--font-serial, 'Courier Prime', monospace); font-weight: 700; color: var(--ink, #14181a); } .ds-sep { opacity: 0.5; } .ds-diff { margin-left: auto; font-size: 0.68rem; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; } .ds-qtext { font-family: var(--font-read, 'Literata', Georgia, serif); font-size: 1.02rem; font-weight: 400; line-height: 1.55; margin: 0 0 0.8rem; max-width: 68ch; } .ds-qtext a { color: inherit; text-decoration-line: none; } .ds-qtext a:hover, .ds-qtext a:focus-visible { text-decoration-line: underline; } .ds-opts { list-style: none; margin: 0 0 0.9rem; padding: 0; display: grid; gap: 0.28rem; font-family: var(--font-read, 'Literata', Georgia, serif); } .ds-opts li { display: grid; grid-template-columns: 2rem 1fr; gap: 0.35rem; padding: 0.18rem 0.35rem; } .ds-key { font-family: var(--font-serial, 'Courier Prime', monospace); font-size: 0.9rem; color: var(--ink-faint, #5a6560); } .ds-q:has(.ds-ans[open]) .is-answer { background: var(--ground, #e6eae3); outline: 1px solid var(--rule-strong, #14181a); } .ds-ans { border-top: 1px dashed var(--rule, #b9c2b8); padding-top: 0.7rem; } .ds-ans summary { display: inline-flex; align-items: center; gap: 0.4rem; cursor: pointer; list-style: none; font: 700 0.8rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.04em; text-transform: uppercase; color: var(--field-text, #0f3d2e); } .ds-ans summary::-webkit-details-marker { display: none; } .ds-ans summary::before { content: ''; width: 0.85rem; height: 0.85rem; border: 1px solid currentColor; } .ds-ans[open] summary::before { background: currentColor; } .ds-ans summary:focus-visible { outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; } .ds-ans p { margin: 0.6rem 0 0; font-family: var(--font-read, 'Literata', serif); transform-origin: top center; animation: ds-lift 260ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-flabel { display: block; font: 600 0.68rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.13em; text-transform: uppercase; color: var(--ink-soft, #4a544f); } .ds-serial { font-family: var(--font-serial, 'Courier Prime', monospace); } @keyframes ds-lift { from { opacity: 0; transform: rotateX(-16deg) translateY(-0.3rem); } } @media (prefers-reduced-motion: reduce) { .ds-ans p { animation: none; } }"
+    },
+    {
+      "name": "Stamp Flag",
+      "kind": "chip",
+      "refersTo": "tag-flag",
+      "description": "Red stamp for cancelled or disputed questions; red ink as text and border only.",
+      "html": "<span class=\"ds-flag\">Cancelled by UPSC</span>",
+      "css": ".ds-flag { display: inline-block; border: 1px solid var(--stamp, #b00d26); color: var(--stamp, #b00d26); padding: 0.05rem 0.4rem; font: 0.68rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.06em; text-transform: uppercase; }"
+    },
+    {
+      "name": "Booklet Cover (open)",
+      "kind": "custom",
+      "refersTo": "cover-band",
+      "description": "An exam as a booklet on a shelf plank: series band, title, registration fields; lifts at its spine on hover and focus with page edges revealed.",
+      "html": "<div class=\"ds-slot\"><article class=\"ds-cover\" tabindex=\"0\"><div class=\"ds-band\"><span class=\"ds-blabel\">Series</span><span class=\"ds-code\">CSE-P</span></div><div class=\"ds-cbody\"><h3 class=\"ds-ctitle\">UPSC Civil Services Prelims</h3><dl class=\"ds-fields\"><div><dt>Questions</dt><dd>3,959</dd></div><div><dt>Years</dt><dd>1995–2026</dd></div><div><dt>Subjects</dt><dd>13</dd></div></dl></div></article></div>",
+      "css": ".ds-slot { position: relative; display: flex; padding-bottom: 0.6rem; perspective: 1400px; max-width: 34rem; } .ds-slot::after { content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 0.6rem; background: var(--paper-edge, #d7ddd3); border-top: 2px solid var(--rule-strong, #14181a); border-bottom: 1px solid var(--rule-strong, #14181a); } .ds-cover { position: relative; flex: 1; background: var(--paper, #f4f6f1); color: var(--ink, #14181a); border: 2px solid var(--rule-strong, #14181a); border-bottom: 0; transform-origin: left center; transition: transform 420ms cubic-bezier(0.16, 1, 0.3, 1), box-shadow 420ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-cover::after { content: ''; position: absolute; top: 0.3rem; bottom: 0; left: calc(100% + 2px); width: 0.75rem; background: repeating-linear-gradient(to right, var(--paper-edge, #d7ddd3) 0 2px, var(--rule-strong, #14181a) 2px 3px); border-top: 1px solid var(--rule-strong, #14181a); clip-path: inset(0 40% 0 0); transition: clip-path 420ms cubic-bezier(0.16, 1, 0.3, 1); } .ds-cover:hover, .ds-cover:focus-visible { transform: rotateY(-5deg); box-shadow: 10px 12px 24px -14px rgb(0 0 0 / 0.45); outline: none; } .ds-cover:hover::after, .ds-cover:focus-visible::after { clip-path: inset(0); } .ds-band { display: flex; justify-content: space-between; align-items: baseline; padding: 0.55rem 1rem; background: var(--field, #0f3d2e); color: var(--field-ink, #f4f6f1); } .ds-blabel, .ds-fields dt { font: 600 0.68rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.13em; text-transform: uppercase; } .ds-blabel { color: var(--field-ink-soft, #a9c4b7); } .ds-code { font: 700 1rem var(--font-serial, 'Courier Prime', monospace); letter-spacing: 0.08em; } .ds-cbody { padding: 1.15rem 1.1rem 1.25rem; display: grid; gap: 1rem; } .ds-ctitle { margin: 0; font: 700 1.6rem/1.12 var(--font-structure, 'Archivo', sans-serif); letter-spacing: -0.02em; max-width: 18ch; } .ds-fields { display: grid; grid-template-columns: repeat(3, auto); justify-content: start; margin: 0; border: 1px solid var(--rule-strong, #14181a); } .ds-fields div { padding: 0.45rem 0.8rem; } .ds-fields div + div { border-left: 1px solid var(--rule-strong, #14181a); } .ds-fields dt { color: var(--ink-soft, #4a544f); } .ds-fields dd { margin: 0.1rem 0 0; font: 700 1rem var(--font-serial, 'Courier Prime', monospace); } @media (prefers-reduced-motion: reduce) { .ds-cover, .ds-cover::after { transition: none; } }"
+    },
+    {
+      "name": "Sealed Cover",
+      "kind": "custom",
+      "refersTo": "seal-band",
+      "description": "A cover that cannot be opened: blank band, soft ink, a deep red seal band across it. Not a link; never moves.",
+      "html": "<div class=\"ds-sealed\" role=\"note\"><div class=\"ds-sband\"><span>Series</span><span>—</span></div><div class=\"ds-sbody\"><p class=\"ds-stitle\">More exams</p><p>In preparation. This one opens when its questions are ready.</p></div><span class=\"ds-seal\" aria-hidden=\"true\">Sealed</span></div>",
+      "css": ".ds-sealed { position: relative; overflow: hidden; max-width: 24rem; background: var(--paper, #f4f6f1); color: var(--ink-soft, #4a544f); border: 2px solid var(--rule-strong, #14181a); } .ds-sband { display: flex; justify-content: space-between; padding: 0.55rem 1rem; background: var(--ground, #e6eae3); color: var(--ink-faint, #5a6560); border-bottom: 1px solid var(--rule, #b9c2b8); font: 600 0.68rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.13em; text-transform: uppercase; } .ds-sbody { padding: 1.15rem 1.1rem 5rem; font-family: var(--font-read, 'Literata', serif); font-size: 0.95rem; } .ds-sbody p { margin: 0 0 1rem; max-width: 30ch; } .ds-sbody .ds-stitle { font: 700 1.6rem/1.12 var(--font-structure, 'Archivo', sans-serif); letter-spacing: -0.02em; color: var(--ink, #14181a); } .ds-seal { position: absolute; left: -10%; right: -10%; bottom: 1.6rem; transform: rotate(-7deg); padding: 0.35rem 0; text-align: center; font: 700 0.78rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.4em; text-transform: uppercase; color: var(--seal-ink, #ffffff); background: var(--seal, #b00d26); pointer-events: none; }"
+    },
+    {
+      "name": "Contents Entry",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Numbered contents row with a dotted leader and an OPEN or COMING state.",
+      "html": "<ol class=\"ds-entries\"><li><div class=\"ds-ehead\"><a href=\"#\">Search by what a question is about</a><span class=\"ds-leader\"></span><span class=\"ds-state\">Open</span></div><p>Describe a topic in your own words.</p></li><li class=\"coming\"><div class=\"ds-ehead\"><span>Revision lists</span><span class=\"ds-leader\"></span><span class=\"ds-state\">Coming</span></div><p>Save questions into named lists.</p></li></ol>",
+      "css": ".ds-entries { margin: 0; padding: 0 0 0 1.75rem; display: grid; gap: 1rem; color: var(--ink, #14181a); } .ds-entries li::marker { font-family: var(--font-serial, 'Courier Prime', monospace); color: var(--ink-faint, #5a6560); } .ds-ehead { display: grid; grid-template-columns: auto 1fr auto; align-items: baseline; gap: 0.6rem; font: 700 1.02rem var(--font-structure, 'Archivo', sans-serif); } .ds-ehead a { color: inherit; text-decoration-color: var(--rule, #b9c2b8); text-underline-offset: 0.18em; } .ds-ehead a:hover { text-decoration-color: currentColor; } .ds-ehead a:focus-visible { outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; } .ds-leader { border-bottom: 1px dotted var(--rule, #b9c2b8); transform: translateY(-0.28em); } .ds-state { font-size: 0.7rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--field-text, #0f3d2e); } .coming .ds-state { color: var(--ink-faint, #5a6560); } .coming .ds-ehead > span:first-child { color: var(--ink-soft, #4a544f); } .ds-entries p { margin: 0.2rem 0 0; font: 0.93rem var(--font-read, 'Literata', serif); color: var(--ink-soft, #4a544f); }"
+    },
+    {
+      "name": "Pager",
+      "kind": "nav",
+      "refersTo": "pager-number",
+      "description": "Square hairline cells; the current page is a filled green cell; unavailable steps are dashed and faint.",
+      "html": "<nav class=\"ds-pager\"><span class=\"ds-pn off\">Previous</span><span class=\"ds-pn cur\">1</span><a class=\"ds-pn num\" href=\"#\">2</a><a class=\"ds-pn num\" href=\"#\">3</a><a class=\"ds-pn\" href=\"#\">Next</a></nav>",
+      "css": ".ds-pager { display: flex; flex-wrap: wrap; gap: 0.35rem; } .ds-pn { display: inline-grid; place-items: center; min-width: 2.2rem; height: 2.2rem; padding-inline: 0.55rem; border: 1px solid var(--rule, #b9c2b8); background: var(--paper, #f4f6f1); color: var(--ink, #14181a); font: 600 0.85rem var(--font-structure, 'Archivo', sans-serif); text-decoration: none; } .ds-pn.num, .ds-pn.cur { font-family: var(--font-serial, 'Courier Prime', monospace); } a.ds-pn:hover { border-color: var(--rule-strong, #14181a); } a.ds-pn:focus-visible { outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; } .ds-pn.cur { background: var(--field, #0f3d2e); border-color: var(--field, #0f3d2e); color: var(--field-ink, #f4f6f1); } .ds-pn.off { color: var(--ink-faint, #5a6560); border-style: dashed; cursor: not-allowed; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Question Paper",
+    "overview": "SawaalBox is the examination booklet itself, made searchable: not a marketing page about a question bank, but a working document the aspirant already knows how to read. Every component is a part of that document. Mastheads and colophons are printed fields of institutional green, forms are ruled instruction boxes, corpus figures are serial numerals in registration grids, each exam is a booklet cover with a printed series code, and every question is a serially numbered block with its answer under a seal you break to read.\n\nThe page is exam stationery, not cream: a pale green-grey ground carrying paper plates, offset ink, and a single deep green committed at page scale. Density is document density. Rules do the work that cards, shadows and radii do elsewhere; hierarchy comes from a heavy rule against a hairline, a green field against paper, and three typefaces with strictly separated jobs. Exam red appears only where real papers use it: stamps and seals.\n\nThere is a night sitting: the same document printed on dark stock. Light is the default; dark applies when the reader's system asks for it or when they force it with the theme toggle, and every semantic token swaps as a set. The world refuses the edtech category arrangement outright: no indigo hero, no rounded feature trio, no smiling-student illustration.",
+    "keyCharacteristics": [
+      "Committed green fields at page scale (masthead, cover band, colophon), never sprinkled as accent.",
+      "Square corners everywhere; structure is drawn with 2px heavy and 1px hairline rules.",
+      "Three typefaces with fixed jobs: Archivo builds, Literata is read, Courier Prime numbers.",
+      "Red is ink for stamps and paper for seals; never an action.",
+      "Flat at rest. Two motions only carry meaning: the booklet cover lifting at its spine and the answer sheet lifting when its seal breaks.",
+      "Light and dark are one document on two stocks, defined once as value pairs and switched as a set."
+    ],
+    "rules": [
+      {
+        "name": "The Committed Field Rule",
+        "body": "Green is a field, not an accent. It fills a region edge to edge or it is not used; text that must read as green uses Green Text Ink, never the field colour.",
+        "section": "colors"
+      },
+      {
+        "name": "The Stamp and Seal Rule",
+        "body": "Exam red appears only as a stamp (flag text and borders, the difficult tag) or a seal band. It is never a button, a link, a heading or a decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Stocks Rule",
+        "body": "Every colour is defined once as a light and dark pair and mapped to one semantic name. New surfaces consume the semantic tokens only; they never branch on theme themselves.",
+        "section": "colors"
+      },
+      {
+        "name": "The Three Voices Rule",
+        "body": "Archivo builds, Literata is read, Courier Prime numbers. A serif heading, a sans question body, or a monospace sentence breaks the document.",
+        "section": "typography"
+      },
+      {
+        "name": "The Reading Measure Rule",
+        "body": "Anything meant to be read, prose, questions, options, answer notes, stops at 68ch however wide the sheet is.",
+        "section": "typography"
+      },
+      {
+        "name": "The Label Is a Field Rule",
+        "body": "The small uppercase label names the field or box directly beneath it, as on an official form. It never floats above a headline as a decorative eyebrow.",
+        "section": "typography"
+      },
+      {
+        "name": "The Stock Not Light Rule",
+        "body": "A surface is raised by being paper on ground and framed by a rule. If a new part seems to need a shadow at rest, it needs a heavier rule instead.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Two Motions Rule",
+        "body": "Motion is meaning, and the system has two meanings. The open cover lifts at its spine (rotateY(-5deg) about its left edge, 420ms cubic-bezier(0.16, 1, 0.3, 1)) while hairline page edges are revealed by clip-path, so layout never reflows. The answer sheet lifts when its seal breaks (rotateX(-16deg) from its top edge with a fade, 260ms, same curve). Everything is reduced to 0.01ms under prefers-reduced-motion.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do fill whole regions with Institutional Green (masthead, series band, colophon, the one primary button, the current pager cell) and use Green Text Ink whenever green must be read as text.",
+      "Do keep exactly one filled-green action per page, the search submit; every other action is outlined in a 2px Heavy Rule on paper.",
+      "Do draw structure with the two rule weights: 2px Heavy Rule for frames and edges, 1px hairline for grouping, dashed for folds and seal lines, dotted for leaders.",
+      "Do set every question serial, count, code, year and option key in Courier Prime, and nothing else.",
+      "Do cap reading text at 68ch and keep question text pre-wrapped.",
+      "Do consume semantic tokens only, so a new surface works on both stocks without a theme branch; check new text colours at 4.5:1 on both ground and paper in both themes.",
+      "Do keep the question block's classes in the shared stylesheet so static and client-rendered questions stay identical.",
+      "Do draw icons as inline SVG strokes at 1.4 with round caps, coloured by currentColor."
+    ],
+    "donts": [
+      "Don't use the field green as a text colour; on dark stock it measures 1.36:1.",
+      "Don't use exam red for buttons, links, headings, highlights or decoration; it is stamp ink and seal paper only.",
+      "Don't let the seal band follow the stamp to its light dark-theme value; a seal stays deep red with white ink.",
+      "Don't round a corner anywhere.",
+      "Don't add a resting shadow, a glow, or a gradient fill to any surface; the only shadow is the spine lift.",
+      "Don't add motion beyond the cover lift and the answer lift (the UPSC cover's digit stamp-in is a page-local entrance, not a pattern to repeat), and never ship motion that survives prefers-reduced-motion.",
+      "Don't mark the correct option before the reader opens the answer.",
+      "Don't underline question-heading links at rest; the serial carries the permalink cue.",
+      "Don't use the uppercase field label as an eyebrow above a headline; it labels a field or box.",
+      "Don't use an indigo hero, a row of rounded feature cards, or student illustration."
+    ]
+  }
+}
