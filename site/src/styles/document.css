@@ -19,7 +19,7 @@
   --l-paper-edge: #d7ddd3; --d-paper-edge: #2c3336;
   --l-ink: #14181a;      --d-ink: #e8ece6;
   --l-ink-soft: #4a544f; --d-ink-soft: #a7b2ad;
-  --l-ink-faint: #6d7873; --d-ink-faint: #7f8a86;
+  --l-ink-faint: #5a6560; --d-ink-faint: #88938f;
   --l-rule: #b9c2b8;     --d-rule: #39423f;
   --l-rule-strong: #14181a; --d-rule-strong: #e8ece6;
   --l-field: #0f3d2e;    --d-field: #123f30;
@@ -27,7 +27,11 @@
   --l-field-ink: #f4f6f1; --d-field-ink: #eef3ee;
   --l-field-ink-soft: #a9c4b7; --d-field-ink-soft: #9dbcae;
   --l-stamp: #b00d26;    --d-stamp: #e76678;
-  --l-stamp-ink: #ffffff; --d-stamp-ink: #15191a;
+  /* A stamp is red ink on the page; a seal is a red band pasted over it. On
+     dark stock the ink has to lighten to stay legible, but a seal that
+     lightened with it would turn pink, so the band keeps its own deep red. */
+  --l-seal: #b00d26;     --d-seal: #c41e3a;
+  --l-seal-ink: #ffffff; --d-seal-ink: #ffffff;
   --l-focus: #0f3d2e;    --d-focus: #7fd3a6;
   /* The field green is a background colour; on dark pages it is too dark to
      read as text. Text that should read as green uses this instead. */
@@ -59,7 +63,8 @@
   --field-ink: var(--l-field-ink);
   --field-ink-soft: var(--l-field-ink-soft);
   --stamp: var(--l-stamp);
-  --stamp-ink: var(--l-stamp-ink);
+  --seal: var(--l-seal);
+  --seal-ink: var(--l-seal-ink);
   --focus: var(--l-focus);
   --field-text: var(--l-field-text);
 }
@@ -82,7 +87,8 @@
     --field-ink: var(--d-field-ink);
     --field-ink-soft: var(--d-field-ink-soft);
     --stamp: var(--d-stamp);
-    --stamp-ink: var(--d-stamp-ink);
+    --seal: var(--d-seal);
+    --seal-ink: var(--d-seal-ink);
     --focus: var(--d-focus);
     --field-text: var(--d-field-text);
   }
@@ -103,7 +109,8 @@
   --field-ink: var(--d-field-ink);
   --field-ink-soft: var(--d-field-ink-soft);
   --stamp: var(--d-stamp);
-  --stamp-ink: var(--d-stamp-ink);
+  --seal: var(--d-seal);
+  --seal-ink: var(--d-seal-ink);
   --focus: var(--d-focus);
   --field-text: var(--d-field-text);
 }

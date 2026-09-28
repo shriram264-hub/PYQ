@@ -68,8 +68,20 @@
   max-width: var(--measure);
 }
 
+/* Long multi-statement questions turned into walls of underline, so the
+   heading link rests bare and the serial above carries the permalink cue. */
 .qtext a {
-  text-decoration-color: var(--rule);
+  text-decoration-line: none;
+}
+
+.qtext a:hover,
+.qtext a:focus-visible {
+  text-decoration-line: underline;
+  text-decoration-color: currentColor;
+}
+
+a.qref:hover {
+  text-decoration-color: currentColor;
 }
 
 .qopts {

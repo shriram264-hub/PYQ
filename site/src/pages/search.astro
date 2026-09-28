@@ -120,7 +120,7 @@ const description = `Search ${CORPUS.total.toLocaleString('en-IN')} UPSC Prelims
 
     return `<article class="qblock">
       <div class="qhead">
-        <span class="serial qref">${q.year} · Q${q.q_no}</span>
+        <a class="serial qref" href="/upsc/question/${qSlug}" tabindex="-1">${q.year} · Q${q.q_no}</a>
         <a href="/upsc/subject/${sSlug}">${esc(subject)}</a>
         <span class="qsep" aria-hidden="true">›</span>
         <a href="/upsc/topic/${sSlug}/${tSlug}">${esc(q.subtopic)}</a>

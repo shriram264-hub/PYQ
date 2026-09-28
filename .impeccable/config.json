@@ -1,0 +1,17 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "side-tab",
+        "value": "*",
+        "files": [
+          "site/src/pages/index.astro"
+        ],
+        "createdAt": "2026-09-28T19:03:33.889Z",
+        "reason": "Claude triage: .slot::after is the full-width, neutral (paper-edge + rule-strong) shelf plank the homepage contract calls for (booklets standing on a rack) and the finish reviewer's fix #1 asked for; it is a horizontal shelf under the covers, not a one-side card accent. Pending the reviewer's verdict pass."
+      }
+    ]
+  }
+}

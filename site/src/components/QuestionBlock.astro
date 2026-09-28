@@ -10,9 +10,15 @@ const href = `/upsc/question/${q.slug}`;
 
 <article class="qblock">
   <div class="qhead">
-    <span class="serial qref">
-      {q.year} · Q{q.q_no}
-    </span>
+    {
+      // The serial is the visible permalink cue. It is a mouse shortcut only:
+      // keyboard users already reach the same page through the heading link.
+      linked ? (
+        <a class="serial qref" href={href} tabindex="-1">{q.year} · Q{q.q_no}</a>
+      ) : (
+        <span class="serial qref">{q.year} · Q{q.q_no}</span>
+      )
+    }
     <a class="qsubject" href={`/upsc/subject/${q.subjectSlug}`}>{q.subject}</a>
     <span class="qsep" aria-hidden="true">›</span>
     <a class="qsubtopic" href={`/upsc/topic/${q.subjectSlug}/${q.subtopicSlug}`}>{q.subtopic}</a>

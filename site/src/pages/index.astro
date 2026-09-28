@@ -32,7 +32,6 @@ const LIVE = [
     href: '/upsc/years',
   },
   { title: 'Free, with no sign-up', body: 'Nothing here sits behind an account or a payment.' },
-  { title: 'Light or dark reading', body: 'Follows your device, or switch it from the header.' },
 ];
 
 const COMING = [
@@ -43,9 +42,28 @@ const COMING = [
 ];
 
 const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYear} — ${c.total.toLocaleString('en-IN')} with official answers, searchable by what they're about. Free, no sign-up. More exams in preparation.`;
+
+// Tells search engines the site's name and where its search lives.
+const website = {
+  '@context': 'https://schema.org',
+  '@type': 'WebSite',
+  name: 'SawaalBox',
+  alternateName: 'सवाल बॉक्स',
+  url: new URL('/', Astro.site).href,
+  description,
+  potentialAction: {
+    '@type': 'SearchAction',
+    target: {
+      '@type': 'EntryPoint',
+      urlTemplate: `${new URL('/search', Astro.site).href}?q={search_term_string}`,
+    },
+    'query-input': 'required name=search_term_string',
+  },
+};
 ---
 
-<Document title="Past Exam Questions, Searchable by Concept" description={description}>
+<Document title="Past Exam Questions by Concept — UPSC Prelims PYQs" description={description}>
+  <script slot="head" type="application/ld+json" set:html={JSON.stringify(website)} />
   <header class="mast">
     <div class="sheet mast-inner">
       <a class="wordmark" href="/">
@@ -76,49 +94,55 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
     <section id="exams" class="sheet rack" aria-labelledby="rack-heading">
       <h2 id="rack-heading" class="visually-hidden">Exams</h2>
       <div class="rack-shelf">
-        <article class="cover cover-open">
-          <div class="cover-band">
-            <span class="field-label band-label">Series</span>
-            <span class="serial band-code">{upsc.series}</span>
-          </div>
-          <div class="cover-body">
-            <h3 class="cover-title">{upsc.name}</h3>
-            <dl class="cover-fields">
-              <div>
-                <dt class="field-label">Questions</dt>
-                <dd class="serial">{c.total.toLocaleString('en-IN')}</dd>
-              </div>
-              <div>
-                <dt class="field-label">Years</dt>
-                <dd class="serial">{c.minYear}–{c.maxYear}</dd>
-              </div>
-              <div>
-                <dt class="field-label">Subjects</dt>
-                <dd class="serial">{c.subjectCount}</dd>
-              </div>
-            </dl>
-            <p class="cover-links">
-              {upsc.topSubjects.map((s, i) => (
-                <>
-                  {i > 0 && <span aria-hidden="true"> · </span>}
-                  <a href={`${upsc.path}/subject/${s.slug}`}>{s.name}</a>
-                </>
-              ))}
-            </p>
-            <a class="cover-open-cta" href={upsc.path}>Open the booklet</a>
-          </div>
-        </article>
+        <div class="slot">
+          <article class="cover cover-open">
+            <div class="cover-band">
+              <span class="field-label band-label">Series</span>
+              <span class="serial band-code">{upsc.series}</span>
+            </div>
+            <div class="cover-body">
+              <h3 class="cover-title">{upsc.name}</h3>
+              <dl class="cover-fields">
+                <div>
+                  <dt class="field-label">Questions</dt>
+                  <dd class="serial">{c.total.toLocaleString('en-IN')}</dd>
+                </div>
+                <div>
+                  <dt class="field-label">Years</dt>
+                  <dd class="serial">{c.minYear}–{c.maxYear}</dd>
+                </div>
+                <div>
+                  <dt class="field-label">Subjects</dt>
+                  <dd class="serial">{c.subjectCount}</dd>
+                </div>
+              </dl>
+              <p class="cover-links">
+                {upsc.topSubjects.map((s, i) => (
+                  <>
+                    {i > 0 && <span aria-hidden="true"> · </span>}
+                    <a href={`${upsc.path}/subject/${s.slug}`}>{s.name}</a>
+                  </>
+                ))}
+              </p>
+              <a class="cover-open-cta" href={upsc.path}>
+                Open the booklet<span class="visually-hidden">: {upsc.name}</span>
+              </a>
+            </div>
+          </article>
+        </div>
 
-        <div class="cover cover-sealed" role="note" aria-label="More exams, in preparation">
-          <div class="cover-band cover-band-blank">
-            <span class="field-label band-label">Series</span>
-            <span class="serial band-code">—</span>
+        <div class="slot">
+          <div class="cover cover-sealed" role="note" aria-label="More exams, in preparation">
+            <div class="cover-band cover-band-blank">
+              <span class="field-label band-label">Series</span>
+              <span class="serial band-code">—</span>
+            </div>
+            <div class="cover-body">
+              <p class="cover-title">More exams</p>
+              <p class="sealed-line">In preparation. This one opens when its questions are ready.</p>
+            </div>
+            <span class="seal" aria-hidden="true">Sealed</span>
           </div>
-          <div class="cover-body">
-            <p class="cover-title">More exams</p>
-            <p class="sealed-line">In preparation. This one opens when its questions are ready.</p>
-          </div>
-          <span class="seal" aria-hidden="true">Sealed</span>
         </div>
       </div>
     </section>
@@ -126,8 +150,8 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
     <section class="sheet specimen" aria-labelledby="specimen-heading">
       <h2 id="specimen-heading">A search that reads past the wording</h2>
       <p class="reading specimen-lede">
-        Search <a class="query" href={`/search?q=${encodeURIComponent(SPECIMEN_QUERY)}`}>{SPECIMEN_QUERY}</a>
-        and among the results is this {specimen.year} question. Its wording never names the
+        Search <a class="query" href={`/search?q=${encodeURIComponent(SPECIMEN_QUERY)}`}>{SPECIMEN_QUERY}</a>{' '}and
+        among the results is this {specimen.year} question. Its wording never names the
         civilisation, so searching the paper for those words would miss it. Try it before you open
         the answer.
       </p>
@@ -164,7 +188,7 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
         </div>
 
         <div>
-          <h3 class="contents-group">In preparation, free during the beta</h3>
+          <h3 class="contents-group">In preparation</h3>
           <ol class="entries" start={LIVE.length + 1}>
             {
               COMING.map((item) => (
@@ -314,22 +338,48 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
   }
 
   .rack-shelf {
+    --shelf-gap: 1.25rem;
+    --plank: 0.6rem;
     display: grid;
     grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
-    gap: 1.25rem;
+    gap: var(--shelf-gap);
     align-items: stretch;
-    padding-bottom: 1rem;
-    /* the shelf the booklets stand on */
-    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  /*
+    Each booklet stands on a plank drawn under its own slot. On a wide rack the
+    plank also runs across the gap to the next slot, so the covers share one
+    shelf; stacked on a phone, each cover gets its own.
+  */
+  .slot {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    padding-bottom: var(--plank);
     perspective: 1400px;
+  }
+
+  .slot::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: var(--plank);
+    background: var(--paper-edge);
+    border-top: var(--rule-heavy) solid var(--rule-strong);
+    border-bottom: var(--rule-hair) solid var(--rule-strong);
   }
 
   .cover {
     position: relative;
     display: flex;
     flex-direction: column;
+    flex: 1;
     background: var(--paper);
     border: var(--rule-heavy) solid var(--rule-strong);
+    /* the plank's top rule is the cover's bottom edge */
+    border-bottom: 0;
   }
 
   .cover-band {
@@ -414,6 +464,13 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
     color: var(--ink-soft);
   }
 
+  /* Raised above the stretched cover link so each subject stays its own target. */
+  .cover-links a {
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Outlined, not filled: search is the page's one filled-green action. */
   .cover-open-cta {
     margin-top: auto;
     align-self: flex-start;
@@ -422,19 +479,31 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
     font-weight: 700;
     font-size: 0.95rem;
     text-decoration: none;
-    color: var(--field-ink);
-    background: var(--field);
+    color: var(--field-text);
+    background: var(--paper);
     border: var(--rule-heavy) solid var(--rule-strong);
   }
 
-  .cover-open-cta:hover {
-    background: var(--field-deep);
+  /* The whole cover opens the booklet. The call to action's hit area is
+     stretched over it, so the lift below never promises a click that does
+     nothing. */
+  .cover-open-cta::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+  }
+
+  .cover-open:hover .cover-open-cta,
+  .cover-open-cta:focus-visible {
+    background: var(--ground);
   }
 
   /*
-    The signature moment: the open booklet lifts at its spine, showing the edge
-    of its first page behind. Pointer hover and keyboard focus both trigger it.
-    The sealed cover has no counterpart — it cannot be opened.
+    The signature moment: the open booklet lifts at its spine and the pages
+    behind it fan out. At rest a few page edges already show past the cover,
+    so it reads as a booklet with pages, not a card. Pointer hover and keyboard
+    focus both trigger the lift. The sealed cover has no counterpart: it cannot
+    be opened.
   */
   .cover-open {
     transform-origin: left center;
@@ -442,16 +511,25 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
       box-shadow 420ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
+  /* The fanned-out pages are always drawn at full width; at rest a clip hides
+     the outer ones. Revealing them with clip-path keeps layout still while the
+     cover moves, where animating width would reflow on every frame. */
   .cover-open::after {
     content: '';
     position: absolute;
-    inset: 0.35rem -0.45rem 0.35rem auto;
-    width: 0.45rem;
-    background: var(--paper-edge);
-    border: var(--rule-hair) solid var(--rule-strong);
-    border-left: 0;
-    opacity: 0;
-    transition: opacity 420ms cubic-bezier(0.16, 1, 0.3, 1);
+    top: 0.3rem;
+    bottom: 0;
+    left: calc(100% + var(--rule-heavy));
+    width: 0.75rem;
+    /* hairline page edges: paper, rule, paper, rule... */
+    background: repeating-linear-gradient(
+      to right,
+      var(--paper-edge) 0 2px,
+      var(--rule-strong) 2px 3px
+    );
+    border-top: var(--rule-hair) solid var(--rule-strong);
+    clip-path: inset(0 40% 0 0);
+    transition: clip-path 420ms cubic-bezier(0.16, 1, 0.3, 1);
   }
 
   .cover-open:hover,
@@ -462,7 +540,7 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
 
   .cover-open:hover::after,
   .cover-open:focus-within::after {
-    opacity: 1;
+    clip-path: inset(0);
   }
 
   .cover-sealed {
@@ -498,8 +576,8 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
     font-weight: 700;
     letter-spacing: 0.4em;
     text-transform: uppercase;
-    color: var(--stamp-ink);
-    background: var(--stamp);
+    color: var(--seal-ink);
+    background: var(--seal);
     pointer-events: none;
   }
 
@@ -610,6 +688,12 @@ const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYea
 
   .entry-coming .entry-title {
     color: var(--ink-soft);
+  }
+
+  @media (min-width: 52.01rem) {
+    .slot:not(:last-child)::after {
+      right: calc(-1 * var(--shelf-gap));
+    }
   }
 
   @media (max-width: 52rem) {
