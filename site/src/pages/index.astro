@@ -2,6 +2,7 @@
 import Document from '../layouts/Document.astro';
 import Colophon from '../components/Colophon.astro';
 import ThemeToggle from '../components/ThemeToggle.astro';
+import AccountControl from '../components/AccountControl.astro';
 import QuestionBlock from '../components/QuestionBlock.astro';
 import { EXAMS } from '../lib/exams.js';
 import { ALL_QUESTIONS } from '../lib/corpus.js';
@@ -66,6 +67,7 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
       <nav class="mast-nav" aria-label="Sections">
         <a href="#exams">Exams</a>
         <a href="#contents">What's inside</a>
+        <AccountControl />
         <ThemeToggle />
       </nav>
       <h1 class="mast-line">Past exam questions, searchable by what they're about.</h1>

@@ -1,0 +1,95 @@
+---
+// Rendered only when Google sign-in is configured at build time (see
+// lib/accounts/config.js), so until the owner sets PUBLIC_AUTH_PROVIDERS=google
+// the built pages carry no trace of it: no markup, no script, no chunk.
+import { authEnabled } from '../lib/accounts/config.js';
+---
+
+{
+  authEnabled && (
+    <div class="account" data-account>
+      <button type="button" class="account-btn" data-account-signin>Sign in</button>
+      <div class="account-user" data-account-user hidden>
+        <button type="button" class="account-btn account-initial" data-account-toggle aria-haspopup="true" aria-expanded="false">
+          <span data-account-initial></span>
+          <span class="visually-hidden">Your account</span>
+        </button>
+        <div class="account-menu" data-account-menu hidden>
+          <a href="/account">My progress and lists</a>
+          <button type="button" data-account-signout>Sign out</button>
+        </div>
+      </div>
+      <p class="account-note" data-account-note role="status" hidden></p>
+    </div>
+  )
+}
+
+{authEnabled && <script>import '../scripts/account.js';</script>}
+
+<style>
+  .account { position: relative; }
+  .account-btn {
+    padding: 0.25rem 0.6rem;
+    /* Match the theme toggle beside it (its 0.95rem icon sets its height) so
+       the two outlined controls read as one pair. No display is set here: the
+       hidden attribute has to keep working on these buttons. */
+    min-height: calc(0.95rem + 0.5rem + 2 * var(--rule-hair));
+    background: transparent;
+    color: inherit;
+    border: var(--rule-hair) solid currentColor;
+    border-radius: 0;
+    font-family: var(--font-structure);
+    font-size: 0.78rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    cursor: pointer;
+  }
+  .account-btn:hover { background: var(--field-deep); }
+  /* The buttons always sit on the green masthead, where the sitewide green
+     focus ring would vanish into the field. */
+  .account-btn:focus-visible { outline-color: var(--field-ink); }
+  .account-initial { min-width: 2rem; font-family: var(--font-serial); font-weight: 700; }
+  .account-menu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.4rem);
+    z-index: 10;
+    display: grid;
+    min-width: 13rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  /* display: grid above would otherwise win over the hidden attribute. */
+  .account-menu[hidden] { display: none; }
+  .account-menu a,
+  .account-menu button {
+    padding: 0.6rem 0.8rem;
+    text-align: left;
+    font: 600 0.88rem var(--font-structure);
+    color: inherit;
+    background: none;
+    border: 0;
+    text-decoration: none;
+    cursor: pointer;
+  }
+  .account-menu > * + * { border-top: var(--rule-hair) solid var(--rule); }
+  .account-menu a:hover,
+  .account-menu button:hover { background: var(--ground); }
+  .account-note {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 0.4rem);
+    z-index: 10;
+    width: min(18rem, 80vw);
+    margin: 0;
+    padding: 0.6rem 0.8rem;
+    background: var(--paper);
+    color: var(--ink);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    font-size: 0.85rem;
+  }
+  .visually-hidden {
+    position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+  }
+</style>

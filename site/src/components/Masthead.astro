@@ -1,5 +1,6 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
+import AccountControl from './AccountControl.astro';
 import { examForPath, withExamCrumb } from '../lib/exams.js';
 
 const crumbs = withExamCrumb(Astro.url.pathname, Astro.props.crumbs ?? []);
@@ -23,6 +24,7 @@ const exam = examForPath(Astro.url.pathname);
           </>
         )
       }
+      <AccountControl />
       <ThemeToggle />
     </nav>
   </div>

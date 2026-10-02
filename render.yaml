@@ -42,3 +42,13 @@ services:
       # Change this one value when sawaalbox.com is registered.
       - key: SITE_URL
         value: https://upsc-pyq-search-s778.onrender.com
+      # Supabase project for accounts. The publishable key is public by design:
+      # it ships in the client bundle, and row-level security does the guarding.
+      - key: PUBLIC_SUPABASE_URL
+        value: https://fcmwzpokqufvkojcqaxo.supabase.co
+      - key: PUBLIC_SUPABASE_PUBLISHABLE_KEY
+        value: sb_publishable_9gqFXj_3dIbp3Mun5I3Lvg_533uA-r3
+      # Sign in stays hidden while this is empty. Set it to "google" once the
+      # Google provider is enabled in Supabase.
+      - key: PUBLIC_AUTH_PROVIDERS
+        value: ""
