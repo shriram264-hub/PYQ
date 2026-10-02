@@ -1,0 +1,84 @@
+/*
+  Pager styling lives here rather than scoped inside Pager.astro because the
+  search page renders its pager client-side, and scoped styles never reach
+  markup injected with innerHTML. Both paths emit the same class names, so the
+  look cannot drift between them.
+*/
+
+.pager {
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 1.75rem;
+  padding-top: 1rem;
+  border-top: var(--rule-hair) solid var(--rule);
+}
+
+/* The search page's pager is an empty nav until results arrive. */
+.pager:empty {
+  display: none;
+}
+
+.pager-count {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.pager-list {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Static pages emit links and the search page emits buttons. Buttons inherit
+   neither colour nor font, so both are set here rather than left to the page. */
+.pager-n,
+.pager-step {
+  display: inline-grid;
+  place-items: center;
+  min-width: 2.2rem;
+  height: 2.2rem;
+  padding-inline: 0.55rem;
+  border: var(--rule-hair) solid var(--rule);
+  border-radius: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-structure);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Page numbers are serials. Said outright because .serial ties with the rule
+   above on specificity, so which face won would depend on import order. */
+.pager-n {
+  font-family: var(--font-serial);
+}
+
+.pager-n:hover,
+.pager-step:hover {
+  border-color: var(--rule-strong);
+}
+
+.pager-n.is-current {
+  background: var(--field);
+  border-color: var(--field);
+  color: var(--field-ink);
+  cursor: default;
+}
+
+.pager-step.is-off {
+  color: var(--ink-faint);
+  border-style: dashed;
+  cursor: not-allowed;
+}
+
+.pager-gap {
+  padding-inline: 0.2rem;
+  color: var(--ink-faint);
+}

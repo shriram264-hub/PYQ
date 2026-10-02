@@ -26,6 +26,8 @@ colors:
   field-ink-dark: "#eef3ee"
   field-ink-soft: "#a9c4b7"
   field-ink-soft-dark: "#9dbcae"
+  field-rule: "#27453c"
+  field-rule-dark: "#29453d"
   field-text: "#0f3d2e"
   field-text-dark: "#7fd3a6"
   stamp: "#b00d26"
@@ -150,6 +152,11 @@ components:
     typography: "{typography.label}"
     rounded: "{rounded.none}"
     padding: "0.05rem 0.4rem"
+  tag-flag-disputed:
+    textColor: "{colors.ink-soft}"
+    typography: "{typography.label}"
+    rounded: "{rounded.none}"
+    padding: "0.05rem 0.4rem"
   pager-number:
     backgroundColor: "{colors.paper}"
     textColor: "{colors.ink}"
@@ -197,9 +204,10 @@ A cool stationery palette: green-grey ground and paper, near-black offset ink, o
 - **Deep Field** (field-deep, #0a2c21; night #0c2c22): the pressed state of the green, used for primary button hover and the breadcrumb strip under the masthead.
 - **Green Text Ink** (field-text, #0f3d2e; night #7fd3a6): the green that is allowed to be read. Answer-toggle labels, OPEN states in the contents page, the outlined "Open the booklet" label, and the caret. On dark stock it lightens to a legible mint.
 - **Field Ink** (field-ink, #f4f6f1; night #eef3ee) and **Field Ink Soft** (field-ink-soft, #a9c4b7; night #9dbcae): text on green fields; the soft variant carries the Devanagari wordmark, field labels inside the series band, and colophon prose.
+- **Field Rule** (field-rule, #27453c; night #29453d): the hairline drawn on a green field, where Hairline Rule would read as a grey stripe. It separates the masthead from the breadcrumb strip. Each value is a 12% white line over that stock's Deep Field, set solid so it lives in the palette.
 
 ### Secondary
-- **Stamp Red** (stamp, #b00d26; night #e76678): red ink on the page, for text and borders only. The "Cancelled by UPSC" and "Answer disputed" flags and the "difficult" difficulty tag. It lightens on dark stock to stay legible.
+- **Stamp Red** (stamp, #b00d26; night #e76678): red ink on the page, for text and borders only. The "Cancelled by UPSC" flag, the dashed frame of the "Answer disputed" flag, and the "difficult" difficulty tag. It lightens on dark stock to stay legible.
 - **Seal Red** (seal, #b00d26; night #c41e3a) with **Seal Ink** (seal-ink, #ffffff): the red paper band pasted across a sealed cover. On dark stock it stays a deep red with white ink rather than following the stamp to pink.
 
 ### Neutral
@@ -207,7 +215,7 @@ A cool stationery palette: green-grey ground and paper, near-black offset ink, o
 - **Paper Plate** (paper, #f4f6f1; night #1d2224): the raised sheet: ruled boxes, covers, question blocks, year tiles, pager cells.
 - **Page Edge** (paper-edge, #d7ddd3; night #2c3336): the shelf plank under the rack and the fanned page edges behind an open cover.
 - **Offset Ink** (ink, #14181a; night #e8ece6): primary text.
-- **Soft Ink** (ink-soft, #4a544f; night #a7b2ad): ledes, standfirsts, entry bodies, metadata rows, field labels.
+- **Soft Ink** (ink-soft, #4a544f; night #a7b2ad): ledes, standfirsts, entry bodies, metadata rows, field labels, the words of the "Answer disputed" flag.
 - **Faint Ink** (ink-faint, #5a6560; night #88938f): option keys, index serials, placeholders, COMING states, disabled pager steps. Both values clear 4.5:1 on ground and on paper; it is faint by hue, not by failing contrast.
 - **Hairline Rule** (rule, #b9c2b8; night #39423f): 1px dividers, dashed answer separators, dotted leaders, the scrollbar thumb.
 - **Heavy Rule** (rule-strong, #14181a; night #e8ece6): the 2px frame of anything the reader acts on or that bounds a document part.
@@ -272,7 +280,7 @@ Flat by default. Depth comes from stock and rules, not light: paper plates on gr
 
 ## Shapes
 
-Square. Radius is 0 on every element, including inputs, buttons, the theme toggle, and the scrollbar thumb. Form is drawn with two rule weights: the heavy rule (2px, Heavy Rule colour) frames masthead and colophon edges, ruled instruction boxes, covers, inputs and buttons; the hairline (1px, Hairline Rule or Heavy Rule colour) groups question blocks, registration cells, year tiles, pager cells and field grids. Dashed hairlines mark a fold or a seal line (above the answer, the fold on the UPSC cover, disabled pager steps). Dotted hairlines are leaders in indexes and contents pages.
+Square. Radius is 0 on every element, including inputs, buttons, the theme toggle, and the scrollbar thumb. Form is drawn with two rule weights: the heavy rule (2px, Heavy Rule colour) frames masthead and colophon edges, ruled instruction boxes, covers, inputs and buttons; the hairline (1px, Hairline Rule or Heavy Rule colour) groups question blocks, registration cells, year tiles, pager cells and field grids. Dashed hairlines mark a fold, a seal line or something provisional (above the answer, the fold on the UPSC cover, disabled pager steps, the frame of the "Answer disputed" flag). Dotted hairlines are leaders in indexes and contents pages.
 
 The only non-orthogonal shape is the seal: a red band rotated -7deg that overruns its cover by 10% each side and is clipped by the cover's edge.
 
@@ -286,7 +294,8 @@ Printed and blunt: square slabs with a heavy ink frame.
 - **Secondary:** outlined. Paper fill, Green Text Ink label, same heavy frame, padding 0.7rem by 1.25rem; hover and focus shift the fill to Stationery Ground. "Open the booklet" is the reference instance.
 
 ### Chips
-- **Flag (stamp):** a 1px Stamp Red border with Stamp Red uppercase text at 0.68rem, 0.06em tracking, padding 0.05rem by 0.4rem. Used for "Cancelled by UPSC" and "Answer disputed".
+- **Flag (stamp):** a 1px Stamp Red border with Stamp Red uppercase text at 0.68rem, 0.06em tracking, padding 0.05rem by 0.4rem. Used for "Cancelled by UPSC".
+- **Flag (disputed):** the quieter stamp, same size and type: the Stamp Red border turns dashed and the text drops to Soft Ink (7.2:1 on paper by day, 7.4:1 by night). Used for "Answer disputed", because a disputed answer still stands until UPSC rules on it.
 - **Difficulty tag:** bare uppercase label at 0.68rem pushed to the row's end; soft ink for easy and moderate, Stamp Red for difficult.
 - **Query token:** an inline search phrase set in Archivo 600 on paper with a 1px Heavy Rule frame, used where copy quotes a search.
 
@@ -301,10 +310,10 @@ Printed and blunt: square slabs with a heavy ink frame.
 - **Focus:** the sitewide 2px focus outline; the caret is Green Text Ink.
 
 ### Navigation
-- **Masthead:** Institutional Green band with a 2px Heavy Rule bottom edge. Wordmark in Archivo 800 with the Devanagari name beside it in Field Ink Soft. Nav links in Archivo 600 at 0.88rem with a transparent underline at rest that turns solid on hover. On inner pages a Deep Field breadcrumb strip follows, slash-separated in Archivo 0.78rem.
+- **Masthead:** Institutional Green band with a 2px Heavy Rule bottom edge. Wordmark in Archivo 800 with the Devanagari name beside it in Field Ink Soft. Nav links in Archivo 600 at 0.88rem with a transparent underline at rest that turns solid on hover. On inner pages a Deep Field breadcrumb strip follows under a Field Rule hairline, slash-separated in Archivo 0.78rem.
 - **Theme toggle:** a small outlined control (1px currentColor border, 0.78rem Archivo 600) cycling System, Light, Dark, with drawn inline SVG icons (1.4 stroke, round caps) and the current state as its text.
 - **Colophon:** the green field again at the foot, 2px Heavy Rule top edge, soft prose and bold structural links.
-- **Pager:** 2.2rem square-cornered cells on paper with hairline frames; hover strengthens the frame to Heavy Rule; the current page is a filled green cell; unavailable steps turn Faint Ink with a dashed frame. A serial "Showing x–y of n" line sits above.
+- **Pager:** 2.2rem square-cornered cells on paper with hairline frames; page numbers in Courier Prime, Previous and Next in Archivo 600 at 0.85rem; hover strengthens the frame to Heavy Rule; the current page is a filled green cell; unavailable steps turn Faint Ink with a dashed frame. A serial "Showing x–y of n" line sits above. Like the question block, the pager is one shared stylesheet, so the server-rendered pager and the search page's client-rendered one cannot drift.
 
 ### Answer Seal
 The signature reading interaction. A `details` element under a dashed hairline; its summary is an uppercase Archivo label in Green Text Ink with a drawn square that fills solid when open ("Show answer" / "Hide answer"). Opening lifts the answer sheet from its top edge, shows "Official answer" as a field label with the serial key, and marks the correct option with a Stationery Ground fill and a 1px Heavy Rule outline. The correct option is never marked before the seal is broken.
@@ -327,7 +336,7 @@ Numbered rows with a serial marker, an Archivo title, a dotted hairline leader, 
 - **Do** set every question serial, count, code, year and option key in Courier Prime, and nothing else.
 - **Do** cap reading text at 68ch and keep question text pre-wrapped.
 - **Do** consume semantic tokens only, so a new surface works on both stocks without a theme branch; check new text colours at 4.5:1 on both ground and paper in both themes.
-- **Do** keep the question block's classes in the shared stylesheet so static and client-rendered questions stay identical.
+- **Do** keep the question block's and the pager's classes in their shared stylesheets (question.css, pager.css) so static and client-rendered output stays identical; scoped styles never reach markup injected with innerHTML.
 - **Do** draw icons as inline SVG strokes at 1.4 with round caps, coloured by currentColor.
 
 ### Don't:

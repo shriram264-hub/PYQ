@@ -51,6 +51,14 @@
   text-transform: uppercase;
 }
 
+/* A disputed answer still stands until UPSC rules on it, so it is a quieter
+   stamp than a cancellation: the frame stays red but is broken, and the words
+   drop to soft ink. */
+.qflag-warn {
+  border-style: dashed;
+  color: var(--ink-soft);
+}
+
 .qmatch {
   font-family: var(--font-serial);
   font-size: 0.72rem;

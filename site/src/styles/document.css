@@ -4,6 +4,7 @@
 @import '@fontsource/courier-prime/400.css';
 @import '@fontsource/courier-prime/700.css';
 @import './question.css';
+@import './pager.css';
 
 /*
   SawaalBox — the examination booklet as a working document.
@@ -26,6 +27,10 @@
   --l-field-deep: #0a2c21; --d-field-deep: #0c2c22;
   --l-field-ink: #f4f6f1; --d-field-ink: #eef3ee;
   --l-field-ink-soft: #a9c4b7; --d-field-ink-soft: #9dbcae;
+  /* A hairline drawn on the green field, where --rule would read as a grey
+     stripe. Each value is a 12% white line laid over that stock's Deep Field,
+     set solid so it lives in the palette. */
+  --l-field-rule: #27453c; --d-field-rule: #29453d;
   --l-stamp: #b00d26;    --d-stamp: #e76678;
   /* A stamp is red ink on the page; a seal is a red band pasted over it. On
      dark stock the ink has to lighten to stay legible, but a seal that
@@ -62,6 +67,7 @@
   --field-deep: var(--l-field-deep);
   --field-ink: var(--l-field-ink);
   --field-ink-soft: var(--l-field-ink-soft);
+  --field-rule: var(--l-field-rule);
   --stamp: var(--l-stamp);
   --seal: var(--l-seal);
   --seal-ink: var(--l-seal-ink);
@@ -86,6 +92,7 @@
     --field-deep: var(--d-field-deep);
     --field-ink: var(--d-field-ink);
     --field-ink-soft: var(--d-field-ink-soft);
+    --field-rule: var(--d-field-rule);
     --stamp: var(--d-stamp);
     --seal: var(--d-seal);
     --seal-ink: var(--d-seal-ink);
@@ -108,6 +115,7 @@
   --field-deep: var(--d-field-deep);
   --field-ink: var(--d-field-ink);
   --field-ink-soft: var(--d-field-ink-soft);
+  --field-rule: var(--d-field-rule);
   --stamp: var(--d-stamp);
   --seal: var(--d-seal);
   --seal-ink: var(--d-seal-ink);

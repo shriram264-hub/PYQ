@@ -436,6 +436,42 @@
           "oklch(95% 0.039 166.2)"
         ]
       },
+      "field-rule": {
+        "role": "primary",
+        "displayName": "Field Rule",
+        "canonical": "#27453c",
+        "oklch": "oklch(36.4% 0.039 172.9)",
+        "theme": "light",
+        "cssVar": "--field-rule",
+        "tonalRamp": [
+          "oklch(15% 0.039 172.9)",
+          "oklch(26% 0.039 172.9)",
+          "oklch(37% 0.039 172.9)",
+          "oklch(48% 0.039 172.9)",
+          "oklch(59% 0.039 172.9)",
+          "oklch(70% 0.039 172.9)",
+          "oklch(82% 0.039 172.9)",
+          "oklch(95% 0.039 172.9)"
+        ]
+      },
+      "field-rule-dark": {
+        "role": "primary",
+        "displayName": "Field Rule (night)",
+        "canonical": "#29453d",
+        "oklch": "oklch(36.5% 0.037 174.1)",
+        "theme": "dark",
+        "cssVar": "--field-rule",
+        "tonalRamp": [
+          "oklch(15% 0.037 174.1)",
+          "oklch(26% 0.037 174.1)",
+          "oklch(37% 0.037 174.1)",
+          "oklch(48% 0.037 174.1)",
+          "oklch(59% 0.037 174.1)",
+          "oklch(70% 0.037 174.1)",
+          "oklch(82% 0.037 174.1)",
+          "oklch(95% 0.037 174.1)"
+        ]
+      },
       "field-text": {
         "role": "primary",
         "displayName": "Green Text Ink",
@@ -817,9 +853,9 @@
       "name": "Stamp Flag",
       "kind": "chip",
       "refersTo": "tag-flag",
-      "description": "Red stamp for cancelled or disputed questions; red ink as text and border only.",
-      "html": "<span class=\"ds-flag\">Cancelled by UPSC</span>",
-      "css": ".ds-flag { display: inline-block; border: 1px solid var(--stamp, #b00d26); color: var(--stamp, #b00d26); padding: 0.05rem 0.4rem; font: 0.68rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.06em; text-transform: uppercase; }"
+      "description": "Red stamp for cancelled or disputed questions; red ink as text and border only. \"Cancelled by UPSC\" is the full stamp: solid red frame, red text. \"Answer disputed\" is the quieter stamp: a dashed red frame with soft-ink text, because the answer still stands until UPSC rules on it.",
+      "html": "<span class=\"ds-flag\">Cancelled by UPSC</span> <span class=\"ds-flag ds-flag-warn\">Answer disputed</span>",
+      "css": ".ds-flag { display: inline-block; border: 1px solid var(--stamp, #b00d26); color: var(--stamp, #b00d26); padding: 0.05rem 0.4rem; font: 0.68rem var(--font-structure, 'Archivo', sans-serif); letter-spacing: 0.06em; text-transform: uppercase; } .ds-flag-warn { border-style: dashed; color: var(--ink-soft, #4a544f); }"
     },
     {
       "name": "Booklet Cover (open)",
@@ -849,7 +885,7 @@
       "name": "Pager",
       "kind": "nav",
       "refersTo": "pager-number",
-      "description": "Square hairline cells; the current page is a filled green cell; unavailable steps are dashed and faint.",
+      "description": "Square hairline cells; page numbers in Courier Prime, Previous and Next in Archivo; the current page is a filled green cell; unavailable steps are dashed and faint. One shared stylesheet (site/src/styles/pager.css) serves the server-rendered pager and the client-rendered search pager.",
       "html": "<nav class=\"ds-pager\"><span class=\"ds-pn off\">Previous</span><span class=\"ds-pn cur\">1</span><a class=\"ds-pn num\" href=\"#\">2</a><a class=\"ds-pn num\" href=\"#\">3</a><a class=\"ds-pn\" href=\"#\">Next</a></nav>",
       "css": ".ds-pager { display: flex; flex-wrap: wrap; gap: 0.35rem; } .ds-pn { display: inline-grid; place-items: center; min-width: 2.2rem; height: 2.2rem; padding-inline: 0.55rem; border: 1px solid var(--rule, #b9c2b8); background: var(--paper, #f4f6f1); color: var(--ink, #14181a); font: 600 0.85rem var(--font-structure, 'Archivo', sans-serif); text-decoration: none; } .ds-pn.num, .ds-pn.cur { font-family: var(--font-serial, 'Courier Prime', monospace); } a.ds-pn:hover { border-color: var(--rule-strong, #14181a); } a.ds-pn:focus-visible { outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; } .ds-pn.cur { background: var(--field, #0f3d2e); border-color: var(--field, #0f3d2e); color: var(--field-ink, #f4f6f1); } .ds-pn.off { color: var(--ink-faint, #5a6560); border-style: dashed; cursor: not-allowed; }"
     }
@@ -914,7 +950,7 @@
       "Do set every question serial, count, code, year and option key in Courier Prime, and nothing else.",
       "Do cap reading text at 68ch and keep question text pre-wrapped.",
       "Do consume semantic tokens only, so a new surface works on both stocks without a theme branch; check new text colours at 4.5:1 on both ground and paper in both themes.",
-      "Do keep the question block's classes in the shared stylesheet so static and client-rendered questions stay identical.",
+      "Do keep the question block's and the pager's classes in their shared stylesheets (question.css, pager.css) so static and client-rendered output stays identical; scoped styles never reach markup injected with innerHTML.",
       "Do draw icons as inline SVG strokes at 1.4 with round caps, coloured by currentColor."
     ],
     "donts": [
