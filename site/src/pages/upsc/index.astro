@@ -6,7 +6,9 @@ import { CORPUS, SUBJECTS, YEARS } from '../../lib/corpus.js';
 
 const digits = (n) => String(n).split('');
 
-const description = `Every UPSC Prelims question from ${CORPUS.minYear} to ${CORPUS.maxYear} — ${CORPUS.total.toLocaleString('en-IN')} questions with answers, searchable by concept. Free, no sign-up.`;
+// Count, not "every": 41 questions across 14 papers are not in the corpus yet,
+// so claiming completeness would be untrue until those gaps are filled.
+const description = `${CORPUS.total.toLocaleString('en-IN')} UPSC Prelims questions from ${CORPUS.minYear} to ${CORPUS.maxYear}, with answers, searchable by concept. Free, no sign-up.`;
 
 const EXAMPLES = [
   'El Nino and the monsoon',
@@ -36,7 +38,7 @@ const EXAMPLES = [
   <main class="sheet cover">
     <section class="instructions ruled" aria-labelledby="search-heading">
       <div class="box-head">
-        <h1 id="search-heading">Search every question UPSC has asked</h1>
+        <h1 id="search-heading">Search {CORPUS.total.toLocaleString('en-IN')} UPSC Prelims questions</h1>
       </div>
       <div class="box-body">
         <p class="reading lede">
