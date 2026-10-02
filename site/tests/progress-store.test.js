@@ -50,7 +50,7 @@ test('saveState and loadState round-trip with a fake storage object', () => {
     },
   };
   const state = { entries: { a: { status: 'done', updatedAt: T1, synced: true } }, pending: [], lists: {} };
-  saveState(state, fakeStorage);
+  assert.equal(saveState(state, fakeStorage), true);
   const loaded = loadState(fakeStorage);
   assert.deepEqual(loaded, state);
 });
@@ -71,7 +71,7 @@ test('loadState returns emptyState when getItem throws', () => {
   }
 });
 
-test('saveState does not throw when setItem throws', () => {
+test('saveState does not throw, and returns false, when setItem throws', () => {
   const thrower = {};
   Object.defineProperty(thrower, 'setItem', {
     get() {
@@ -80,9 +80,11 @@ test('saveState does not throw when setItem throws', () => {
     configurable: true,
   });
   try {
+    let saved;
     assert.doesNotThrow(() => {
-      saveState(emptyState(), thrower);
+      saved = saveState(emptyState(), thrower);
     });
+    assert.equal(saved, false);
   } finally {
     delete thrower.setItem;
   }
@@ -99,9 +101,11 @@ test('loadState and saveState handle blocked globalThis.localStorage', () => {
     });
     const result = loadState();
     assert.deepEqual(result, emptyState());
+    let saved;
     assert.doesNotThrow(() => {
-      saveState(emptyState());
+      saved = saveState(emptyState());
     });
+    assert.equal(saved, false);
   } finally {
     if (originalDescriptor) {
       Object.defineProperty(globalThis, 'localStorage', originalDescriptor);

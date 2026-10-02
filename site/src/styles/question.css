@@ -208,10 +208,15 @@ a.qref:hover {
 /* Progress marks: outlined toggles in the answer-seal idiom (a ruled square
    that fills when on). Never filled green: that is reserved for the page's
    one primary action. */
+/* The slot is rendered empty and marks.js fills it. With no script it stays
+   empty and takes no room, so the page reads exactly as it did before. */
 .qmarks {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.qmarks:not(:empty) {
   margin: 0 0 0.85rem;
 }
 
@@ -220,6 +225,10 @@ a.qref:hover {
   align-items: center;
   gap: 0.4rem;
   padding: 0.3rem 0.6rem;
+  /* A fixed floor, not the font's line height: the fallback face before the web
+     font loads is 2px taller, and the row's reserved height below has to hold
+     for both. */
+  min-height: 1.75rem;
   font-family: var(--font-structure);
   font-size: 0.75rem;
   font-weight: 700;
@@ -255,4 +264,41 @@ a.qref:hover {
 
 .qmark[aria-pressed='true']::before {
   background: currentColor;
+}
+
+/* Fingers need a bigger target than a cursor does. */
+@media (pointer: coarse) {
+  .qmark {
+    min-height: 2.4rem;
+  }
+}
+
+/* The script adds the buttons after load. Where it will run, hold the row's
+   room from first paint (and its margin, which an empty slot does not carry)
+   so the question text below never moves. The heights equal the .qmark
+   min-heights above: one row, or two when the pair wraps on a very narrow
+   screen (under 20.85rem). */
+@media (scripting: enabled) {
+  .qmarks {
+    margin: 0 0 0.85rem;
+    min-height: 1.75rem;
+  }
+}
+
+@media (scripting: enabled) and (pointer: coarse) {
+  .qmarks {
+    min-height: 2.4rem;
+  }
+}
+
+@media (scripting: enabled) and (max-width: 20.85rem) {
+  .qmarks {
+    min-height: calc(2 * 1.75rem + 0.5rem);
+  }
+}
+
+@media (scripting: enabled) and (pointer: coarse) and (max-width: 20.85rem) {
+  .qmarks {
+    min-height: calc(2 * 2.4rem + 0.5rem);
+  }
 }

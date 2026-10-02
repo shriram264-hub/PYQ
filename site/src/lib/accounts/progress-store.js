@@ -53,12 +53,17 @@ export function loadState(storage = undefined) {
   }
 }
 
+// Returns true when the state was written, false when storage refused it
+// (blocked, private mode, full). It never throws: the caller decides what to do
+// with a false, typically by holding the state in memory so the page still
+// reflects what the person just did.
 export function saveState(state, storage = undefined) {
   try {
     const s = storage ?? globalThis.localStorage;
     s.setItem(STORAGE_KEY, JSON.stringify(state));
+    return true;
   } catch {
-    /* private mode or full storage: the mark still shows for this page */
+    return false;
   }
 }
 

@@ -5,24 +5,35 @@ const CONTROLS = [
   { status: 'review', label: 'Needs review' },
 ];
 
+// Set only when storage refused our last write (blocked, private mode, full).
+// It holds what the person just did so this page still shows it; the next
+// successful write clears it and storage is the source of truth again.
+let pageState = null;
+const current = () => pageState ?? loadState();
+
+// Blocks arrive with an empty, server-rendered .qmarks slot so the page does
+// not shift when this runs. Fill that slot; create it only if a block has none.
 function ensureControls(block) {
-  const existing = block.querySelector(':scope > .qmarks');
-  if (existing) return existing;
-  const group = document.createElement('div');
-  group.className = 'qmarks';
-  group.setAttribute('role', 'group');
-  group.setAttribute('aria-label', 'Your progress on this question');
-  for (const c of CONTROLS) {
-    const b = document.createElement('button');
-    b.type = 'button';
-    b.className = 'qmark';
-    b.dataset.status = c.status;
-    b.textContent = c.label;
-    b.setAttribute('aria-pressed', 'false');
-    group.append(b);
+  let group = block.querySelector(':scope > .qmarks');
+  if (!group) {
+    group = document.createElement('div');
+    group.className = 'qmarks';
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', 'Your progress on this question');
+    // Between the options and the sealed answer: decide, then check.
+    block.insertBefore(group, block.querySelector(':scope > .qanswer, :scope > .qanswer-none'));
   }
-  // Between the options and the sealed answer: decide, then check.
-  block.insertBefore(group, block.querySelector(':scope > .qanswer, :scope > .qanswer-none'));
+  if (!group.querySelector('.qmark')) {
+    for (const c of CONTROLS) {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'qmark';
+      b.dataset.status = c.status;
+      b.textContent = c.label;
+      b.setAttribute('aria-pressed', 'false');
+      group.append(b);
+    }
+  }
   return group;
 }
 
@@ -32,7 +43,7 @@ function blocksIn(root) {
 }
 
 export function paintAll(root = document) {
-  const { entries } = loadState();
+  const { entries } = current();
   for (const block of blocksIn(root)) {
     const status = entries[block.dataset.qkey]?.status;
     for (const b of ensureControls(block).querySelectorAll('.qmark')) {
@@ -45,11 +56,12 @@ document.addEventListener('click', (event) => {
   const button = event.target.closest('.qmark');
   if (!button) return;
   const key = button.closest('.qblock[data-qkey]').dataset.qkey;
-  const current = loadState();
+  // Act on what the person is looking at, not on what storage says now: another
+  // tab or a restored page may have changed it since this page last painted.
   // Pressing the active mark clears it.
-  const next = current.entries[key]?.status === button.dataset.status ? null : button.dataset.status;
-  const { state, op } = setMark(current, key, next);
-  saveState(state);
+  const next = button.getAttribute('aria-pressed') === 'true' ? null : button.dataset.status;
+  const { state, op } = setMark(current(), key, next);
+  pageState = saveState(state) ? null : state;
   paintAll(); // the same question can appear twice on one page
   document.dispatchEvent(new CustomEvent('sawaalbox:mark', { detail: op }));
 });
@@ -60,6 +72,11 @@ new MutationObserver((records) => {
 }).observe(document.body, { childList: true, subtree: true });
 window.addEventListener('storage', (e) => {
   if (e.key === STORAGE_KEY) paintAll();
+});
+// A page restored from the back/forward cache keeps its old DOM and runs no
+// scripts, so it can show marks that changed while it was away.
+window.addEventListener('pageshow', (e) => {
+  if (e.persisted) paintAll();
 });
 // A later sync repaints by dispatching this event rather than importing this
 // module: marks.js registers a click handler as a side effect, so a second
