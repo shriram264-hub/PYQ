@@ -204,3 +204,55 @@ a.qref:hover {
     margin-left: 0;
   }
 }
+
+/* Progress marks: outlined toggles in the answer-seal idiom (a ruled square
+   that fills when on). Never filled green: that is reserved for the page's
+   one primary action. */
+.qmarks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+}
+
+.qmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.6rem;
+  font-family: var(--font-structure);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  background: transparent;
+  border: var(--rule-hair) solid var(--rule);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.qmark::before {
+  content: '';
+  width: 0.75rem;
+  height: 0.75rem;
+  border: var(--rule-hair) solid currentColor;
+}
+
+.qmark:hover {
+  color: var(--ink);
+  border-color: var(--rule-strong);
+}
+
+.qmark[aria-pressed='true'] {
+  color: var(--field-text);
+  border-color: currentColor;
+}
+
+.qmark[data-status='review'][aria-pressed='true'] {
+  color: var(--ink);
+}
+
+.qmark[aria-pressed='true']::before {
+  background: currentColor;
+}

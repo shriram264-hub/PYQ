@@ -71,6 +71,10 @@ const crumbs = [{ name: 'Search', href: '/upsc/search' }];
   <Colophon />
 </Document>
 
+<script>
+  import '../../scripts/marks.js';
+</script>
+
 <script define:vars={{ API_BASE }}>
   const PAGE_SIZE = 25;
   const $ = (id) => document.getElementById(id);
