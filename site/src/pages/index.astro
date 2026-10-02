@@ -22,14 +22,12 @@ const LIVE = [
     href: '/search',
   },
   {
-    title: 'Browse every subject, year and topic',
-    body: `${c.subjectCount} subjects and ${c.yearCount} years of papers, each with its own page.`,
-    href: '/upsc/subjects',
+    title: 'Browse by subject, year and topic',
+    body: "Each exam's papers are filed by subject, year and topic, and every question has its own page.",
   },
   {
     title: 'Official answers, flagged honestly',
-    body: 'Every recorded answer, with questions UPSC later cancelled or disputed marked as such.',
-    href: '/upsc/years',
+    body: 'Every recorded answer, with questions later cancelled or disputed marked as such.',
   },
   { title: 'Free, with no sign-up', body: 'Nothing here sits behind an account or a payment.' },
 ];
@@ -41,7 +39,9 @@ const COMING = [
   { title: 'See where you are weak', body: 'Accuracy by subject and topic, from your own attempts.' },
 ];
 
-const description = `Every UPSC Prelims question from ${c.minYear} to ${c.maxYear} — ${c.total.toLocaleString('en-IN')} with official answers, searchable by what they're about. Free, no sign-up. More exams in preparation.`;
+// The page belongs to every exam, so it speaks for none. The first exam is
+// named once here, as a fact, because it is the only one a visitor can open.
+const description = `Past exam questions with official answers, searchable by what they're about. First exam open: UPSC Prelims, ${c.total.toLocaleString('en-IN')} questions from ${c.minYear}–${c.maxYear}. Free, no sign-up.`;
 
 // Tells search engines the site's name and where its search lives.
 const website = {
@@ -62,7 +62,7 @@ const website = {
 };
 ---
 
-<Document title="Past Exam Questions by Concept — UPSC Prelims PYQs" description={description}>
+<Document title="Past Exam Questions, Searchable by Topic" description={description}>
   <script slot="head" type="application/ld+json" set:html={JSON.stringify(website)} />
   <header class="mast">
     <div class="sheet mast-inner">
@@ -83,7 +83,7 @@ const website = {
   <main>
     <section class="sheet strip" aria-label="Search">
       <form class="strip-form ruled" action="/search" method="get" role="search">
-        <label class="field-label" for="q">Search {upsc.name} questions</label>
+        <label class="field-label" for="q">Search past exam questions</label>
         <div class="strip-row">
           <input id="q" name="q" type="search" autocomplete="off" placeholder="e.g. monsoon and El Nino" required />
           <button type="submit">Search</button>
@@ -151,7 +151,7 @@ const website = {
       <h2 id="specimen-heading">A search that reads past the wording</h2>
       <p class="reading specimen-lede">
         Search <a class="query" href={`/search?q=${encodeURIComponent(SPECIMEN_QUERY)}`}>{SPECIMEN_QUERY}</a>{' '}and
-        among the results is this {specimen.year} question. Its wording never names the
+        among the results is this {specimen.year} {upsc.short} Prelims question. Its wording never names the
         civilisation, so searching the paper for those words would miss it. Try it before you open
         the answer.
       </p>

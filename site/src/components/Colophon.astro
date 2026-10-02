@@ -1,16 +1,27 @@
 ---
-import { CORPUS } from '../lib/corpus.js';
+import { EXAMS, examForPath } from '../lib/exams.js';
+
+// Inside an exam, the footer offers that exam's own indexes. Everywhere else
+// (the homepage, search) it offers one entry per exam, so it never speaks for
+// a single exam on a page that belongs to all of them.
+const exam = examForPath(Astro.url.pathname);
+const links = exam
+  ? [
+      { name: 'All subjects', href: `${exam.path}/subjects` },
+      { name: 'All years', href: `${exam.path}/years` },
+    ]
+  : EXAMS.map((e) => ({ name: e.name, href: e.path }));
+
+const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.maxYear}`).join('; ');
 ---
 
 <footer class="colophon">
   <div class="sheet colophon-inner">
     <p>
-      SawaalBox is free and needs no account. Questions are reproduced from UPSC Civil Services
-      Preliminary Examination papers, {CORPUS.minYear}–{CORPUS.maxYear}.
+      SawaalBox is free and needs no account. Questions are reproduced from past papers: {sources}.
     </p>
     <nav aria-label="Footer">
-      <a href="/upsc/subjects">All subjects</a>
-      <a href="/upsc/years">All years</a>
+      {links.map((link) => <a href={link.href}>{link.name}</a>)}
       <a href="/search">Search</a>
     </nav>
   </div>

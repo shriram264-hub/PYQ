@@ -13,6 +13,8 @@ export const EXAMS = [
     path: '/upsc',
     short: 'UPSC',
     name: 'UPSC Civil Services Prelims',
+    // The paper's formal title, used where questions are credited to their source.
+    source: 'UPSC Civil Services Preliminary Examination',
     series: 'CSE-P',
     corpus: CORPUS,
     topSubjects: SUBJECTS.slice(0, 4),
