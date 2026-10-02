@@ -23,8 +23,14 @@ from pypdf import PdfReader
 # ---------- patterns that describe the PDF layout ----------
 FOOTER = "UnlockIAS | www.unlockias.in/upsc-prelims-pyq"
 HEADER = re.compile(
-    r"^UPSC (?P<year>\d{4}) (?P<topic>.+?) (?P<difficulty>easy|moderate|difficult)$"
+    r"^UPSC (?P<year>\d{4}) (?P<topic>.+?) (?P<difficulty>easy|moderate|medium|difficult|hard)$"
 )
+# The PDF mostly says easy/moderate/difficult, but 19 headers say "medium" or
+# "hard". An unmatched header is silent and destructive: the next "Q<n>." line
+# overwrites the previous record, so one question vanishes and the next one
+# inherits its neighbour's subject, difficulty and status. Normalise the
+# synonyms to the three levels the site uses.
+DIFFICULTY = {"medium": "moderate", "hard": "difficult"}
 QSTART = re.compile(r"^Q(?P<num>\d+)\.\s*(?P<text>.*)$")
 OPTION = re.compile(r"^\((?P<letter>[a-d])\)\s*(?P<text>.*)$")
 ANSWER = re.compile(r"^Answer\s*:\s*(?P<raw>.*)$", re.IGNORECASE)
@@ -57,6 +63,7 @@ def read_lines(pdf_path):
 def parse(lines):
     """Walk the lines and build one record per question."""
     questions, current, section = [], None, None
+    starts = 0  # every "Q<n>." line seen; must equal the number of records
 
     def finish():
         if current:
@@ -73,7 +80,7 @@ def parse(lines):
                 "q_no": None,
                 "subject": subject.strip(),
                 "subtopic": subtopic.strip(),
-                "difficulty": m["difficulty"],
+                "difficulty": DIFFICULTY.get(m["difficulty"], m["difficulty"]),
                 "question": "",
                 "a": "", "b": "", "c": "", "d": "",
                 "answer": "",
@@ -86,6 +93,7 @@ def parse(lines):
             continue
 
         if m := QSTART.match(line):
+            starts += 1
             current["q_no"] = int(m["num"])
             current["question"] = m["text"]
             section = "question"
@@ -118,7 +126,33 @@ def parse(lines):
                 current[section] += " " + line
 
     finish()
+    if starts != len(questions):
+        sys.exit(
+            f"{starts} question starts but {len(questions)} records: a question header "
+            "was not recognised, so questions were overwritten. Fix HEADER before using this output."
+        )
     return questions
+
+
+def apply_corrections(questions, path):
+    """Apply data/corrections.json: verified fixes for text the PDF gets wrong."""
+    if not path.exists():
+        return 0
+    by_key = {(q["year"], q["q_no"]): q for q in questions}
+    patches = json.loads(path.read_text(encoding="utf-8"))["patches"]
+    for p in patches:
+        q = by_key.get((p["year"], p["q_no"]))
+        if q is None:
+            sys.exit(f"corrections.json: {p['year']} Q{p['q_no']} is not in the extracted data")
+        for find, repl in p["replace"]:
+            hits = q[p["field"]].count(find)
+            if hits != 1:
+                sys.exit(
+                    f"corrections.json: {p['year']} Q{p['q_no']} {p['field']}: expected the "
+                    f"text to fix exactly once, found it {hits} times; the source has changed"
+                )
+            q[p["field"]] = q[p["field"]].replace(find, repl)
+    return len(patches)
 
 
 def check(questions):
@@ -150,6 +184,8 @@ def main():
 
     print(f"Reading {pdf_path} ...")
     questions = parse(read_lines(pdf_path))
+    fixed = apply_corrections(questions, out / "corrections.json")
+    print(f"Applied {fixed} correction(s) from corrections.json")
     for i, q in enumerate(questions, 1):
         q["id"] = i
 

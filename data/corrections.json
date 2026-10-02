@@ -1,0 +1,31 @@
+{
+  "about": "Fixes applied by scripts/extract_questions.py after parsing the PDF. Each replace is an exact find/replace that must match exactly once, so a fix fails loudly if the source text ever changes instead of silently not applying. Record where every value was verified.",
+  "patches": [
+    {
+      "year": 2024,
+      "q_no": 66,
+      "why": "The source PDF prints the three numbered statements empty.",
+      "field": "question",
+      "replace": [["\n1.\n2.\n3.\n", "\n1. Addition\n2. Variation\n3. Repeal\n"]],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.pmfias.com/as-per-article-368-of-the-constitution-of/",
+        "https://www.examrobot.com/node/31041",
+        "https://vajiramandravi.com/upsc-exam/as-per-article-368-of-the-constitution-of-india-the-parliament-may-amend-any-provision-of-the-constitution-by-way-of/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 67,
+      "why": "The source PDF prints the five numbered countries empty.",
+      "field": "question",
+      "replace": [["\n1.\n2.\n3.\n4.\n5.\n", "\n1. Italy\n2. Japan\n3. Nigeria\n4. South Korea\n5. South Africa\n"]],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.examrobot.com/node/31004",
+        "https://forumias.com/blog/question/consider-the-following-countries-1-italy-2-japan-3-nigeria-4-south-korea-5-south-africa-which-of-the-above-countries-are-frequently-mentioned-in-the-media-for-their-low-birth-rates-or-ageing-po/",
+        "https://www.gktoday.in/question/consider-the-following-countries-italyjapannigeriasouth-koreasouth-afr-971651"
+      ]
+    }
+  ]
+}
