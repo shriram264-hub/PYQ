@@ -9,26 +9,54 @@ export function emptyState() {
 export function parseState(raw) {
   try {
     const s = JSON.parse(raw);
-    if (s && typeof s.entries === 'object' && Array.isArray(s.pending)) {
-      return { ...emptyState(), ...s };
+    if (!s || typeof s !== 'object') return emptyState();
+
+    // Validate and coerce entries
+    const entries = {};
+    if (s.entries && typeof s.entries === 'object' && !Array.isArray(s.entries)) {
+      for (const [k, v] of Object.entries(s.entries)) {
+        if (v && typeof v === 'object' && !Array.isArray(v)) {
+          const status = v.status;
+          const updatedAt = v.updatedAt;
+          if ((status === 'done' || status === 'review') && updatedAt && Date.parse(updatedAt)) {
+            entries[k] = { status, updatedAt, synced: Boolean(v.synced) };
+          }
+        }
+      }
     }
+
+    // Validate and coerce pending
+    let pending = [];
+    if (Array.isArray(s.pending)) {
+      pending = s.pending;
+    }
+
+    // Validate and coerce lists
+    const lists = {};
+    if (s.lists && typeof s.lists === 'object' && !Array.isArray(s.lists)) {
+      Object.assign(lists, s.lists);
+    }
+
+    return { entries, pending, lists };
   } catch {
     /* fall through to a clean state */
   }
   return emptyState();
 }
 
-export function loadState(storage = globalThis.localStorage) {
+export function loadState(storage = undefined) {
   try {
-    return parseState(storage.getItem(STORAGE_KEY));
+    const s = storage ?? globalThis.localStorage;
+    return parseState(s.getItem(STORAGE_KEY));
   } catch {
     return emptyState();
   }
 }
 
-export function saveState(state, storage = globalThis.localStorage) {
+export function saveState(state, storage = undefined) {
   try {
-    storage.setItem(STORAGE_KEY, JSON.stringify(state));
+    const s = storage ?? globalThis.localStorage;
+    s.setItem(STORAGE_KEY, JSON.stringify(state));
   } catch {
     /* private mode or full storage: the mark still shows for this page */
   }

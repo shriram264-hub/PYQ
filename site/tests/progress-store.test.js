@@ -35,3 +35,103 @@ test('markAllSynced flags every entry', () => {
   const out = markAllSynced({ a: { status: 'done', updatedAt: T1, synced: false } });
   assert.equal(out.a.synced, true);
 });
+
+// Fix 1: localStorage access
+import { loadState, saveState } from '../src/lib/accounts/progress-store.js';
+
+test('saveState and loadState round-trip with a fake storage object', () => {
+  const fakeStorage = {
+    data: {},
+    getItem(key) {
+      return this.data[key] ?? null;
+    },
+    setItem(key, value) {
+      this.data[key] = value;
+    },
+  };
+  const state = { entries: { a: { status: 'done', updatedAt: T1, synced: true } }, pending: [], lists: {} };
+  saveState(state, fakeStorage);
+  const loaded = loadState(fakeStorage);
+  assert.deepEqual(loaded, state);
+});
+
+test('loadState returns emptyState when localStorage throws on access', () => {
+  const thrower = {};
+  Object.defineProperty(thrower, 'getItem', {
+    get() {
+      throw new Error('blocked');
+    },
+    configurable: true,
+  });
+  try {
+    const result = loadState(thrower);
+    assert.deepEqual(result, emptyState());
+  } finally {
+    delete thrower.getItem;
+  }
+});
+
+test('saveState does not throw when localStorage throws', () => {
+  const thrower = {};
+  Object.defineProperty(thrower, 'setItem', {
+    get() {
+      throw new Error('blocked');
+    },
+    configurable: true,
+  });
+  try {
+    assert.doesNotThrow(() => {
+      saveState(emptyState(), thrower);
+    });
+  } finally {
+    delete thrower.setItem;
+  }
+});
+
+// Fix 2: parseState validates all fields
+test('parseState converts null entries/lists to {}', () => {
+  const result = parseState('{"entries":null,"pending":[],"lists":null}');
+  assert.deepEqual(result.entries, {});
+  assert.deepEqual(result.lists, {});
+  assert.deepEqual(result.pending, []);
+});
+
+test('parseState converts non-array pending to []', () => {
+  const result = parseState('{"entries":{},"pending":{},"lists":{}}');
+  assert.deepEqual(result.pending, []);
+});
+
+test('parseState converts array entries to {}', () => {
+  const result = parseState('{"entries":[],"pending":[],"lists":{}}');
+  assert.deepEqual(result.entries, {});
+});
+
+test('parseState drops invalid entries', () => {
+  const input = {
+    entries: {
+      a: 'done',
+      b: { status: 'done', updatedAt: T1, synced: true },
+      c: { status: 'maybe', updatedAt: T1 },
+      d: { status: 'done', updatedAt: 'invalid-date' },
+      e: { status: 'review', updatedAt: T2, synced: false },
+    },
+    pending: [],
+    lists: {},
+  };
+  const result = parseState(JSON.stringify(input));
+  assert.deepEqual(Object.keys(result.entries).sort(), ['b', 'e']);
+  assert.equal(result.entries.b.synced, true);
+  assert.equal(result.entries.e.synced, false);
+});
+
+test('parseState coerces synced to boolean', () => {
+  const input = { entries: { a: { status: 'done', updatedAt: T1, synced: 1 } }, pending: [], lists: {} };
+  const result = parseState(JSON.stringify(input));
+  assert.equal(result.entries.a.synced, true);
+});
+
+test('parseState drops entries with missing updatedAt', () => {
+  const input = { entries: { a: { status: 'done' }, b: { status: 'review', updatedAt: T1 } }, pending: [], lists: {} };
+  const result = parseState(JSON.stringify(input));
+  assert.deepEqual(Object.keys(result.entries), ['b']);
+});
