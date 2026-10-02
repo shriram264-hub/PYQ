@@ -1,7 +1,7 @@
 # Accounts — sign-in, synced progress, bookmarks
 
 Date: 2026-09-27
-Status: Approved design, awaiting written-spec review
+Status: Approved; implementation plan: docs/superpowers/plans/2026-10-02-accounts.md
 Part 1 of 3 of the first paid bundle (1 accounts · 2 mock tests + analytics · 3 payments)
 
 ## Goal
@@ -153,10 +153,11 @@ renders and reads fully; only the new controls are absent.
 
 ## Configuration
 
-Two new build-time environment variables, both public by design:
+Three new build-time environment variables, all public by design:
 
 - `PUBLIC_SUPABASE_URL`
-- `PUBLIC_SUPABASE_ANON_KEY`
+- `PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+- `PUBLIC_AUTH_PROVIDERS` — which sign-in providers the site shows; empty hides Sign in
 
 The `service_role` key is never placed in the site, the repo, or any build
 environment for the static site.
@@ -189,7 +190,7 @@ environment for the static site.
 
 1. Create a Supabase project.
 2. Create a Google OAuth client and enable the Google provider in Supabase.
-3. Provide the project URL and the anon key. Never the `service_role` key.
+3. Provide the project URL and the publishable key. Never the `service_role` key.
 
 The schema, policies, tests and interface can be written before these exist; nothing
 can be verified end to end until they do.
