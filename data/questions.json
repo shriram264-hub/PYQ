@@ -2853,7 +2853,7 @@
   "subject": "Geography",
   "subtopic": "World Geography",
   "difficulty": "moderate",
-  "question": "Consider the following pairs :\nI.\nII.\nIII. In how many of the above rows is the given information correctly matched?",
+  "question": "Consider the following pairs :\nCountry : Resource-rich in\nI. Botswana : Diamond\nII. Chile : Lithium\nIII. Indonesia : Nickel\nIn how many of the above rows is the given information correctly matched?",
   "a": "Only one",
   "b": "Only two",
   "c": "All the three",
@@ -2869,7 +2869,7 @@
   "subject": "Geography",
   "subtopic": "World Geography",
   "difficulty": "moderate",
-  "question": "Consider the following pairs :\nI.\nII.\nIII. In how many of the above rows is the given information correctly matched?",
+  "question": "Consider the following pairs :\nRegion : Country\nI. Mallorca : Italy\nII. Normandy : Spain\nIII. Sardinia : France\nIn how many of the above rows is the given information correctly matched?",
   "a": "Only one",
   "b": "Only two",
   "c": "All the three",
@@ -2933,7 +2933,7 @@
   "subject": "Science and Technology",
   "subtopic": "Defence Technology",
   "difficulty": "moderate",
-  "question": "With reference to India’s defence, consider the following pairs :\nI.\nII.\nIII.\nHow many of the pairs given above are correctly matched?",
+  "question": "With reference to India’s defence, consider the following pairs :\nAircraft type : Description\nI. Dornier-228 : Maritime patrol aircraft\nII. IL-76 : Supersonic combat aircraft\nIII. C-17 Globemaster III : Military transport aircraft\nHow many of the pairs given above are correctly matched?",
   "a": "Only one",
   "b": "Only two",
   "c": "All the three",
@@ -3125,7 +3125,7 @@
   "subject": "International Relations",
   "subtopic": "International Organizations",
   "difficulty": "moderate",
-  "question": "Consider the following pairs :\nI.\nII.\nIII.\nIV.\nHow many of the pairs given above are correctly matched?",
+  "question": "Consider the following pairs :\nI. International Year of the Woman Farmer : 2026\nII. International Year of Sustainable and Resilient Tourism : 2027\nIII. International Year of Peace and Trust : 2025\nIV. International Year of Asteroid Awareness and Planetary Defence : 2029\nHow many of the pairs given above are correctly matched?",
   "a": "Only one",
   "b": "Only two",
   "c": "Only three",
@@ -3557,7 +3557,7 @@
   "subject": "Environment & Ecology",
   "subtopic": "Protected Areas & Wildlife",
   "difficulty": "moderate",
-  "question": "Consider the following pairs :\n1.\n2.\n3.\nHow many of the pairs given above are correctly matched ?",
+  "question": "Consider the following pairs :\nCountry : Animal found in its natural habitat\n1. Brazil : Indri\n2. Indonesia : Elk\n3. Madagascar : Bonobo\nHow many of the pairs given above are correctly matched ?",
   "a": "Only one",
   "b": "Only two",
   "c": "All three",
@@ -3573,7 +3573,7 @@
   "subject": "Current Affairs",
   "subtopic": "International Organisations & Groupings",
   "difficulty": "moderate",
-  "question": "Consider the following statements regarding World Toilet Organization :\n1.\n2. organization, to inspire action to tackle the global sanitation crisis.\n3. developing countries to achieve the end of open defecation.\nWhich of the statements given above is/are correct ?",
+  "question": "Consider the following statements regarding World Toilet Organization :\n1. It is one of the agencies of the United Nations.\n2. World Toilet Summit, World Toilet Day and World Toilet College are the initiatives of this organization, to inspire action to tackle the global sanitation crisis.\n3. The main focus of its function is to grant funds to the least developed countries and developing countries to achieve the end of open defecation.\nWhich of the statements given above is/are correct ?",
   "a": "2 only",
   "b": "3 only",
   "c": "1 and 2",
@@ -3589,7 +3589,7 @@
   "subject": "Environment & Ecology",
   "subtopic": "Ecosystems & Ecology Concepts",
   "difficulty": "moderate",
-  "question": "Consider the following statements :\n1.\n2.\n3.\nWhich of the statements given above are correct ?",
+  "question": "Consider the following statements :\n1. Lions do not have a particular breeding season.\n2. Unlike most other big cats, cheetahs do not roar.\n3. Unlike male lions, male leopards do not proclaim their territory by scent marking.\nWhich of the statements given above are correct ?",
   "a": "1 and 2 only",
   "b": "2 and 3 only",
   "c": "1 and 3 only",
@@ -3621,7 +3621,7 @@
   "subject": "Science & Technology",
   "subtopic": "Energy & Environment",
   "difficulty": "moderate",
-  "question": "Consider the following :\n1.\n2.\n3.\n4.\nHow many of the above are considered \"Distributed Energy Resources\" ?",
+  "question": "Consider the following :\n1. Battery storage\n2. Biomass generators\n3. Fuel cells\n4. Rooftop solar photovoltaic units\nHow many of the above are considered \"Distributed Energy Resources\" ?",
   "a": "Only one",
   "b": "Only two",
   "c": "Only three",
@@ -3653,7 +3653,7 @@
   "subject": "Environment & Ecology",
   "subtopic": "Ecosystems & Ecology Concepts",
   "difficulty": "easy",
-  "question": "Consider the following :\n1.\n2.\n3.\nHow many of the above have poisonous species among them ?",
+  "question": "Consider the following :\n1. Butterflies\n2. Fish\n3. Frogs\nHow many of the above have poisonous species among them ?",
   "a": "Only one",
   "b": "Only two",
   "c": "All three",
@@ -3669,7 +3669,7 @@
   "subject": "Environment & Ecology",
   "subtopic": "Biodiversity & Conservation",
   "difficulty": "moderate",
-  "question": "Consider the following :\n1.\n2.\n3.\nHow many of the above trees are actually native to India ?",
+  "question": "Consider the following :\n1. Cashew\n2. Papaya\n3. Red sanders\nHow many of the above trees are actually native to India ?",
   "a": "Only one",
   "b": "Only two",
   "c": "All three",
@@ -3685,7 +3685,7 @@
   "subject": "Science & Technology",
   "subtopic": "Energy & Environment",
   "difficulty": "moderate",
-  "question": "With reference to radioisotope thermoelectric generators (RTGs), consider the following statements :\n1.\n2.\n3.\nWhich of the statements given above are correct ?",
+  "question": "With reference to radioisotope thermoelectric generators (RTGs), consider the following statements :\n1. RTGs are miniature fission reactors.\n2. RTGs are used for powering the onboard systems of spacecrafts.\n3. RTGs can use Plutonium-238, which is a by-product of weapons development.\nWhich of the statements given above are correct ?",
   "a": "1 and 2 only",
   "b": "2 and 3 only",
   "c": "1 and 3 only",
@@ -3733,7 +3733,7 @@
   "subject": "Science & Technology",
   "subtopic": "Defence Technology",
   "difficulty": "moderate",
-  "question": "Consider the following activities :\n1.\n2.\n3. In how many of the above activities can the radars be used ?",
+  "question": "Consider the following activities :\n1. Identification of narcotics on passengers at airports or in aircraft\n2. Monitoring of precipitation\n3. Tracking the migration of animals\nIn how many of the above activities can the radars be used ?",
   "a": "Only one",
   "b": "Only two",
   "c": "All three",
@@ -3749,7 +3749,7 @@
   "subject": "Science & Technology",
   "subtopic": "Defence Technology",
   "difficulty": "moderate",
-  "question": "Consider the following aircraft :\n1.\n2.\n3.\nHow many of the above are considered fifth generation fighter aircraft ?",
+  "question": "Consider the following aircraft :\n1. Rafael\n2. MiG-29\n3. Tejas MK-1\nHow many of the above are considered fifth generation fighter aircraft ?",
   "a": "Only one",
   "b": "Only two",
   "c": "All three",
@@ -3765,7 +3765,7 @@
   "subject": "Science and Technology",
   "subtopic": "Chemistry",
   "difficulty": "moderate",
-  "question": "In which of the following are hydrogels used ?\n1.\n2.\n3.\nSelect the correct answer using the code given below :",
+  "question": "In which of the following are hydrogels used ?\n1. Controlled drug delivery in patients\n2. Mobile air-conditioning systems\n3. Preparation of industrial lubricants\nSelect the correct answer using the code given below :",
   "a": "1 only",
   "b": "1 and 2 only",
   "c": "2 and 3 only",
@@ -3861,7 +3861,7 @@
   "subject": "Economy",
   "subtopic": "Banking and Finance",
   "difficulty": "difficult",
-  "question": "Consider the following statements :\n1. window of the Reserve Bank of India.\n2.\n3.\nWhich of the statements given above is/are correct ?",
+  "question": "Consider the following statements :\n1. In India, Non-Banking Financial Companies can access the Liquidity Adjustment Facility window of the Reserve Bank of India.\n2. In India, Foreign Institutional Investors can hold the Government Securities (G-Secs).\n3. In India, Stock Exchanges can offer separate trading platforms for debts.\nWhich of the statements given above is/are correct ?",
   "a": "1 and 2 only",
   "b": "3 only",
   "c": "1, 2 and 3",
@@ -4133,7 +4133,7 @@
   "subject": "Indian Economy",
   "subtopic": "International Trade & WTO",
   "difficulty": "easy",
-  "question": "Consider the following statements :\n1.\n2. rice and wheat.\nWhich of the statements given above is/are correct ?",
+  "question": "Consider the following statements :\n1. India is a member of the International Grains Council.\n2. A country needs to be a member of the International Grains Council for exporting or importing rice and wheat.\nWhich of the statements given above is/are correct ?",
   "a": "1 only",
   "b": "2 only",
   "c": "Both 1 and 2",
@@ -4181,7 +4181,7 @@
   "subject": "Indian Polity",
   "subtopic": "Constitutional Framework & Development",
   "difficulty": "moderate",
-  "question": "With reference to the Government of India Act, 1935, consider the following statements :\n1. Indian Provinces and Princely States.\n2.\nWhich of the statements given above is/are correct ?",
+  "question": "With reference to the Government of India Act, 1935, consider the following statements :\n1. It provided for the establishment of an All India Federation based on the union of the British Indian Provinces and Princely States.\n2. Defence and Foreign Affairs were kept under the control of the federal legislature.\nWhich of the statements given above is/are correct ?",
   "a": "1 only",
   "b": "2 only",
   "c": "Both 1 and 2",
@@ -4229,7 +4229,7 @@
   "subject": "Art & Culture",
   "subtopic": "Architecture & World Heritage",
   "difficulty": "moderate",
-  "question": "Consider the following properties included in the World Heritage List released by UNESCO :\n1.\n2.\n3.\n4.\nHow many of the above properties were included in 2023 ?",
+  "question": "Consider the following properties included in the World Heritage List released by UNESCO :\n1. Shantiniketan\n2. Rani-ki-Vav\n3. Sacred Ensembles of the Hoysalas\n4. Mahabodhi Temple Complex at Bodhgaya\nHow many of the above properties were included in 2023 ?",
   "a": "Only one",
   "b": "Only two",
   "c": "Only three",
@@ -4277,7 +4277,7 @@
   "subject": "Polity",
   "subtopic": "Parliamentary Procedures",
   "difficulty": "moderate",
-  "question": "Which of the following statements are correct in respect of a Money Bill in the Parliament ?\n1.\n2.\n3.\n4. Sabha.\nSelect the answer using the code given below :",
+  "question": "Which of the following statements are correct in respect of a Money Bill in the Parliament ?\n1. Article 109 mentions special procedure in respect of Money Bills.\n2. A Money Bill shall not be introduced in the Council of States.\n3. The Rajya Sabha can either approve the Bill or suggest changes but cannot reject it.\n4. Amendments to a Money Bill suggested by the Rajya Sabha have to be accepted by the Lok Sabha.\nSelect the answer using the code given below :",
   "a": "1 and 2 only",
   "b": "2 and 3 only",
   "c": "1, 2 and 3",
@@ -4293,7 +4293,7 @@
   "subject": "Science & Technology",
   "subtopic": "Defence Technology",
   "difficulty": "moderate",
-  "question": "Which of the following is/are correctly matched in terms of equivalent rank in the three services of Indian Defence forces ?\n1.\n2.\n3.\n4.\nSelect the correct answer using the code given below :",
+  "question": "Which of the following is/are correctly matched in terms of equivalent rank in the three services of Indian Defence forces ?\nArmy : Airforce : Navy\n1. Brigadier : Air Commodore : Commander\n2. Major General : Air Vice Marshal : Vice Admiral\n3. Major : Squadron Leader : Lieutenant Commander\n4. Lieutenant Colonel : Group Captain : Captain\nSelect the correct answer using the code given below :",
   "a": "1 and 4",
   "b": "1 and 3",
   "c": "2, 3 and 4",
@@ -4309,7 +4309,7 @@
   "subject": "Indian Polity",
   "subtopic": "Constitutional & Statutory Bodies",
   "difficulty": "moderate",
-  "question": "The North Eastern Council (NEC) was established by the North Eastern Council Act, 1971. Subsequent to the amendment of NEC Act in 2002, the Council comprises which of the following members ?\n1.\n2.\n3.\n4.\nSelect the correct answer using the code given below :",
+  "question": "The North Eastern Council (NEC) was established by the North Eastern Council Act, 1971. Subsequent to the amendment of NEC Act in 2002, the Council comprises which of the following members ?\n1. Governor of the Constituent State\n2. Chief Minister of the Constituent State\n3. Three Members to be nominated by the President of India\n4. The Home Minister of India\nSelect the correct answer using the code given below :",
   "a": "1, 2 and 3 only",
   "b": "1, 3 and 4 only",
   "c": "2 and 4 only",
@@ -4341,7 +4341,7 @@
   "subject": "Indian Polity",
   "subtopic": "Constitutional Framework & Development",
   "difficulty": "easy",
-  "question": "The Constitution (71st Amendment) Act, 1992 amends the Eighth Schedule to the Constitution to include which of the following languages ?\n1.\n2.\n3.\n4.\nSelect the correct answer using the code given below :",
+  "question": "The Constitution (71st Amendment) Act, 1992 amends the Eighth Schedule to the Constitution to include which of the following languages ?\n1. Konkani\n2. Manipuri\n3. Nepali\n4. Maithili\nSelect the correct answer using the code given below :",
   "a": "1, 2 and 3",
   "b": "1, 2 and 4",
   "c": "1, 3 and 4",
@@ -4357,7 +4357,7 @@
   "subject": "Modern History",
   "subtopic": "Post-Independence India",
   "difficulty": "moderate",
-  "question": "Consider the following pairs :\n1.\n2.\n3.\n4.\nHow many of the above are correctly matched ?",
+  "question": "Consider the following pairs :\nParty : Its Leader\n1. Bharatiya Jana Sangh : Dr. Shyama Prasad Mukherjee\n2. Socialist Party : C. Rajagopalachari\n3. Congress for Democracy : Jagjivan Ram\n4. Swatantra Party : Acharya Narendra Dev\nHow many of the above are correctly matched ?",
   "a": "Only one",
   "b": "Only two",
   "c": "Only three",
@@ -4373,7 +4373,7 @@
   "subject": "Polity",
   "subtopic": "Constitutional Provisions",
   "difficulty": "easy",
-  "question": "Which of the following statements are correct about the Constitution of India ?\n1.\n2.\n3. Constitution.\nSelect the answer using the code given below :",
+  "question": "Which of the following statements are correct about the Constitution of India ?\n1. Powers of the Municipalities are given in Part IX A of the Constitution.\n2. Emergency provisions are given in Part XVIII of the Constitution.\n3. Provisions related to the amendment of the Constitution are given in Part XX of the Constitution.\nSelect the answer using the code given below :",
   "a": "1 and 2 only",
   "b": "2 and 3 only",
   "c": "1 and 3 only",
@@ -4421,7 +4421,7 @@
   "subject": "Polity",
   "subtopic": "Defence",
   "difficulty": "moderate",
-  "question": "What are the duties of the Chief of Defence Staff (CDS) as Head of the Department of Military Affairs ?\n1.\n2.\n3.\nSelect the correct answer using the code given below :",
+  "question": "What are the duties of the Chief of Defence Staff (CDS) as Head of the Department of Military Affairs ?\n1. Permanent Chairman of Chiefs of Staff Committee\n2. Exercise military command over the three Service Chiefs\n3. Principal Military Advisor to Defence Minister on all tri-service matters\nSelect the correct answer using the code given below :",
   "a": "1, 2 and 3",
   "b": "1 and 2 only",
   "c": "2 and 3 only",
@@ -4757,7 +4757,7 @@
   "subject": "Indian Economy",
   "subtopic": "Agriculture & Rural Development",
   "difficulty": "moderate",
-  "question": "With reference to the Digital India Land Records Modernisation Programme, consider the following statements :\n1.\n2.\n3. any of the languages recognized by the Constitution of India.\nWhich of the statements given above are correct ?",
+  "question": "With reference to the Digital India Land Records Modernisation Programme, consider the following statements :\n1. To implement the scheme, the Central Government provides 100% funding.\n2. Under the Scheme, Cadastral Maps are digitised.\n3. An initiative has been undertaken to transliterate the Records of Rights from local language to any of the languages recognized by the Constitution of India.\nWhich of the statements given above are correct ?",
   "a": "1 and 2 only",
   "b": "2 and 3 only",
   "c": "1 and 3 only",
@@ -4789,7 +4789,7 @@
   "subject": "Indian Economy",
   "subtopic": "Human Development, Poverty & Employment Schemes",
   "difficulty": "moderate",
-  "question": "With reference to the Pradhan Mantri Shram Yogi Maan-dhan (PM-SYM) Yojana, consider the following statements :\n1.\n2.\n3. attaining the age of 60 years.\n4.\nWhich of the statements given above is/are correct ?",
+  "question": "With reference to the Pradhan Mantri Shram Yogi Maan-dhan (PM-SYM) Yojana, consider the following statements :\n1. The entry age group for enrolment in the scheme is 21 to 40 years.\n2. Age specific contribution shall be made by the beneficiary.\n3. Each subscriber under the scheme shall receive a minimum pension of ₹ 3,000 per month after attaining the age of 60 years.\n4. Family pension is applicable to the spouse and unmarried daughters.\nWhich of the statements given above is/are correct ?",
   "a": "1, 3 and 4",
   "b": "2 and 3 only",
   "c": "2 only",
@@ -13765,7 +13765,7 @@
   "subject": "Science & Technology",
   "subtopic": "Space Technology & Astronomy",
   "difficulty": "moderate",
-  "question": "With reference to the Indian Regional Navigation Satellite System (IRNSS), consider the following statements :\n1.\n2.\n3.\n2019.\nWhich of the statements given above is/are correct ?",
+  "question": "With reference to the Indian Regional Navigation Satellite System (IRNSS), consider the following statements :\n1. IRNSS has three satellites in geostationary and four satellites in geosynchronous orbits.\n2. IRNSS covers entire India and about 5500 sq. km beyond its borders.\n3. India will have its own satellite navigation system with full global coverage by the middle of 2019.\nWhich of the statements given above is/are correct ?",
   "a": "1 only",
   "b": "1 and 2 only",
   "c": "2 and 3 only",
@@ -13781,7 +13781,7 @@
   "subject": "Science & Technology",
   "subtopic": "Physics",
   "difficulty": "moderate",
-  "question": "Consider the following phenomena :\n1.\n2.\n3.\nWhich of the above is/are the prediction/predictions of Albert Einstein's General Theory of Relativity, often discussed in media ?",
+  "question": "Consider the following phenomena :\n1. Light is affected by gravity.\n2. The Universe is constantly expanding.\n3. Matter warps its surrounding space-time.\nWhich of the above is/are the prediction/predictions of Albert Einstein's General Theory of Relativity, often discussed in media ?",
   "a": "1 and 2 only",
   "b": "3 only",
   "c": "1 and 3 only",
@@ -13797,7 +13797,7 @@
   "subject": "Science & Technology",
   "subtopic": "Biotechnology & Genetics",
   "difficulty": "moderate",
-  "question": "With reference to the Genetically Modified mustard (GM mustard) developed in India, consider the following statements :\n1. pest-resistance to a wide variety of pests.\n2.\n3.\nWhich of the statements given above is/are correct ?",
+  "question": "With reference to the Genetically Modified mustard (GM mustard) developed in India, consider the following statements :\n1. GM mustard has the genes of a soil bacterium that give the plant the property of pest-resistance to a wide variety of pests.\n2. GM mustard has the genes that allow the plant cross-pollination and hybridization.\n3. GM mustard has been developed jointly by the IARI and Punjab Agricultural University.\nWhich of the statements given above is/are correct ?",
   "a": "1 and 3 only",
   "b": "2 only",
   "c": "2 and 3 only",
@@ -13813,7 +13813,7 @@
   "subject": "Science & Technology",
   "subtopic": "Computer & Information Technology",
   "difficulty": "moderate",
-  "question": "Consider the following pairs : Terms sometimes seen in news\n1.\n2.\n3.\nWhich of the pairs given above is/are correctly matched ?",
+  "question": "Consider the following pairs : Terms sometimes seen in news\n1. Belle II experiment : Artificial Intelligence\n2. Blockchain technology : Digital/Cryptocurrency\n3. CRISPR – Cas9 : Particle Physics\nWhich of the pairs given above is/are correctly matched ?",
   "a": "1 and 3 only",
   "b": "2 only",
   "c": "2 and 3 only",
@@ -13861,7 +13861,7 @@
   "subject": "Science & Technology",
   "subtopic": "Energy & Environment",
   "difficulty": "moderate",
-  "question": "With reference to solar power production in India, consider the following statements :\n1. units.\n2.\nWhich of the statements given above is/are correct ?",
+  "question": "With reference to solar power production in India, consider the following statements :\n1. India is the third largest in the world in the manufacture of silicon wafers used in photovoltaic units.\n2. The solar power tariffs are determined by the Solar Energy Corporation of India.\nWhich of the statements given above is/are correct ?",
   "a": "1 only",
   "b": "2 only",
   "c": "Both 1 and 2",
@@ -13941,7 +13941,7 @@
   "subject": "Art & Culture",
   "subtopic": "Architecture & World Heritage",
   "difficulty": "moderate",
-  "question": "With reference to the cultural history of India, consider the following statements :\n1.\n2. Lucknow.\nWhich of the statements given above is/are correct ?",
+  "question": "With reference to the cultural history of India, consider the following statements :\n1. White marble was used in making Buland Darwaza and Khankah at Fatehpur Sikri.\n2. Red sandstone and marble were used in making Bara Imambara and Rumi Darwaza at Lucknow.\nWhich of the statements given above is/are correct ?",
   "a": "1 only",
   "b": "2 only",
   "c": "Both 1 and 2",
@@ -14005,7 +14005,7 @@
   "subject": "Modern History",
   "subtopic": "British Administration & Economic Policies",
   "difficulty": "moderate",
-  "question": "Which of the following led to the introduction of English Education in India ?\n1.\n2.\n3.\nSelect the correct answer using the code given below :",
+  "question": "Which of the following led to the introduction of English Education in India ?\n1. Charter Act of 1813\n2. General Committee of Public Instruction, 1823\n3. Orientalist and Anglicist Controversy\nSelect the correct answer using the code given below :",
   "a": "1 and 2 only",
   "b": "2 only",
   "c": "1 and 3 only",
@@ -14037,7 +14037,7 @@
   "subject": "Current Affairs",
   "subtopic": "Indian Government Schemes & Initiatives",
   "difficulty": "moderate",
-  "question": "With reference to Pradhan Mantri Kaushal Vikas Yojana, consider the following statements :\n1.\n2. digital literacy.\n3. Skill Qualification Framework.\nWhich of the statements given above is/are correct ?",
+  "question": "With reference to Pradhan Mantri Kaushal Vikas Yojana, consider the following statements :\n1. It is the flagship scheme of the Ministry of Labour and Employment.\n2. It, among other things, will also impart training in soft skills, entrepreneurship, financial and digital literacy.\n3. It aims to align the competencies of the unregulated workforce of the country to the National Skill Qualification Framework.\nWhich of the statements given above is/are correct ?",
   "a": "1 and 3 only",
   "b": "2 only",
   "c": "2 and 3 only",
@@ -62689,22 +62689,6 @@
  },
  {
   "year": 1995,
-  "q_no": 91,
-  "subject": "Modern History",
-  "subtopic": "Advent Of Europeans & British Expansion",
-  "difficulty": "moderate",
-  "question": "91.\nWhich one of the following pairs is correctly matched?",
-  "a": "Battle of Buxar — Mir Jafar vs. Clive",
-  "b": "Battle of Wandiwash — French vs. East India Company",
-  "c": "Battle of Chilianwala — Dalhousie vs. Marathas",
-  "d": "Battle of Kharda — Nizam vs. East India Company",
-  "answer": "b",
-  "answer_note": "",
-  "status": "ok",
-  "id": 3919
- },
- {
-  "year": 1995,
   "q_no": 92,
   "subject": "Indian Polity",
   "subtopic": "Elections & Electoral Reforms",
@@ -62717,7 +62701,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3920
+  "id": 3919
  },
  {
   "year": 1995,
@@ -62733,7 +62717,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3921
+  "id": 3920
  },
  {
   "year": 1995,
@@ -62749,7 +62733,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3922
+  "id": 3921
  },
  {
   "year": 1995,
@@ -62765,7 +62749,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3923
+  "id": 3922
  },
  {
   "year": 1995,
@@ -62781,7 +62765,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3924
+  "id": 3923
  },
  {
   "year": 1995,
@@ -62797,7 +62781,7 @@
   "answer": "a",
   "answer_note": "",
   "status": "ok",
-  "id": 3925
+  "id": 3924
  },
  {
   "year": 1995,
@@ -62813,7 +62797,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3926
+  "id": 3925
  },
  {
   "year": 1995,
@@ -62829,7 +62813,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3927
+  "id": 3926
  },
  {
   "year": 1995,
@@ -62845,7 +62829,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3928
+  "id": 3927
  },
  {
   "year": 1995,
@@ -62861,7 +62845,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3929
+  "id": 3928
  },
  {
   "year": 1995,
@@ -62877,7 +62861,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3930
+  "id": 3929
  },
  {
   "year": 1995,
@@ -62893,7 +62877,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3931
+  "id": 3930
  },
  {
   "year": 1995,
@@ -62909,7 +62893,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3932
+  "id": 3931
  },
  {
   "year": 1995,
@@ -62925,7 +62909,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3933
+  "id": 3932
  },
  {
   "year": 1995,
@@ -62941,7 +62925,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3934
+  "id": 3933
  },
  {
   "year": 1995,
@@ -62957,7 +62941,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3935
+  "id": 3934
  },
  {
   "year": 1995,
@@ -62973,7 +62957,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3936
+  "id": 3935
  },
  {
   "year": 1995,
@@ -62989,7 +62973,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3937
+  "id": 3936
  },
  {
   "year": 1995,
@@ -63005,7 +62989,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3938
+  "id": 3937
  },
  {
   "year": 1995,
@@ -63021,7 +63005,7 @@
   "answer": "a",
   "answer_note": "",
   "status": "ok",
-  "id": 3939
+  "id": 3938
  },
  {
   "year": 1995,
@@ -63037,7 +63021,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3940
+  "id": 3939
  },
  {
   "year": 1995,
@@ -63053,7 +63037,7 @@
   "answer": "a",
   "answer_note": "",
   "status": "ok",
-  "id": 3941
+  "id": 3940
  },
  {
   "year": 1995,
@@ -63069,7 +63053,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3942
+  "id": 3941
  },
  {
   "year": 1995,
@@ -63085,7 +63069,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3943
+  "id": 3942
  },
  {
   "year": 1995,
@@ -63101,7 +63085,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3944
+  "id": 3943
  },
  {
   "year": 1995,
@@ -63117,7 +63101,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3945
+  "id": 3944
  },
  {
   "year": 1995,
@@ -63133,7 +63117,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3946
+  "id": 3945
  },
  {
   "year": 1995,
@@ -63149,7 +63133,7 @@
   "answer": "",
   "answer_note": "(None of the options (a–d) is correct)",
   "status": "disputed",
-  "id": 3947
+  "id": 3946
  },
  {
   "year": 1995,
@@ -63165,7 +63149,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3948
+  "id": 3947
  },
  {
   "year": 1995,
@@ -63181,7 +63165,7 @@
   "answer": "a",
   "answer_note": "",
   "status": "ok",
-  "id": 3949
+  "id": 3948
  },
  {
   "year": 1995,
@@ -63197,7 +63181,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3950
+  "id": 3949
  },
  {
   "year": 1995,
@@ -63213,7 +63197,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3951
+  "id": 3950
  },
  {
   "year": 1995,
@@ -63229,7 +63213,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3952
+  "id": 3951
  },
  {
   "year": 1995,
@@ -63245,7 +63229,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3953
+  "id": 3952
  },
  {
   "year": 1995,
@@ -63261,7 +63245,7 @@
   "answer": "a",
   "answer_note": "",
   "status": "ok",
-  "id": 3954
+  "id": 3953
  },
  {
   "year": 1995,
@@ -63277,7 +63261,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3955
+  "id": 3954
  },
  {
   "year": 1995,
@@ -63293,7 +63277,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3956
+  "id": 3955
  },
  {
   "year": 1995,
@@ -63309,7 +63293,7 @@
   "answer": "a",
   "answer_note": "",
   "status": "ok",
-  "id": 3957
+  "id": 3956
  },
  {
   "year": 1995,
@@ -63325,7 +63309,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3958
+  "id": 3957
  },
  {
   "year": 1995,
@@ -63341,7 +63325,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3959
+  "id": 3958
  },
  {
   "year": 1995,
@@ -63357,7 +63341,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3960
+  "id": 3959
  },
  {
   "year": 1995,
@@ -63373,7 +63357,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3961
+  "id": 3960
  },
  {
   "year": 1995,
@@ -63389,7 +63373,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3962
+  "id": 3961
  },
  {
   "year": 1995,
@@ -63405,7 +63389,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3963
+  "id": 3962
  },
  {
   "year": 1995,
@@ -63421,7 +63405,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3964
+  "id": 3963
  },
  {
   "year": 1995,
@@ -63437,7 +63421,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3965
+  "id": 3964
  },
  {
   "year": 1995,
@@ -63453,7 +63437,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3966
+  "id": 3965
  },
  {
   "year": 1995,
@@ -63469,7 +63453,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3967
+  "id": 3966
  },
  {
   "year": 1995,
@@ -63485,7 +63469,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3968
+  "id": 3967
  },
  {
   "year": 1995,
@@ -63501,7 +63485,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3969
+  "id": 3968
  },
  {
   "year": 1995,
@@ -63517,7 +63501,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3970
+  "id": 3969
  },
  {
   "year": 1995,
@@ -63533,7 +63517,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3971
+  "id": 3970
  },
  {
   "year": 1995,
@@ -63549,7 +63533,7 @@
   "answer": "d",
   "answer_note": "",
   "status": "ok",
-  "id": 3972
+  "id": 3971
  },
  {
   "year": 1995,
@@ -63565,7 +63549,7 @@
   "answer": "a",
   "answer_note": "",
   "status": "ok",
-  "id": 3973
+  "id": 3972
  },
  {
   "year": 1995,
@@ -63581,7 +63565,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3974
+  "id": 3973
  },
  {
   "year": 1995,
@@ -63597,7 +63581,7 @@
   "answer": "c",
   "answer_note": "",
   "status": "ok",
-  "id": 3975
+  "id": 3974
  },
  {
   "year": 1995,
@@ -63613,7 +63597,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3976
+  "id": 3975
  },
  {
   "year": 1995,
@@ -63629,7 +63613,7 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3977
+  "id": 3976
  },
  {
   "year": 1995,
@@ -63645,6 +63629,6 @@
   "answer": "b",
   "answer_note": "",
   "status": "ok",
-  "id": 3978
+  "id": 3977
  }
 ]

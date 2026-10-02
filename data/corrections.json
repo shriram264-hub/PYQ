@@ -6,7 +6,12 @@
       "q_no": 66,
       "why": "The source PDF prints the three numbered statements empty.",
       "field": "question",
-      "replace": [["\n1.\n2.\n3.\n", "\n1. Addition\n2. Variation\n3. Repeal\n"]],
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n",
+          "\n1. Addition\n2. Variation\n3. Repeal\n"
+        ]
+      ],
       "verified": "2026-10-02",
       "sources": [
         "https://www.pmfias.com/as-per-article-368-of-the-constitution-of/",
@@ -19,12 +24,622 @@
       "q_no": 67,
       "why": "The source PDF prints the five numbered countries empty.",
       "field": "question",
-      "replace": [["\n1.\n2.\n3.\n4.\n5.\n", "\n1. Italy\n2. Japan\n3. Nigeria\n4. South Korea\n5. South Africa\n"]],
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n4.\n5.\n",
+          "\n1. Italy\n2. Japan\n3. Nigeria\n4. South Korea\n5. South Africa\n"
+        ]
+      ],
       "verified": "2026-10-02",
       "sources": [
         "https://www.examrobot.com/node/31004",
         "https://forumias.com/blog/question/consider-the-following-countries-1-italy-2-japan-3-nigeria-4-south-korea-5-south-africa-which-of-the-above-countries-are-frequently-mentioned-in-the-media-for-their-low-birth-rates-or-ageing-po/",
         "https://www.gktoday.in/question/consider-the-following-countries-italyjapannigeriasouth-koreasouth-afr-971651"
+      ]
+    },
+    {
+      "year": 2025,
+      "q_no": 79,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\nI.\nII.\nIII. In how many of the above rows is the given information correctly matched?",
+          "\nCountry : Resource-rich in\nI. Botswana : Diamond\nII. Chile : Lithium\nIII. Indonesia : Nickel\nIn how many of the above rows is the given information correctly matched?"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2025",
+        "https://www.nextias.com/blog/upsc-prelims-2025-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2025,
+      "q_no": 80,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\nI.\nII.\nIII. In how many of the above rows is the given information correctly matched?",
+          "\nRegion : Country\nI. Mallorca : Italy\nII. Normandy : Spain\nIII. Sardinia : France\nIn how many of the above rows is the given information correctly matched?"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2025",
+        "https://www.nextias.com/blog/upsc-prelims-2025-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2025,
+      "q_no": 84,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\nI.\nII.\nIII.",
+          "\nAircraft type : Description\nI. Dornier-228 : Maritime patrol aircraft\nII. IL-76 : Supersonic combat aircraft\nIII. C-17 Globemaster III : Military transport aircraft"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2025",
+        "https://www.nextias.com/blog/upsc-prelims-2025-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2025,
+      "q_no": 96,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\nI.\nII.\nIII.\nIV.",
+          "\nI. International Year of the Woman Farmer : 2026\nII. International Year of Sustainable and Resilient Tourism : 2027\nIII. International Year of Peace and Trust : 2025\nIV. International Year of Asteroid Awareness and Planetary Defence : 2029"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2025",
+        "https://www.nextias.com/blog/upsc-prelims-2025-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 23,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\nCountry : Animal found in its natural habitat\n1. Brazil : Indri\n2. Indonesia : Elk\n3. Madagascar : Bonobo"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 24,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2. organization, to inspire action to tackle the global sanitation crisis.\n3. developing countries to achieve the end of open defecation.",
+          "\n1. It is one of the agencies of the United Nations.\n2. World Toilet Summit, World Toilet Day and World Toilet College are the initiatives of this organization, to inspire action to tackle the global sanitation crisis.\n3. The main focus of its function is to grant funds to the least developed countries and developing countries to achieve the end of open defecation."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 25,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Lions do not have a particular breeding season.\n2. Unlike most other big cats, cheetahs do not roar.\n3. Unlike male lions, male leopards do not proclaim their territory by scent marking."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 27,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n4.",
+          "\n1. Battery storage\n2. Biomass generators\n3. Fuel cells\n4. Rooftop solar photovoltaic units"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 29,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Butterflies\n2. Fish\n3. Frogs"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 30,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Cashew\n2. Papaya\n3. Red sanders"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 31,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. RTGs are miniature fission reactors.\n2. RTGs are used for powering the onboard systems of spacecrafts.\n3. RTGs can use Plutonium-238, which is a by-product of weapons development."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 34,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3. In how many of the above activities can the radars be used ?",
+          "\n1. Identification of narcotics on passengers at airports or in aircraft\n2. Monitoring of precipitation\n3. Tracking the migration of animals\nIn how many of the above activities can the radars be used ?"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 35,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Rafael\n2. MiG-29\n3. Tejas MK-1"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 36,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Controlled drug delivery in patients\n2. Mobile air-conditioning systems\n3. Preparation of industrial lubricants"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 42,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1. window of the Reserve Bank of India.\n2.\n3.",
+          "\n1. In India, Non-Banking Financial Companies can access the Liquidity Adjustment Facility window of the Reserve Bank of India.\n2. In India, Foreign Institutional Investors can hold the Government Securities (G-Secs).\n3. In India, Stock Exchanges can offer separate trading platforms for debts."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 59,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2. rice and wheat.",
+          "\n1. India is a member of the International Grains Council.\n2. A country needs to be a member of the International Grains Council for exporting or importing rice and wheat."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 62,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1. Indian Provinces and Princely States.\n2.",
+          "\n1. It provided for the establishment of an All India Federation based on the union of the British Indian Provinces and Princely States.\n2. Defence and Foreign Affairs were kept under the control of the federal legislature."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 65,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n4.",
+          "\n1. Shantiniketan\n2. Rani-ki-Vav\n3. Sacred Ensembles of the Hoysalas\n4. Mahabodhi Temple Complex at Bodhgaya"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 68,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n4. Sabha.",
+          "\n1. Article 109 mentions special procedure in respect of Money Bills.\n2. A Money Bill shall not be introduced in the Council of States.\n3. The Rajya Sabha can either approve the Bill or suggest changes but cannot reject it.\n4. Amendments to a Money Bill suggested by the Rajya Sabha have to be accepted by the Lok Sabha."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 69,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n4.",
+          "\nArmy : Airforce : Navy\n1. Brigadier : Air Commodore : Commander\n2. Major General : Air Vice Marshal : Vice Admiral\n3. Major : Squadron Leader : Lieutenant Commander\n4. Lieutenant Colonel : Group Captain : Captain"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 70,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n4.",
+          "\n1. Governor of the Constituent State\n2. Chief Minister of the Constituent State\n3. Three Members to be nominated by the President of India\n4. The Home Minister of India"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 72,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n4.",
+          "\n1. Konkani\n2. Manipuri\n3. Nepali\n4. Maithili"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 73,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n4.",
+          "\nParty : Its Leader\n1. Bharatiya Jana Sangh : Dr. Shyama Prasad Mukherjee\n2. Socialist Party : C. Rajagopalachari\n3. Congress for Democracy : Jagjivan Ram\n4. Swatantra Party : Acharya Narendra Dev"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 74,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3. Constitution.",
+          "\n1. Powers of the Municipalities are given in Part IX A of the Constitution.\n2. Emergency provisions are given in Part XVIII of the Constitution.\n3. Provisions related to the amendment of the Constitution are given in Part XX of the Constitution."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 77,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Permanent Chairman of Chiefs of Staff Committee\n2. Exercise military command over the three Service Chiefs\n3. Principal Military Advisor to Defence Minister on all tri-service matters"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 98,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3. any of the languages recognized by the Constitution of India.",
+          "\n1. To implement the scheme, the Central Government provides 100% funding.\n2. Under the Scheme, Cadastral Maps are digitised.\n3. An initiative has been undertaken to transliterate the Records of Rights from local language to any of the languages recognized by the Constitution of India."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2024,
+      "q_no": 100,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3. attaining the age of 60 years.\n4.",
+          "\n1. The entry age group for enrolment in the scheme is 21 to 40 years.\n2. Age specific contribution shall be made by the beneficiary.\n3. Each subscriber under the scheme shall receive a minimum pension of ₹ 3,000 per month after attaining the age of 60 years.\n4. Family pension is applicable to the spouse and unmarried daughters."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2024",
+        "https://www.nextias.com/blog/upsc-prelims-2024-question-paper-gs-1/"
+      ]
+    },
+    {
+      "year": 2018,
+      "q_no": 61,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.\n2019.",
+          "\n1. IRNSS has three satellites in geostationary and four satellites in geosynchronous orbits.\n2. IRNSS covers entire India and about 5500 sq. km beyond its borders.\n3. India will have its own satellite navigation system with full global coverage by the middle of 2019."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2018",
+        "https://www.clearias.com/upsc-question-paper-2018-download-cse-prelims-gs-paper-1/"
+      ]
+    },
+    {
+      "year": 2018,
+      "q_no": 62,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Light is affected by gravity.\n2. The Universe is constantly expanding.\n3. Matter warps its surrounding space-time."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2018",
+        "https://www.clearias.com/upsc-question-paper-2018-download-cse-prelims-gs-paper-1/"
+      ]
+    },
+    {
+      "year": 2018,
+      "q_no": 63,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1. pest-resistance to a wide variety of pests.\n2.\n3.",
+          "\n1. GM mustard has the genes of a soil bacterium that give the plant the property of pest-resistance to a wide variety of pests.\n2. GM mustard has the genes that allow the plant cross-pollination and hybridization.\n3. GM mustard has been developed jointly by the IARI and Punjab Agricultural University."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2018",
+        "https://www.clearias.com/upsc-question-paper-2018-download-cse-prelims-gs-paper-1/"
+      ]
+    },
+    {
+      "year": 2018,
+      "q_no": 64,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Belle II experiment : Artificial Intelligence\n2. Blockchain technology : Digital/Cryptocurrency\n3. CRISPR – Cas9 : Particle Physics"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2018",
+        "https://www.clearias.com/upsc-question-paper-2018-download-cse-prelims-gs-paper-1/"
+      ]
+    },
+    {
+      "year": 2018,
+      "q_no": 67,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1. units.\n2.",
+          "\n1. India is the third largest in the world in the manufacture of silicon wafers used in photovoltaic units.\n2. The solar power tariffs are determined by the Solar Energy Corporation of India."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2018",
+        "https://www.clearias.com/upsc-question-paper-2018-download-cse-prelims-gs-paper-1/"
+      ]
+    },
+    {
+      "year": 2018,
+      "q_no": 72,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2. Lucknow.",
+          "\n1. White marble was used in making Buland Darwaza and Khankah at Fatehpur Sikri.\n2. Red sandstone and marble were used in making Bara Imambara and Rumi Darwaza at Lucknow."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2018",
+        "https://www.clearias.com/upsc-question-paper-2018-download-cse-prelims-gs-paper-1/"
+      ]
+    },
+    {
+      "year": 2018,
+      "q_no": 76,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2.\n3.",
+          "\n1. Charter Act of 1813\n2. General Committee of Public Instruction, 1823\n3. Orientalist and Anglicist Controversy"
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2018",
+        "https://www.clearias.com/upsc-question-paper-2018-download-cse-prelims-gs-paper-1/"
+      ]
+    },
+    {
+      "year": 2018,
+      "q_no": 78,
+      "why": "The source PDF prints these numbered items empty or cut short.",
+      "field": "question",
+      "replace": [
+        [
+          "\n1.\n2. digital literacy.\n3. Skill Qualification Framework.",
+          "\n1. It is the flagship scheme of the Ministry of Labour and Employment.\n2. It, among other things, will also impart training in soft skills, entrepreneurship, financial and digital literacy.\n3. It aims to align the competencies of the unregulated workforce of the country to the National Skill Qualification Framework."
+        ]
+      ],
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.unlockias.in/upsc-prelims-pyq/2018",
+        "https://www.clearias.com/upsc-question-paper-2018-download-cse-prelims-gs-paper-1/"
+      ]
+    },
+    {
+      "year": 1995,
+      "q_no": 91,
+      "drop": true,
+      "why": "The source PDF repeats 1995 Q81 (the battles pairs question) under Q91. The real Q91 is a graph question the PDF omits, left out by the owner's decision (figure questions are not reproduced).",
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.examrace.com/IAS/IAS-Prelims-Papers/General-Studies/IAS-Prelims-General-Studies-Paper-1995-Part-8.html"
       ]
     }
   ]

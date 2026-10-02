@@ -144,6 +144,11 @@ def apply_corrections(questions, path):
         q = by_key.get((p["year"], p["q_no"]))
         if q is None:
             sys.exit(f"corrections.json: {p['year']} Q{p['q_no']} is not in the extracted data")
+        if p.get("drop"):
+            # A record that is not a real question (e.g. the PDF repeating
+            # another question under this number). The number stays a gap.
+            questions.remove(q)
+            continue
         for find, repl in p["replace"]:
             hits = q[p["field"]].count(find)
             if hits != 1:

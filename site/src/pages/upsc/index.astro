@@ -6,9 +6,9 @@ import { CORPUS, SUBJECTS, YEARS } from '../../lib/corpus.js';
 
 const digits = (n) => String(n).split('');
 
-// Count, not "every": 22 questions across 9 papers (1995–2007) are not in the
-// corpus. The source compilation dropped them because each depends on a map
-// or figure, so claiming completeness would be untrue.
+// Count, not "every": some 1995–2007 questions are not in the corpus. The
+// source compilation dropped them, most because they depend on a map or
+// figure, so claiming completeness would be untrue.
 const description = `${CORPUS.total.toLocaleString('en-IN')} UPSC Prelims questions from ${CORPUS.minYear} to ${CORPUS.maxYear}, with answers, searchable by concept. Free, no sign-up.`;
 
 const EXAMPLES = [

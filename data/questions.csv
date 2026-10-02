@@ -805,13 +805,17 @@ II. When it is Monday in Anadyr, it is Tuesday in Nome.
 Which of the statements given above is/are correct?",I only,II only,Both I and II,Neither I nor II,a,ok,
 178,2025,78,Modern History,Social & Religious Reform Movements,easy,Who among the following was the founder of the ‘Self-Respect Movement’?,‘Periyar’ E. V. Ramaswamy Naicker,Dr. B. R. Ambedkar,Bhaskarrao Jadhav,Dinkarrao Javalkar,a,ok,
 179,2025,79,Geography,World Geography,moderate,"Consider the following pairs :
-I.
-II.
-III. In how many of the above rows is the given information correctly matched?",Only one,Only two,All the three,None,c,ok,
+Country : Resource-rich in
+I. Botswana : Diamond
+II. Chile : Lithium
+III. Indonesia : Nickel
+In how many of the above rows is the given information correctly matched?",Only one,Only two,All the three,None,c,ok,
 180,2025,80,Geography,World Geography,moderate,"Consider the following pairs :
-I.
-II.
-III. In how many of the above rows is the given information correctly matched?",Only one,Only two,All the three,None,d,ok,
+Region : Country
+I. Mallorca : Italy
+II. Normandy : Spain
+III. Sardinia : France
+In how many of the above rows is the given information correctly matched?",Only one,Only two,All the three,None,d,ok,
 181,2025,81,Science,Rare Earth Elements,moderate,"Consider the following statements :
 Statement I : Some rare earth elements are used in the manufacture of flat television screens and computer monitors.
 Statement II : Some rare earth elements have phosphorescent properties.
@@ -827,9 +831,10 @@ II. SpaDeX
 III. Gaganyaan
 How many of the space missions given above encourage and support microgravity research?",Only one,Only two,All the three,None,b,ok,
 184,2025,84,Science and Technology,Defence Technology,moderate,"With reference to India’s defence, consider the following pairs :
-I.
-II.
-III.
+Aircraft type : Description
+I. Dornier-228 : Maritime patrol aircraft
+II. IL-76 : Supersonic combat aircraft
+III. C-17 Globemaster III : Military transport aircraft
 How many of the pairs given above are correctly matched?",Only one,Only two,All the three,None,b,ok,
 185,2025,85,Science and Technology,Chemistry,easy,Artificial way of causing rainfall to reduce air pollution makes use of,silver iodide and potassium iodide,silver nitrate and potassium iodide,silver iodide and potassium nitrate,silver nitrate and potassium chloride,a,ok,
 186,2025,86,Polity,President,moderate,"Consider the following statements with regard to pardoning power of the President of India :
@@ -877,10 +882,10 @@ I. Co-chaired with India, the event builds on the advances made at the Bletchley
 II. Along with other countries, US and UK also signed the declaration on inclusive and sustainable AI.
 Which of the statements given above is/are correct?",I only,II only,Both I and II,Neither I nor II,a,ok,
 196,2025,96,International Relations,International Organizations,moderate,"Consider the following pairs :
-I.
-II.
-III.
-IV.
+I. International Year of the Woman Farmer : 2026
+II. International Year of Sustainable and Resilient Tourism : 2027
+III. International Year of Peace and Trust : 2025
+IV. International Year of Asteroid Awareness and Planetary Defence : 2029
 How many of the pairs given above are correctly matched?",Only one,Only two,Only three,All the four,d,ok,
 197,2025,97,Current Affairs,International Organisations & Groupings,easy,"Consider the following statements with regard to BRICS :
 I. 16th BRICS Summit was held under the Chairship of Russia in Kazan.
@@ -992,42 +997,43 @@ Statement-I : Many chewing gums found in the market are considered a source of e
 Statement-II : Many chewing gums contain plastic as gum base.
 Which one of the following is correct in respect of the above statements ?",Both Statement-I and Statement-II are correct and Statement-II explains Statement-I,"Both Statement-I and Statement-II are correct, but Statement-II does not explain Statement-I","Statement-I is correct, but Statement-II is incorrect","Statement-I is incorrect, but Statement-II is correct",a,ok,
 223,2024,23,Environment & Ecology,Protected Areas & Wildlife,moderate,"Consider the following pairs :
-1.
-2.
-3.
+Country : Animal found in its natural habitat
+1. Brazil : Indri
+2. Indonesia : Elk
+3. Madagascar : Bonobo
 How many of the pairs given above are correctly matched ?",Only one,Only two,All three,None,d,ok,
 224,2024,24,Current Affairs,International Organisations & Groupings,moderate,"Consider the following statements regarding World Toilet Organization :
-1.
-2. organization, to inspire action to tackle the global sanitation crisis.
-3. developing countries to achieve the end of open defecation.
+1. It is one of the agencies of the United Nations.
+2. World Toilet Summit, World Toilet Day and World Toilet College are the initiatives of this organization, to inspire action to tackle the global sanitation crisis.
+3. The main focus of its function is to grant funds to the least developed countries and developing countries to achieve the end of open defecation.
 Which of the statements given above is/are correct ?",2 only,3 only,1 and 2,2 and 3,a,ok,
 225,2024,25,Environment & Ecology,Ecosystems & Ecology Concepts,moderate,"Consider the following statements :
-1.
-2.
-3.
+1. Lions do not have a particular breeding season.
+2. Unlike most other big cats, cheetahs do not roar.
+3. Unlike male lions, male leopards do not proclaim their territory by scent marking.
 Which of the statements given above are correct ?",1 and 2 only,2 and 3 only,1 and 3 only,"1, 2 and 3",a,ok,
 226,2024,26,Current Affairs,International Relations & Treaties,moderate,"Which one of the following is the correct description of ""100 Million Farmers"" ?","It is a platform for accelerating the transition towards food and water systems that are net-zero (carbon), nature-positive and that aims to increase farmer resilience.",It is an international alliance and a network of individuals and farming organisations interested in supporting and strengthening the development of the organic animal husbandry.,"It is a digital platform fully integrated with service providers and built on blockchain that lets buyers, sellers and third parties trade fertilizers quickly and securely.","It is a platform with the mission of encouraging the farmers to form Farmer Product Organisations or Agribusiness Consortiums, thus facilitating the access to global open markets to sell their products.",a,ok,
 227,2024,27,Science & Technology,Energy & Environment,moderate,"Consider the following :
-1.
-2.
-3.
-4.
+1. Battery storage
+2. Biomass generators
+3. Fuel cells
+4. Rooftop solar photovoltaic units
 How many of the above are considered ""Distributed Energy Resources"" ?",Only one,Only two,Only three,All four,d,ok,
 228,2024,28,Environment & Ecology,Ecosystems & Ecology Concepts,difficult,Which one of the following shows a unique relationship with an insect that has coevolved with it and that is the only insect that can pollinate this tree ?,Fig,Mahua,Sandalwood,Silk cotton,a,ok,
 229,2024,29,Environment & Ecology,Ecosystems & Ecology Concepts,easy,"Consider the following :
-1.
-2.
-3.
+1. Butterflies
+2. Fish
+3. Frogs
 How many of the above have poisonous species among them ?",Only one,Only two,All three,None,c,ok,
 230,2024,30,Environment & Ecology,Biodiversity & Conservation,moderate,"Consider the following :
-1.
-2.
-3.
+1. Cashew
+2. Papaya
+3. Red sanders
 How many of the above trees are actually native to India ?",Only one,Only two,All three,None,a,ok,
 231,2024,31,Science & Technology,Energy & Environment,moderate,"With reference to radioisotope thermoelectric generators (RTGs), consider the following statements :
-1.
-2.
-3.
+1. RTGs are miniature fission reactors.
+2. RTGs are used for powering the onboard systems of spacecrafts.
+3. RTGs can use Plutonium-238, which is a by-product of weapons development.
 Which of the statements given above are correct ?",1 and 2 only,2 and 3 only,1 and 3 only,"1, 2 and 3",b,ok,
 232,2024,32,Science & Technology,Space Technology & Astronomy,moderate,"Consider the following statements :
 Statement-I : Giant stars live much longer than dwarf stars.
@@ -1035,18 +1041,19 @@ Statement-II : Compared to dwarf stars, giant stars have a greater rate of nucle
 Which one of the following is correct in respect of the above statements ?",Both Statement-I and Statement-II are correct and Statement-II explains Statement-I,"Both Statement-I and Statement-II are correct, but Statement-II does not explain Statement-I","Statement-I is correct, but Statement-II is incorrect","Statement-I is incorrect, but Statement-II is correct",d,ok,
 233,2024,33,Science & Technology,Biology,easy,Which one of the following is synthesised in human body that dilates blood vessels and increases blood flow ?,Nitric oxide,Nitrous oxide,Nitrogen dioxide,Nitrogen pentoxide,a,ok,
 234,2024,34,Science & Technology,Defence Technology,moderate,"Consider the following activities :
-1.
-2.
-3. In how many of the above activities can the radars be used ?",Only one,Only two,All three,None,b,ok,
+1. Identification of narcotics on passengers at airports or in aircraft
+2. Monitoring of precipitation
+3. Tracking the migration of animals
+In how many of the above activities can the radars be used ?",Only one,Only two,All three,None,b,ok,
 235,2024,35,Science & Technology,Defence Technology,moderate,"Consider the following aircraft :
-1.
-2.
-3.
+1. Rafael
+2. MiG-29
+3. Tejas MK-1
 How many of the above are considered fifth generation fighter aircraft ?",Only one,Only two,All three,None,d,ok,
 236,2024,36,Science and Technology,Chemistry,moderate,"In which of the following are hydrogels used ?
-1.
-2.
-3.
+1. Controlled drug delivery in patients
+2. Mobile air-conditioning systems
+3. Preparation of industrial lubricants
 Select the correct answer using the code given below :",1 only,1 and 2 only,2 and 3 only,"1, 2 and 3",a,ok,
 237,2024,37,Science and Technology,Energy,easy,"Which one of the following is the exhaust pipe emission from Fuel Cell Electric Vehicles, powered by hydrogen ?",Hydrogen peroxide,Hydronium,Oxygen,Water vapour,d,ok,
 238,2024,38,Science and Technology,Energy,moderate,"Recently, the term ""pumped-storage hydropower"" is actually and appropriately discussed in the context of which one of the following ?",Irrigation of terraced crop fields,Lift irrigation of cereal crops,Long duration energy storage,Rainwater harvesting system,c,ok,
@@ -1054,9 +1061,9 @@ Select the correct answer using the code given below :",1 only,1 and 2 only,2 an
 240,2024,40,Economy,Financial Markets,moderate,"With reference to the Indian economy, ""Collateral Borrowing and Lending Obligations"" are the instruments of :",Bond market,Forex market,Money market,Stock market,c,ok,
 241,2024,41,Economy,Demographics,easy,The total fertility rate in an economy is defined as :,the number of children born per 1000 people in the population in a year.,the number of children born to a couple in their lifetime in a given population.,the birth rate minus death rate.,the average number of live births a woman would have by the end of her child-bearing age.,d,ok,
 242,2024,42,Economy,Banking and Finance,difficult,"Consider the following statements :
-1. window of the Reserve Bank of India.
-2.
-3.
+1. In India, Non-Banking Financial Companies can access the Liquidity Adjustment Facility window of the Reserve Bank of India.
+2. In India, Foreign Institutional Investors can hold the Government Securities (G-Secs).
+3. In India, Stock Exchanges can offer separate trading platforms for debts.
 Which of the statements given above is/are correct ?",1 and 2 only,3 only,"1, 2 and 3",2 and 3 only,c,ok,
 243,2024,43,Indian Economy,Financial Markets & Capital Markets,easy,"In India, which of the following can trade in Corporate Bonds and Government Securities ?
 1. Insurance Companies
@@ -1129,22 +1136,22 @@ Which of the statements given above is/are correct ?",1 only,2 only,Both 1 and 2
 2. Upanishads were composed earlier than the Puranas.
 Which of the statements given above is/are correct ?",1 only,2 only,Both 1 and 2,Neither 1 nor 2,b,ok,
 259,2024,59,Indian Economy,International Trade & WTO,easy,"Consider the following statements :
-1.
-2. rice and wheat.
+1. India is a member of the International Grains Council.
+2. A country needs to be a member of the International Grains Council for exporting or importing rice and wheat.
 Which of the statements given above is/are correct ?",1 only,2 only,Both 1 and 2,Neither 1 nor 2,a,ok,
 260,2024,60,Art & Culture,Cultural Institutions & Awards,moderate,Which one of the following was the latest inclusion in the Intangible Cultural Heritage List of UNESCO ?,Chhau dance,Durga puja,Garba dance,Kumbh mela,c,ok,
 261,2024,61,Indian Polity,Constitutional Framework & Development,easy,Who was the Provisional President of the Constituent Assembly before Dr. Rajendra Prasad took over ?,C. Rajagopalachari,Dr. B.R. Ambedkar,T.T. Krishnamachari,Dr. Sachchidananda Sinha,d,ok,
 262,2024,62,Indian Polity,Constitutional Framework & Development,moderate,"With reference to the Government of India Act, 1935, consider the following statements :
-1. Indian Provinces and Princely States.
-2.
+1. It provided for the establishment of an All India Federation based on the union of the British Indian Provinces and Princely States.
+2. Defence and Foreign Affairs were kept under the control of the federal legislature.
 Which of the statements given above is/are correct ?",1 only,2 only,Both 1 and 2,Neither 1 nor 2,a,ok,
 263,2024,63,Art & Culture,Literature & Languages,easy,Which one of the following is a work attributed to playwright Bhasa ?,Kavyalankara,Natyashastra,Madhyama-vyayoga,Mahabhashya,c,ok,
 264,2024,64,Art & Culture,Philosophy & Religion,difficult,"Sanghabhuti, an Indian Buddhist monk, who travelled to China at the end of the fourth century AD, was the author of a commentary on :",Prajnaparamita Sutra,Visuddhimagga,Sarvastivada Vinaya,Lalitavistara,c,ok,
 265,2024,65,Art & Culture,Architecture & World Heritage,moderate,"Consider the following properties included in the World Heritage List released by UNESCO :
-1.
-2.
-3.
-4.
+1. Shantiniketan
+2. Rani-ki-Vav
+3. Sacred Ensembles of the Hoysalas
+4. Mahabodhi Temple Complex at Bodhgaya
 How many of the above properties were included in 2023 ?",Only one,Only two,Only three,All four,b,ok,
 266,2024,66,Indian Polity,Constitutional Framework & Development,easy,"As per Article 368 of the Constitution of India, the Parliament may amend any provision of the Constitution by way of :
 1. Addition
@@ -1159,47 +1166,49 @@ Select the correct answer using the code given below :",1 and 2 only,2 and 3 onl
 5. South Africa
 Which of the above countries are frequently mentioned in the media for their low birth rates, or ageing population or declining population ?","1, 2 and 4","1, 3 and 5",2 and 4 only,3 and 5 only,a,ok,
 268,2024,68,Polity,Parliamentary Procedures,moderate,"Which of the following statements are correct in respect of a Money Bill in the Parliament ?
-1.
-2.
-3.
-4. Sabha.
+1. Article 109 mentions special procedure in respect of Money Bills.
+2. A Money Bill shall not be introduced in the Council of States.
+3. The Rajya Sabha can either approve the Bill or suggest changes but cannot reject it.
+4. Amendments to a Money Bill suggested by the Rajya Sabha have to be accepted by the Lok Sabha.
 Select the answer using the code given below :",1 and 2 only,2 and 3 only,"1, 2 and 3","1, 3 and 4",c,ok,
 269,2024,69,Science & Technology,Defence Technology,moderate,"Which of the following is/are correctly matched in terms of equivalent rank in the three services of Indian Defence forces ?
-1.
-2.
-3.
-4.
+Army : Airforce : Navy
+1. Brigadier : Air Commodore : Commander
+2. Major General : Air Vice Marshal : Vice Admiral
+3. Major : Squadron Leader : Lieutenant Commander
+4. Lieutenant Colonel : Group Captain : Captain
 Select the correct answer using the code given below :",1 and 4,1 and 3,"2, 3 and 4",3 only,d,ok,
 270,2024,70,Indian Polity,Constitutional & Statutory Bodies,moderate,"The North Eastern Council (NEC) was established by the North Eastern Council Act, 1971. Subsequent to the amendment of NEC Act in 2002, the Council comprises which of the following members ?
-1.
-2.
-3.
-4.
+1. Governor of the Constituent State
+2. Chief Minister of the Constituent State
+3. Three Members to be nominated by the President of India
+4. The Home Minister of India
 Select the correct answer using the code given below :","1, 2 and 3 only","1, 3 and 4 only",2 and 4 only,"1, 2, 3 and 4",a,ok,
 271,2024,71,Indian Polity,Elections & Electoral Reforms,easy,How many Delimitation Commissions have been constituted by the Government of India till December 2023 ?,One,Two,Three,Four,d,ok,
 272,2024,72,Indian Polity,Constitutional Framework & Development,easy,"The Constitution (71st Amendment) Act, 1992 amends the Eighth Schedule to the Constitution to include which of the following languages ?
-1.
-2.
-3.
-4.
+1. Konkani
+2. Manipuri
+3. Nepali
+4. Maithili
 Select the correct answer using the code given below :","1, 2 and 3","1, 2 and 4","1, 3 and 4","2, 3 and 4",a,ok,
 273,2024,73,Modern History,Post-Independence India,moderate,"Consider the following pairs :
-1.
-2.
-3.
-4.
+Party : Its Leader
+1. Bharatiya Jana Sangh : Dr. Shyama Prasad Mukherjee
+2. Socialist Party : C. Rajagopalachari
+3. Congress for Democracy : Jagjivan Ram
+4. Swatantra Party : Acharya Narendra Dev
 How many of the above are correctly matched ?",Only one,Only two,Only three,All four,b,ok,
 274,2024,74,Polity,Constitutional Provisions,easy,"Which of the following statements are correct about the Constitution of India ?
-1.
-2.
-3. Constitution.
+1. Powers of the Municipalities are given in Part IX A of the Constitution.
+2. Emergency provisions are given in Part XVIII of the Constitution.
+3. Provisions related to the amendment of the Constitution are given in Part XX of the Constitution.
 Select the answer using the code given below :",1 and 2 only,2 and 3 only,1 and 3 only,"1, 2 and 3",d,ok,
 275,2024,75,Indian Polity,Federalism & Centre–State Relations,moderate,Which one of the following statements is correct as per the Constitution of India ?,Inter-State trade and commerce is a State subject under the State List.,Inter-State migration is a State subject under the State List.,Inter-State quarantine is a Union subject under the Union List.,Corporation tax is a State subject under the State List.,c,ok,
 276,2024,76,Indian Polity,Fundamental Rights,easy,"Under which of the following Articles of the Constitution of India, has the Supreme Court of India placed the Right to Privacy ?",Article 15,Article 16,Article 19,Article 21,d,ok,
 277,2024,77,Polity,Defence,moderate,"What are the duties of the Chief of Defence Staff (CDS) as Head of the Department of Military Affairs ?
-1.
-2.
-3.
+1. Permanent Chairman of Chiefs of Staff Committee
+2. Exercise military command over the three Service Chiefs
+3. Principal Military Advisor to Defence Minister on all tri-service matters
 Select the correct answer using the code given below :","1, 2 and 3",1 and 2 only,2 and 3 only,1 and 3 only,d,ok,
 278,2024,78,Polity,Defence,easy,Operations undertaken by the Army towards upliftment of the local population in remote areas to include addressing of their basic needs is called :,Operation Sankalp,Operation Maitri,Operation Sadbhavana,Operation Madad,c,ok,
 279,2024,79,Geography,World Political Geography & Borders,easy,The longest border between any two countries in the world is between :,Canada and the United States of America,Chile and Argentina,China and India,Kazakhstan and Russian Federation,a,ok,
@@ -1275,19 +1284,19 @@ Statement-I : Recently, Venezuela has achieved a rapid recovery from its economi
 Statement-II : Venezuela has the world's largest oil reserves.
 Which one of the following is correct in respect of the above statements ?",Both Statement-I and Statement-II are correct and Statement-II explains Statement-I,"Both Statement-I and Statement-II are correct, but Statement-II does <i>not</i> explain Statement-I","Statement-I is correct, but Statement-II is incorrect","Statement-I is incorrect, but Statement-II is correct",d,ok,
 298,2024,98,Indian Economy,Agriculture & Rural Development,moderate,"With reference to the Digital India Land Records Modernisation Programme, consider the following statements :
-1.
-2.
-3. any of the languages recognized by the Constitution of India.
+1. To implement the scheme, the Central Government provides 100% funding.
+2. Under the Scheme, Cadastral Maps are digitised.
+3. An initiative has been undertaken to transliterate the Records of Rights from local language to any of the languages recognized by the Constitution of India.
 Which of the statements given above are correct ?",1 and 2 only,2 and 3 only,1 and 3 only,"1, 2 and 3",d,ok,
 299,2024,99,Current Affairs,Indian Government Schemes & Initiatives,easy,"With reference to the 'Pradhan Mantri Surakshit Matritva Abhiyan', consider the following statements :
 1. second and third trimesters of pregnancy and six months post-delivery health care service in any government health facility.
 2. provide services at nearby government health facilities.
 Which of the statements given above is/are correct ?",1 only,2 only,Both 1 and 2,Neither 1 nor 2,b,ok,
 300,2024,100,Indian Economy,"Human Development, Poverty & Employment Schemes",moderate,"With reference to the Pradhan Mantri Shram Yogi Maan-dhan (PM-SYM) Yojana, consider the following statements :
-1.
-2.
-3. attaining the age of 60 years.
-4.
+1. The entry age group for enrolment in the scheme is 21 to 40 years.
+2. Age specific contribution shall be made by the beneficiary.
+3. Each subscriber under the scheme shall receive a minimum pension of ₹ 3,000 per month after attaining the age of 60 years.
+4. Family pension is applicable to the spouse and unmarried daughters.
 Which of the statements given above is/are correct ?","1, 3 and 4",2 and 3 only,2 only,"1, 2 and 4",b,ok,
 301,2023,1,Geography,Indian Rivers & Water Resources,moderate,"Consider the following statements :
 1. Jhelum River passes through Wular Lake.
@@ -3314,53 +3323,52 @@ Which of the statements given above is/are correct ?",1 only,2 and 3 only,1 and 
 Select the correct answer using the code given below :","1, 3 and 4","2, 3, 4 and 5","2, 4 and 5","1, 2, 3 and 5",c,ok,
 860,2018,60,Environment & Ecology,Biodiversity & Conservation,moderate,"The term ""sixth mass extinction/sixth extinction"" is often mentioned in the news in the context of the discussion of",Widespread monoculture practices in agriculture and large-scale commercial farming with indiscriminate use of chemicals in many parts of the world that may result in the loss of good native ecosystems.,Fears of a possible collision of a meteorite with the Earth in the near future in the manner it happened 65 million years ago that caused the mass extinction of many species including those of dinosaurs.,Large scale cultivation of genetically modified crops in many parts of the world and promoting their cultivation in other parts of the world which may cause the disappearance of good native crop plants and the loss of food biodiversity.,"Mankind's over-exploitation/misuse of natural resources, fragmentation/loss of natural habitats, destruction of ecosystems, pollution and global climate change.",d,ok,
 861,2018,61,Science & Technology,Space Technology & Astronomy,moderate,"With reference to the Indian Regional Navigation Satellite System (IRNSS), consider the following statements :
-1.
-2.
-3.
-2019.
+1. IRNSS has three satellites in geostationary and four satellites in geosynchronous orbits.
+2. IRNSS covers entire India and about 5500 sq. km beyond its borders.
+3. India will have its own satellite navigation system with full global coverage by the middle of 2019.
 Which of the statements given above is/are correct ?",1 only,1 and 2 only,2 and 3 only,None,a,ok,
 862,2018,62,Science & Technology,Physics,moderate,"Consider the following phenomena :
-1.
-2.
-3.
+1. Light is affected by gravity.
+2. The Universe is constantly expanding.
+3. Matter warps its surrounding space-time.
 Which of the above is/are the prediction/predictions of Albert Einstein's General Theory of Relativity, often discussed in media ?",1 and 2 only,3 only,1 and 3 only,"1, 2 and 3",d,ok,
 863,2018,63,Science & Technology,Biotechnology & Genetics,moderate,"With reference to the Genetically Modified mustard (GM mustard) developed in India, consider the following statements :
-1. pest-resistance to a wide variety of pests.
-2.
-3.
+1. GM mustard has the genes of a soil bacterium that give the plant the property of pest-resistance to a wide variety of pests.
+2. GM mustard has the genes that allow the plant cross-pollination and hybridization.
+3. GM mustard has been developed jointly by the IARI and Punjab Agricultural University.
 Which of the statements given above is/are correct ?",1 and 3 only,2 only,2 and 3 only,"1, 2 and 3",b,ok,
 864,2018,64,Science & Technology,Computer & Information Technology,moderate,"Consider the following pairs : Terms sometimes seen in news
-1.
-2.
-3.
+1. Belle II experiment : Artificial Intelligence
+2. Blockchain technology : Digital/Cryptocurrency
+3. CRISPR – Cas9 : Particle Physics
 Which of the pairs given above is/are correctly matched ?",1 and 3 only,2 only,2 and 3 only,"1, 2 and 3",b,ok,
 865,2018,65,Environment & Ecology,Climate Change & Greenhouse Gases,easy,"Which of the following statements best describes ""carbon fertilization"" ?",Increased plant growth due to increased concentration of carbon dioxide in the atmosphere,Increased temperature of Earth due to increased concentration of carbon dioxide in the atmosphere,Increased acidity of oceans as a result of increased concentration of carbon dioxide in the atmosphere,Adaptation of all living beings on Earth to the climate change brought about by the increased concentration of carbon dioxide in the atmosphere,a,ok,
 866,2018,66,Science & Technology,Computer & Information Technology,easy,"When the alarm of your smartphone rings in the morning, you wake up and tap it to stop the alarm which causes your geyser to be switched on automatically. The smart mirror in your bathroom shows the day's weather and also indicates the level of water in your overhead tank. After you take some groceries from your refrigerator for making breakfast, it recognises the shortage of stock in it and places an order for the supply of fresh grocery items. When you step out of your house and lock the door, all lights, fans, geysers and AC machines get switched off automatically. On your way to office, your car warns you about traffic congestion ahead and suggests an alternative route, and if you are late for a meeting, it sends a message to your office accordingly. In the context of emerging communication technologies, which one of the following terms best applies to the above scenario ?",Border Gateway Protocol,Internet of Things,Internet Protocol,Virtual Private Network,b,ok,
 867,2018,67,Science & Technology,Energy & Environment,moderate,"With reference to solar power production in India, consider the following statements :
-1. units.
-2.
+1. India is the third largest in the world in the manufacture of silicon wafers used in photovoltaic units.
+2. The solar power tariffs are determined by the Solar Energy Corporation of India.
 Which of the statements given above is/are correct ?",1 only,2 only,Both 1 and 2,Neither 1 nor 2,d,ok,
 868,2018,68,Modern History,British Administration & Economic Policies,moderate,The staple commodities of export by the English East India Company from Bengal in the middle of the 18th century were,"Raw cotton, oil-seeds and opium","Sugar, salt, zinc and lead","Copper, silver, gold, spices and tea","Cotton, silk, saltpetre and opium",d,ok,
 869,2018,69,Modern History,Gandhian Mass Movements (1915-1942),easy,Which one of the following is a very significant aspect of the Champaran Satyagraha ?,"Active all-India participation of lawyers, students and women in the National Movement",Active involvement of Dalit and Tribal communities of India in the National Movement,Joining of peasant unrest to India's National Movement,Drastic decrease in the cultivation of plantation crops and commercial crops,c,ok,
 870,2018,70,Modern History,Post-Independence India,moderate,"Who among the following were the founders of the ""Hind Mazdoor Sabha"" established in 1948 ?","B. Krishna Pillai, E.M.S. Namboodiripad and K.C. George","Jayaprakash Narayan, Deen Dayal Upadhyay and M.N. Roy","C.P. Ramaswamy Iyer, K. Kamaraj and Veeresalingam Pantulu","Ashok Mehta, T.S. Ramanujam and G.G. Mehta",d,ok,
 871,2018,71,Art & Culture,Philosophy & Religion,easy,"With reference to the religious practices in India, the ""Sthanakvasi"" sect belongs to",Buddhism,Jainism,Vaishnavism,Shaivism,b,ok,
 872,2018,72,Art & Culture,Architecture & World Heritage,moderate,"With reference to the cultural history of India, consider the following statements :
-1.
-2. Lucknow.
+1. White marble was used in making Buland Darwaza and Khankah at Fatehpur Sikri.
+2. Red sandstone and marble were used in making Bara Imambara and Rumi Darwaza at Lucknow.
 Which of the statements given above is/are correct ?",1 only,2 only,Both 1 and 2,Neither 1 nor 2,d,ok,
 873,2018,73,Medieval History,Medieval Culture & Historiography,easy,Which one of the following foreign travellers elaborately discussed about diamonds and diamond mines of India ?,Francois Bernier,Jean-Baptiste Tavernier,Jean de Thevenot,Abbe Barthelemy Carre,b,ok,
 874,2018,74,Art & Culture,Philosophy & Religion,easy,"With reference to Indian history, who among the following is a future Buddha, yet to come to save the world ?",Avalokiteshvara,Lokesvara,Maitreya,Padmapani,c,ok,
 875,2018,75,Modern History,Advent Of Europeans & British Expansion,moderate,Which one of the following statements does not apply to the system of Subsidiary Alliance introduced by Lord Wellesley ?,To maintain a large standing army at other's expense,To keep India safe from Napoleonic danger,To secure a fixed income for the Company,To establish British paramountcy over the Indian States,c,ok,
 876,2018,76,Modern History,British Administration & Economic Policies,moderate,"Which of the following led to the introduction of English Education in India ?
-1.
-2.
-3.
+1. Charter Act of 1813
+2. General Committee of Public Instruction, 1823
+3. Orientalist and Anglicist Controversy
 Select the correct answer using the code given below :",1 and 2 only,2 only,1 and 3 only,"1, 2 and 3",d,ok,
 877,2018,77,Geography,Indian Physical Geography,easy,Which one of the following is an artificial lake ?,Kodaikanal (Tamil Nadu),Kolleru (Andhra Pradesh),Nainital (Uttarakhand),Renuka (Himachal Pradesh),a,ok,
 878,2018,78,Current Affairs,Indian Government Schemes & Initiatives,moderate,"With reference to Pradhan Mantri Kaushal Vikas Yojana, consider the following statements :
-1.
-2. digital literacy.
-3. Skill Qualification Framework.
+1. It is the flagship scheme of the Ministry of Labour and Employment.
+2. It, among other things, will also impart training in soft skills, entrepreneurship, financial and digital literacy.
+3. It aims to align the competencies of the unregulated workforce of the country to the National Skill Qualification Framework.
 Which of the statements given above is/are correct ?",1 and 3 only,2 only,2 and 3 only,"1, 2 and 3",c,ok,
 879,2018,79,Modern History,Gandhian Era & Mass Movements (1919-1947),easy,"In 1920, which of the following changed its name to ""Swarajya Sabha"" ?",All India Home Rule League,Hindu Mahasabha,South Indian Liberal Federation,The Servants of India Society,a,ok,
 880,2018,80,Modern History,Social & Religious Reform Movements,moderate,Which among the following events happened earliest ?,Swami Dayanand established Arya Samaj.,Dinabandhu Mitra wrote Neeldarpan.,Bankim Chandra Chattopadhyay wrote Anandmath.,Satyendranath Tagore became the first Indian to succeed in the Indian Civil Services Examination.,b,ok,
@@ -11700,92 +11708,90 @@ IV. The Partition of Bengal Choose the correct answer from the codes given below
 3917,1995,89,Indian Polity,Local Government & Panchayati Raj,moderate,"89.
 Which one of the following is incorrect in respect of Local Government in India?","According to the Indian Constitution, local government is not an independent tier in the federal system",30% of the seats in local bodies are reserved for women,Local government finances are to be provided by a Commission,Elections to local bodies are to be determined by a Commission,b,ok,
 3918,1995,90,Modern History,Revolutionary & Communist Movements,moderate,90. The Barrah dacoity was the first major venture of the revolutionary terrorist of the freedom movement in,Bombay Karnataka,Punjab,East Bengal,The Madras Presidency,c,ok,
-3919,1995,91,Modern History,Advent Of Europeans & British Expansion,moderate,"91.
-Which one of the following pairs is correctly matched?",Battle of Buxar — Mir Jafar vs. Clive,Battle of Wandiwash — French vs. East India Company,Battle of Chilianwala — Dalhousie vs. Marathas,Battle of Kharda — Nizam vs. East India Company,b,ok,
-3920,1995,92,Indian Polity,Elections & Electoral Reforms,moderate,"92.
+3919,1995,92,Indian Polity,Elections & Electoral Reforms,moderate,"92.
 Which of the following political parties is/are national political parties?
 I. Muslim League
 II. Revolutionary Socialist Party
 III. All India Forward Block
 IV. Peasants and Workers Party of India Choose the correct answer from the codes given below:","I, II and III",II and IV,III only,None of the above,d,ok,
-3921,1995,93,Indian Economy,National Income & Economic Growth,easy,"93. The main reason for low growth rate in India, in spite of high rate of savings and capital formation is",high birth rate,low level of foreign aid,low capital / output ratio,high capital / output ratio,d,ok,
-3922,1995,94,Geography,Indian Physical Geography,moderate,"94. Examine the map of Jammu and Kashmir given below: The mountain ranges marked 1, 2, 3 and 4 are respectively The original map is not available for this question.","Ladakh, Zanskar, Karakoram and Pir Panjal","Karakoram, Ladakh, Zanskar and Pir Panjal","Karakoram, Zanskar, Pir Panjal and Ladakh","Ladakh, Pir Panjal, Karakoram and Zanskar",b,ok,
-3923,1995,95,Indian Economy,Economic Planning & Five-Year Plans,moderate,95. The largest source of financing the public sector outlay of the Eighth Five-Year Plan comes from,balance from current revenue,contribution of public enterprises,government borrowings,deficit financing,d,ok,
-3924,1995,96,Indian Economy,International Trade & WTO,easy,96. The new Exim Policy announced in 1992 is for a period of,3 years,4 years,7 years,5 years,d,ok,
-3925,1995,97,Indian Economy,Banking & Financial Sector,moderate,"97. Consider the following:
+3920,1995,93,Indian Economy,National Income & Economic Growth,easy,"93. The main reason for low growth rate in India, in spite of high rate of savings and capital formation is",high birth rate,low level of foreign aid,low capital / output ratio,high capital / output ratio,d,ok,
+3921,1995,94,Geography,Indian Physical Geography,moderate,"94. Examine the map of Jammu and Kashmir given below: The mountain ranges marked 1, 2, 3 and 4 are respectively The original map is not available for this question.","Ladakh, Zanskar, Karakoram and Pir Panjal","Karakoram, Ladakh, Zanskar and Pir Panjal","Karakoram, Zanskar, Pir Panjal and Ladakh","Ladakh, Pir Panjal, Karakoram and Zanskar",b,ok,
+3922,1995,95,Indian Economy,Economic Planning & Five-Year Plans,moderate,95. The largest source of financing the public sector outlay of the Eighth Five-Year Plan comes from,balance from current revenue,contribution of public enterprises,government borrowings,deficit financing,d,ok,
+3923,1995,96,Indian Economy,International Trade & WTO,easy,96. The new Exim Policy announced in 1992 is for a period of,3 years,4 years,7 years,5 years,d,ok,
+3924,1995,97,Indian Economy,Banking & Financial Sector,moderate,"97. Consider the following:
 I. Industrial Finance Corporation of India
 II. Industrial Credit and Investment Corporation of India
 III. Industrial Development Bank of India
 IV. Unit Trust of India The correct sequence in which the above was established is","I, II, IV, III","I, III, II, IV","IV, III, II, I","I, IV, III, II",a,ok,
-3926,1995,98,Modern History,Gandhian Mass Movements (1915-1942),easy,98. In 1930 Mahatma Gandhi started Civil Disobedience Movement from,Sevagram,Dandi,Sabarmati,Wardha,c,ok,
-3927,1995,99,Indian Polity,Elections & Electoral Reforms,moderate,"99. If in an election to a State Legislative Assembly the candidate who is declared elected loses his deposit, it means that",the polling was very poor,the election was for a multi-member constituency,the elected candidate’s victory over his nearest rival was very marginal,a very large number of candidates contested the election,d,ok,
-3928,1995,100,Modern History,Social & Religious Reform Movements,moderate,"100.
+3925,1995,98,Modern History,Gandhian Mass Movements (1915-1942),easy,98. In 1930 Mahatma Gandhi started Civil Disobedience Movement from,Sevagram,Dandi,Sabarmati,Wardha,c,ok,
+3926,1995,99,Indian Polity,Elections & Electoral Reforms,moderate,"99. If in an election to a State Legislative Assembly the candidate who is declared elected loses his deposit, it means that",the polling was very poor,the election was for a multi-member constituency,the elected candidate’s victory over his nearest rival was very marginal,a very large number of candidates contested the election,d,ok,
+3927,1995,100,Modern History,Social & Religious Reform Movements,moderate,"100.
 Which one of the following pairs is not correctly matched?",Jamnalal Bajaj — Satyagraha Ashram at Wardha,Dadabhai Naoroji — Bombay Association,Lala Lajpat Rai — National School at Lahore,Bal Gangadhar Tilak — Satya Shodhak Sabha,d,ok,
-3929,1995,101,Science & Technology,Chemistry,easy,"101.
+3928,1995,101,Science & Technology,Chemistry,easy,"101.
 Which one of the following is a mixed fertilizer?",CAM,Urea,Ammonium Sulphate,NPK,d,ok,
-3930,1995,102,Science & Technology,Materials & Engineering,easy,"102.
+3929,1995,102,Science & Technology,Materials & Engineering,easy,"102.
 Which one of the following polymers is widely used for making bullet-proof material?",Polyvinyl chloride,Polyamides,Polyethylene,Polycarbonates,d,ok,
-3931,1995,103,Science & Technology,Chemistry,easy,103. The chemical used as a ‘fixer’ in photography is,sodium sulphate,sodium thiosulphate,ammonium persulphate,borax,b,ok,
-3932,1995,104,Science & Technology,Computer & Information Technology,easy,104. The technique used to transmit audio signals in television broadcasts is,Amplitude Modulation,Frequency Modulation,Pulse Code Modulation,Time Division Multiplexing,b,ok,
-3933,1995,105,Science & Technology,Physics,moderate,"105. A parachutist jumps from a height of 5000 metres. The relationship between his falling speed ‘v’ and the distance fallen through ‘d’ is best represented as (four graphs labelled a, b, c, d).",Graph (a),Graph (b),Graph (c),Graph (d),b,ok,
-3934,1995,106,Science & Technology,Physics,easy,"106.
+3930,1995,103,Science & Technology,Chemistry,easy,103. The chemical used as a ‘fixer’ in photography is,sodium sulphate,sodium thiosulphate,ammonium persulphate,borax,b,ok,
+3931,1995,104,Science & Technology,Computer & Information Technology,easy,104. The technique used to transmit audio signals in television broadcasts is,Amplitude Modulation,Frequency Modulation,Pulse Code Modulation,Time Division Multiplexing,b,ok,
+3932,1995,105,Science & Technology,Physics,moderate,"105. A parachutist jumps from a height of 5000 metres. The relationship between his falling speed ‘v’ and the distance fallen through ‘d’ is best represented as (four graphs labelled a, b, c, d).",Graph (a),Graph (b),Graph (c),Graph (d),b,ok,
+3933,1995,106,Science & Technology,Physics,easy,"106.
 Which one of the following can be used to confirm whether drinking water contains a gamma-emitting isotope or not?",Microscope,Lead plate,Scintillation counter,Spectrophotometer,c,ok,
-3935,1995,107,Science & Technology,Physics,easy,107. The normal temperature of human body on the Kelvin scale is,280,290,300,310,d,ok,
-3936,1995,108,Science & Technology,Physics,easy,"108. When the same note is played on a sitar and a flute, the sound produced can be distinguished from each other because of the difference in","pitch, loudness and quality",pitch and loudness,quality only,loudness only,c,ok,
-3937,1995,109,Science & Technology,Physics,moderate,"109. Assertion (A): A diamond sparkles more than a glass imitation cut to the same shape.
+3934,1995,107,Science & Technology,Physics,easy,107. The normal temperature of human body on the Kelvin scale is,280,290,300,310,d,ok,
+3935,1995,108,Science & Technology,Physics,easy,"108. When the same note is played on a sitar and a flute, the sound produced can be distinguished from each other because of the difference in","pitch, loudness and quality",pitch and loudness,quality only,loudness only,c,ok,
+3936,1995,109,Science & Technology,Physics,moderate,"109. Assertion (A): A diamond sparkles more than a glass imitation cut to the same shape.
 Reason (R): The refractive index of diamond is less than that of glass. In the context of the above two statements, which one of the following is correct?","Both A and R are true, and R is the correct explanation of A","Both A and R are true, but R is not a correct explanation of A","A is true, but R is false","A is false, but R is true",c,ok,
-3938,1995,110,Science & Technology,Science & Technology History,moderate,110. Who among the following anticipated Newton by declaring that all things gravitate to the earth?,Aryabhata,Varahamihira,Buddha Gupta,Brahmagupta,d,ok,
-3939,1995,111,Science & Technology,Physics,easy,111. Optical fibre works on the principle of,total internal reflection,refraction,scattering,interference,a,ok,
-3940,1995,112,Science & Technology,Physics,difficult,112. Suppose a rocketship is receding from the earth at a speed of 2⁄10th the velocity of light. A light in the rocketship appears blue to the passengers on the ship. What colour would it appear to an observer on the earth?,Blue,Orange,Yellow,Yellow-orange,d,ok,
-3941,1995,113,Science & Technology,Energy & Environment,easy,"113.
+3937,1995,110,Science & Technology,Science & Technology History,moderate,110. Who among the following anticipated Newton by declaring that all things gravitate to the earth?,Aryabhata,Varahamihira,Buddha Gupta,Brahmagupta,d,ok,
+3938,1995,111,Science & Technology,Physics,easy,111. Optical fibre works on the principle of,total internal reflection,refraction,scattering,interference,a,ok,
+3939,1995,112,Science & Technology,Physics,difficult,112. Suppose a rocketship is receding from the earth at a speed of 2⁄10th the velocity of light. A light in the rocketship appears blue to the passengers on the ship. What colour would it appear to an observer on the earth?,Blue,Orange,Yellow,Yellow-orange,d,ok,
+3940,1995,113,Science & Technology,Energy & Environment,easy,"113.
 Which one of the following pairs of materials serves as electrodes in chargeable batteries commonly used in devices such as torchlights, electric shavers, etc.?",Nickel and cadmium,Zinc and carbon,Lead peroxide and lead,Iron and cadmium,a,ok,
-3942,1995,114,Science & Technology,Space Technology & Astronomy,easy,114. Cryogenic engines find applications in,sub-marine propulsion,frost-free refrigerators,rocket technology,researches in superconductivity,c,ok,
-3943,1995,115,Science & Technology,Physics,moderate,An air bubble in water will act like a,convex mirror,convex lens,concave mirror,concave lens,d,ok,
-3944,1995,116,Science & Technology,Energy & Environment,easy,The difference between a nuclear reactor and an atomic bomb is that,no chain reaction takes place in nuclear reactor while in the atomic bomb there is a chain reaction,the chain reaction in nuclear reactor is controlled,the chain reaction in nuclear reactor is not controlled,no chain reaction takes place in atomic bomb while it takes place in nuclear reactor,b,ok,
-3945,1995,117,Environment & Ecology,Renewable Energy & Green Technologies,easy,Which one of the following fuels causes minimum environmental pollution?,Diesel,Coal,Hydrogen,Kerosene,c,ok,
-3946,1995,118,Ancient History,Science & Technology,easy,Zero was invented by,Aryabhata,Varahamihira,Bhaskara I,an unknown Indian,d,ok,
-3947,1995,119,Science & Technology,Health & Diseases,moderate,Which one of the following sets is correctly matched?,"Diphtheria, Pneumonia and Leprosy: Hereditary","AIDS, Syphilis and Gonorrhoea: Bacterial","Colour blindness, Haemophilia and Sickle cell anaemia: Sex linked","Polio, Japanese B encephalitis and plague: Viral",,disputed,(None of the options (a–d) is correct)
-3948,1995,120,Science & Technology,Biology,easy,A person with ‘AB’ blood group is sometimes called a universal recipient because of the,lack of antigen in his blood,lack of antibodies in his blood,lack of both antigens and antibodies in his blood,presence of antibodies in his blood,b,ok,
-3949,1995,121,Science & Technology,Biology,easy,Which one of the following is a membrane that protects the developing embryo from desiccation?,Amnion,Allantois,Chorion,Yolk sac,a,ok,
-3950,1995,122,Science & Technology,Health & Diseases,moderate,Which one of the following antimicrobial drugs is suitable for treatment of both tuberculosis and leprosy?,Isoniazid,p-aminosalicylic acid,Streptomycin,Rifampicin,d,ok,
-3951,1995,123,Science & Technology,Biology,moderate,Most of the desert plants bloom during night time because,their blooming is controlled by low temperature,they are sensitive to the phases of moon,the desert insects eat away flowers during day time,the desert insects are active during night time,d,ok,
-3952,1995,124,Science & Technology,Biology,easy,The only snake that builds a nest is,Chain viper,King Cobra,Krait,Saw scaled viper,b,ok,
-3953,1995,125,Science & Technology,Biology,easy,"Which of the following elements are present in all proteins?
+3941,1995,114,Science & Technology,Space Technology & Astronomy,easy,114. Cryogenic engines find applications in,sub-marine propulsion,frost-free refrigerators,rocket technology,researches in superconductivity,c,ok,
+3942,1995,115,Science & Technology,Physics,moderate,An air bubble in water will act like a,convex mirror,convex lens,concave mirror,concave lens,d,ok,
+3943,1995,116,Science & Technology,Energy & Environment,easy,The difference between a nuclear reactor and an atomic bomb is that,no chain reaction takes place in nuclear reactor while in the atomic bomb there is a chain reaction,the chain reaction in nuclear reactor is controlled,the chain reaction in nuclear reactor is not controlled,no chain reaction takes place in atomic bomb while it takes place in nuclear reactor,b,ok,
+3944,1995,117,Environment & Ecology,Renewable Energy & Green Technologies,easy,Which one of the following fuels causes minimum environmental pollution?,Diesel,Coal,Hydrogen,Kerosene,c,ok,
+3945,1995,118,Ancient History,Science & Technology,easy,Zero was invented by,Aryabhata,Varahamihira,Bhaskara I,an unknown Indian,d,ok,
+3946,1995,119,Science & Technology,Health & Diseases,moderate,Which one of the following sets is correctly matched?,"Diphtheria, Pneumonia and Leprosy: Hereditary","AIDS, Syphilis and Gonorrhoea: Bacterial","Colour blindness, Haemophilia and Sickle cell anaemia: Sex linked","Polio, Japanese B encephalitis and plague: Viral",,disputed,(None of the options (a–d) is correct)
+3947,1995,120,Science & Technology,Biology,easy,A person with ‘AB’ blood group is sometimes called a universal recipient because of the,lack of antigen in his blood,lack of antibodies in his blood,lack of both antigens and antibodies in his blood,presence of antibodies in his blood,b,ok,
+3948,1995,121,Science & Technology,Biology,easy,Which one of the following is a membrane that protects the developing embryo from desiccation?,Amnion,Allantois,Chorion,Yolk sac,a,ok,
+3949,1995,122,Science & Technology,Health & Diseases,moderate,Which one of the following antimicrobial drugs is suitable for treatment of both tuberculosis and leprosy?,Isoniazid,p-aminosalicylic acid,Streptomycin,Rifampicin,d,ok,
+3950,1995,123,Science & Technology,Biology,moderate,Most of the desert plants bloom during night time because,their blooming is controlled by low temperature,they are sensitive to the phases of moon,the desert insects eat away flowers during day time,the desert insects are active during night time,d,ok,
+3951,1995,124,Science & Technology,Biology,easy,The only snake that builds a nest is,Chain viper,King Cobra,Krait,Saw scaled viper,b,ok,
+3952,1995,125,Science & Technology,Biology,easy,"Which of the following elements are present in all proteins?
 I. Carbon
 II. Hydrogen
 III. Oxygen
 IV. Nitrogen
 Select the correct answer from the codes given below:",I and II,"I, II and IV","I, III and IV","I, II, III and IV",d,ok,
-3954,1995,126,Science & Technology,Biology,easy,Which one of the following hormones contains iodine?,Thyroxine,Testosterone,Insulin,Adrenaline,a,ok,
-3955,1995,127,Science & Technology,Science & Technology History,moderate,"“By weaving threads of physics, chemistry and biology into a rich tapestry, this remarkable scientist provided a unifying molecular view of the world... He touted the wonderful properties of Vitamin C first as a cure of common cold and later as a preventive agent against cancer.” One of science’s major figures of all time referred to above is",G.N. Lewis,Linus Carl Pauling,Fritz London,Walter Heitler,b,ok,
-3956,1995,128,Environment & Ecology,Pollution & Waste Management,moderate,"“The final Agent Orange raid in Vietnam took place in 1970…. areas have begun to bloom again. But 19 years after the war’s end, it seems plain that Agent Orange is killing and maiming human beings, something it never intended to do. The apparent toxic fall-out from those clouds ... is a crop of human miseries including cancers, miscarriages and birth defects — that may persist for decades.” The offensive substance referred to in the above quotation is",DDT used as insecticide,a complex mixture of herbicides and weedicides used to increase agricultural output in the then South Vietnam under the US aid programme,a complex mixture of DDT and other insecticides used as aerial sprays for protection against malaria and other tropical diseases,dioxin used as defoliants,d,ok,
-3957,1995,129,Science & Technology,Health & Diseases,easy,"“It begins as a single cell and grows into a merciless disease that claims millions of lives year after year. But scientists are steadily unlocking its mysteries, and the fight against it may now have reached a dramatic turning point. New discoveries promise better therapies and hope in the war against ...” The disease referred to in the above quotation is",Cancer,AIDS,Tuberculosis,Alzheimer’s disease,a,ok,
-3958,1995,130,Science & Technology,Energy & Environment,easy,"‘Yellow cake’, an item of smuggling across borders is",a crude form of heroin,a crude form of cocaine,uranium oxide,unrefined gold,c,ok,
-3959,1995,131,Science & Technology,Quantitative Aptitude,moderate,"Consider the series given below: 4/12/95, 1/1/96, 29/1/96, 26/2/96... The next term of the series is",24/3/96,25/3/96,26/3/96,27/3/96,b,ok,
-3960,1995,132,Science & Technology,Quantitative Aptitude,easy,In track meets both 100 yards and 100 metres are used as distances. By how many metres is 100 metres longer than 100 yards?,0.856 m,8.56 m,0.0856 m,1.0 m,b,ok,
-3961,1995,133,Science & Technology,Logical Reasoning & Puzzles,moderate,"Examine the following statements: I watch TV only if I am bored. I am never bored when I have my brother’s company. Whenever I go to the theatre, I take my brother along.
+3953,1995,126,Science & Technology,Biology,easy,Which one of the following hormones contains iodine?,Thyroxine,Testosterone,Insulin,Adrenaline,a,ok,
+3954,1995,127,Science & Technology,Science & Technology History,moderate,"“By weaving threads of physics, chemistry and biology into a rich tapestry, this remarkable scientist provided a unifying molecular view of the world... He touted the wonderful properties of Vitamin C first as a cure of common cold and later as a preventive agent against cancer.” One of science’s major figures of all time referred to above is",G.N. Lewis,Linus Carl Pauling,Fritz London,Walter Heitler,b,ok,
+3955,1995,128,Environment & Ecology,Pollution & Waste Management,moderate,"“The final Agent Orange raid in Vietnam took place in 1970…. areas have begun to bloom again. But 19 years after the war’s end, it seems plain that Agent Orange is killing and maiming human beings, something it never intended to do. The apparent toxic fall-out from those clouds ... is a crop of human miseries including cancers, miscarriages and birth defects — that may persist for decades.” The offensive substance referred to in the above quotation is",DDT used as insecticide,a complex mixture of herbicides and weedicides used to increase agricultural output in the then South Vietnam under the US aid programme,a complex mixture of DDT and other insecticides used as aerial sprays for protection against malaria and other tropical diseases,dioxin used as defoliants,d,ok,
+3956,1995,129,Science & Technology,Health & Diseases,easy,"“It begins as a single cell and grows into a merciless disease that claims millions of lives year after year. But scientists are steadily unlocking its mysteries, and the fight against it may now have reached a dramatic turning point. New discoveries promise better therapies and hope in the war against ...” The disease referred to in the above quotation is",Cancer,AIDS,Tuberculosis,Alzheimer’s disease,a,ok,
+3957,1995,130,Science & Technology,Energy & Environment,easy,"‘Yellow cake’, an item of smuggling across borders is",a crude form of heroin,a crude form of cocaine,uranium oxide,unrefined gold,c,ok,
+3958,1995,131,Science & Technology,Quantitative Aptitude,moderate,"Consider the series given below: 4/12/95, 1/1/96, 29/1/96, 26/2/96... The next term of the series is",24/3/96,25/3/96,26/3/96,27/3/96,b,ok,
+3959,1995,132,Science & Technology,Quantitative Aptitude,easy,In track meets both 100 yards and 100 metres are used as distances. By how many metres is 100 metres longer than 100 yards?,0.856 m,8.56 m,0.0856 m,1.0 m,b,ok,
+3960,1995,133,Science & Technology,Logical Reasoning & Puzzles,moderate,"Examine the following statements: I watch TV only if I am bored. I am never bored when I have my brother’s company. Whenever I go to the theatre, I take my brother along.
 Which one of the following conclusions is valid in the context of the above statements?","If I am bored, I watch TV","If I am bored, I seek my brother’s company","If I am not with my brother, then I watch TV","If I am not bored, I do not watch TV",d,ok,
-3962,1995,134,Science & Technology,Logical Reasoning & Puzzles,moderate,"In the given diagram, circle A represents teachers who can teach Physics, circle B represents teachers who can teach Chemistry and circle C represents those who can teach Mathematics. Among the regions marked p, q, r, s, t, u and v, the one which represents teachers who can teach Physics and Mathematics but not Chemistry, is",v,u,s,t,b,ok,
-3963,1995,135,Science & Technology,Logical Reasoning & Puzzles,difficult,"Seven men, A, B, C, D, E, F and G are standing in a queue in that order. Each one is wearing a cap of a different colour like violet, indigo, blue, green, yellow, orange and red. D is able to see in front of him green and blue but not violet. E can see violet and yellow, but not red. G can see caps of all colours other than orange. If E is wearing an indigo-coloured cap, then the colour of the cap worn by F is",blue,violet,red,orange,c,ok,
-3964,1995,136,Science & Technology,Quantitative Aptitude,easy,A person travelled from one place to another at an average speed of 40 kilometres/hour and back to the original place at an average speed of 50 kilometres/hour. What is his average speed in kilometres/hour during the entire roundtrip?,45,20,400/9,Impossible to find out unless the distance between the two places is known,c,ok,
-3965,1995,137,Science & Technology,Quantitative Aptitude,easy,The value of (a – m)(b – m) … (y – m)(z – m) is,m26 + am25 + abm24 + … + a.b.c … z,m26 – am25 + abm24 + … – a.b.c … z,0,Indeterminate,c,ok,
-3966,1995,138,Science & Technology,Quantitative Aptitude,moderate,A rectangular sump of dimensions 6 m × 5 m × 4 m is to be built by using bricks to make the outer dimension 6.2 m × 5.2 m × 4.2 m. Approximately how many bricks of size 20 cm × 10 cm × 5 cm are required to build the sump for storing water?,1500,3000,15000,30000,c,ok,
-3967,1995,139,Science & Technology,Quantitative Aptitude,moderate,"Consider the figure given below: PQRS is a square of side 1 unit and Q, S are the centres of the two circles. The area of the shaded portion is",π/2,1/2,π/4 – 1/2,π/2 – 1,d,ok,
-3968,1995,140,Science & Technology,Quantitative Aptitude,easy,"A thief running at 8 km/hr is chased by a policeman whose speed is 10 km/hr. If the thief is 100 metres ahead of the policeman, then the time required for the policeman to catch the thief will be",2 minutes,6 minutes,10 minutes,3 minutes,d,ok,
-3969,1995,141,Science & Technology,Quantitative Aptitude,moderate,A student has 60% chance of passing in English and 54% chance of passing in both English and Mathematics. What is the percentage probability that he will fail in Mathematics?,12,36,4,10,d,ok,
-3970,1995,142,Science & Technology,Quantitative Aptitude,moderate,"One of the drawers is opened at random and a coin is drawn. It is found to be a silver coin.
+3961,1995,134,Science & Technology,Logical Reasoning & Puzzles,moderate,"In the given diagram, circle A represents teachers who can teach Physics, circle B represents teachers who can teach Chemistry and circle C represents those who can teach Mathematics. Among the regions marked p, q, r, s, t, u and v, the one which represents teachers who can teach Physics and Mathematics but not Chemistry, is",v,u,s,t,b,ok,
+3962,1995,135,Science & Technology,Logical Reasoning & Puzzles,difficult,"Seven men, A, B, C, D, E, F and G are standing in a queue in that order. Each one is wearing a cap of a different colour like violet, indigo, blue, green, yellow, orange and red. D is able to see in front of him green and blue but not violet. E can see violet and yellow, but not red. G can see caps of all colours other than orange. If E is wearing an indigo-coloured cap, then the colour of the cap worn by F is",blue,violet,red,orange,c,ok,
+3963,1995,136,Science & Technology,Quantitative Aptitude,easy,A person travelled from one place to another at an average speed of 40 kilometres/hour and back to the original place at an average speed of 50 kilometres/hour. What is his average speed in kilometres/hour during the entire roundtrip?,45,20,400/9,Impossible to find out unless the distance between the two places is known,c,ok,
+3964,1995,137,Science & Technology,Quantitative Aptitude,easy,The value of (a – m)(b – m) … (y – m)(z – m) is,m26 + am25 + abm24 + … + a.b.c … z,m26 – am25 + abm24 + … – a.b.c … z,0,Indeterminate,c,ok,
+3965,1995,138,Science & Technology,Quantitative Aptitude,moderate,A rectangular sump of dimensions 6 m × 5 m × 4 m is to be built by using bricks to make the outer dimension 6.2 m × 5.2 m × 4.2 m. Approximately how many bricks of size 20 cm × 10 cm × 5 cm are required to build the sump for storing water?,1500,3000,15000,30000,c,ok,
+3966,1995,139,Science & Technology,Quantitative Aptitude,moderate,"Consider the figure given below: PQRS is a square of side 1 unit and Q, S are the centres of the two circles. The area of the shaded portion is",π/2,1/2,π/4 – 1/2,π/2 – 1,d,ok,
+3967,1995,140,Science & Technology,Quantitative Aptitude,easy,"A thief running at 8 km/hr is chased by a policeman whose speed is 10 km/hr. If the thief is 100 metres ahead of the policeman, then the time required for the policeman to catch the thief will be",2 minutes,6 minutes,10 minutes,3 minutes,d,ok,
+3968,1995,141,Science & Technology,Quantitative Aptitude,moderate,A student has 60% chance of passing in English and 54% chance of passing in both English and Mathematics. What is the percentage probability that he will fail in Mathematics?,12,36,4,10,d,ok,
+3969,1995,142,Science & Technology,Quantitative Aptitude,moderate,"One of the drawers is opened at random and a coin is drawn. It is found to be a silver coin.
 What is the probability that the other coin in the drawer is a gold coin?",0.25,1.00,0.50,0.60,c,ok,
-3971,1995,143,Science & Technology,Quantitative Aptitude,easy,"In the Cartesian plane four points P, Q, R, S have coordinates (1, 1), (4, 2), (4, 4) and (1, 4). The area of the quadrilateral PQRS is",9,7.5,4.5,Impossible to find unless the lengths of the diagonals are known,b,ok,
-3972,1995,144,Indian Economy,National Income & Economic Growth,moderate,"Consider the diagram given below: (Pie-chart showing family expenditure with segments labelled T: Transport, Ec: Education of children, H: Housing, C: Clothing, F: Food, S: Savings, O: Others.) From the diagram shown it would be right to conclude that",the family spent more than half the income on food and clothing,the amount saved by the family was too little,the family had no health problems,the family managed to meet all the essential expenses out of the income earned,d,ok,
-3973,1995,145,Environment & Ecology,Pollution & Waste Management,moderate,"Consider the table given below providing details of traffic volume per hour for four locations (showing total traffic volume, % of heavy vehicles, average noise level in dB(A) and noise-pollution level in dB(A)). When the total traffic volume is the same, the factor(s) which affect(s) the noise-pollution level is/are",% of heavy vehicles,noise-pollution level and average noise level,average noise level and % of heavy vehicles,indeterminable on the basis of details given,a,ok,
-3974,1995,146,Indian Economy,Financial Markets & Capital Markets,difficult,"The price fluctuations of 4 scrips in a stock market in the four quarters of a year are shown in the table below. Four different investors had the following portfolios of investment in the four companies throughout the year: Investor 1: 10 of A, 20 of B, 30 of C and 40 of D Investor 2: 40 of A, 10 of B, 20 of C and 30 of D Investor 3: 30 of A, 40 of B, 10 of C and 20 of D Investor 4: 20 of A, 30 of B, 40 of C and 10 of D In the light of the above, which one of the following statements is correct?",Investor 2 has made the best investment,Investor 1 has made the best investment,Investor 2 suffered a net loss during the year,Investor 3 suffered a net loss during the year,b,ok,
-3975,1995,147,Science & Technology,Quantitative Aptitude,moderate,"X and Y are two variables whose values at any time are related to each other as shown in Fig. (i). X is known to vary periodically with reference to time as shown in Fig. (ii).
+3970,1995,143,Science & Technology,Quantitative Aptitude,easy,"In the Cartesian plane four points P, Q, R, S have coordinates (1, 1), (4, 2), (4, 4) and (1, 4). The area of the quadrilateral PQRS is",9,7.5,4.5,Impossible to find unless the lengths of the diagonals are known,b,ok,
+3971,1995,144,Indian Economy,National Income & Economic Growth,moderate,"Consider the diagram given below: (Pie-chart showing family expenditure with segments labelled T: Transport, Ec: Education of children, H: Housing, C: Clothing, F: Food, S: Savings, O: Others.) From the diagram shown it would be right to conclude that",the family spent more than half the income on food and clothing,the amount saved by the family was too little,the family had no health problems,the family managed to meet all the essential expenses out of the income earned,d,ok,
+3972,1995,145,Environment & Ecology,Pollution & Waste Management,moderate,"Consider the table given below providing details of traffic volume per hour for four locations (showing total traffic volume, % of heavy vehicles, average noise level in dB(A) and noise-pollution level in dB(A)). When the total traffic volume is the same, the factor(s) which affect(s) the noise-pollution level is/are",% of heavy vehicles,noise-pollution level and average noise level,average noise level and % of heavy vehicles,indeterminable on the basis of details given,a,ok,
+3973,1995,146,Indian Economy,Financial Markets & Capital Markets,difficult,"The price fluctuations of 4 scrips in a stock market in the four quarters of a year are shown in the table below. Four different investors had the following portfolios of investment in the four companies throughout the year: Investor 1: 10 of A, 20 of B, 30 of C and 40 of D Investor 2: 40 of A, 10 of B, 20 of C and 30 of D Investor 3: 30 of A, 40 of B, 10 of C and 20 of D Investor 4: 20 of A, 30 of B, 40 of C and 10 of D In the light of the above, which one of the following statements is correct?",Investor 2 has made the best investment,Investor 1 has made the best investment,Investor 2 suffered a net loss during the year,Investor 3 suffered a net loss during the year,b,ok,
+3974,1995,147,Science & Technology,Quantitative Aptitude,moderate,"X and Y are two variables whose values at any time are related to each other as shown in Fig. (i). X is known to vary periodically with reference to time as shown in Fig. (ii).
 Which of the following curves depicts correctly the dependence of Y on time?",curve (a) shown in the figure,curve (b) shown in the figure,curve (c) shown in the figure,curve (d) shown in the figure,c,ok,
-3976,1995,148,Science & Technology,Quantitative Aptitude,moderate,"Out of a total of 120 musicians in a club, 5 % can play all the three instruments—guitar, violin and flute. It so happens that the number of musicians who can play any two and only two of the above instruments is 30. The number of musicians who can play the guitar alone is 40.
+3975,1995,148,Science & Technology,Quantitative Aptitude,moderate,"Out of a total of 120 musicians in a club, 5 % can play all the three instruments—guitar, violin and flute. It so happens that the number of musicians who can play any two and only two of the above instruments is 30. The number of musicians who can play the guitar alone is 40.
 What is the total number of those who can play violin alone or flute alone?",45,44,38,30,b,ok,
-3977,1995,149,Science & Technology,Logical Reasoning & Puzzles,easy,"Which of the following can be inferred from the statement that “Either John is stupid or John is lazy”?
+3976,1995,149,Science & Technology,Logical Reasoning & Puzzles,easy,"Which of the following can be inferred from the statement that “Either John is stupid or John is lazy”?
 I. John is lazy / therefore, John is not stupid.
 II. John is not lazy / therefore, John is stupid.
 III. John is not stupid / therefore, John is lazy.
 IV. John is stupid / therefore, John is not lazy. Choose the correct answer from the codes given below:",I and II,II and III,III and IV,I and IV,b,ok,
-3978,1995,150,Science & Technology,Quantitative Aptitude,difficult,"A person earns Rs 2000 per month over and above his salary as additional charge allowance. However, 30 % of this additional income will be deducted as additional income tax at source. If the person would deposit Rs 1000 per month in a long-term saving fetching 12 % interest, his tax liability on the additional allowance would reduce to 10 %. What is the effective interest for this person for money invested in the long-term savings scheme?",12 %,18 %,19 %,20 %,b,ok,
+3977,1995,150,Science & Technology,Quantitative Aptitude,difficult,"A person earns Rs 2000 per month over and above his salary as additional charge allowance. However, 30 % of this additional income will be deducted as additional income tax at source. If the person would deposit Rs 1000 per month in a long-term saving fetching 12 % interest, his tax liability on the additional allowance would reduce to 10 %. What is the effective interest for this person for money invested in the long-term savings scheme?",12 %,18 %,19 %,20 %,b,ok,
