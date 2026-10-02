@@ -4,6 +4,14 @@ services:
     runtime: python
     plan: free
     rootDir: backend
+    # The API reads ../data at startup, which sits outside rootDir, so without
+    # this a data-only commit would never redeploy it and search would keep
+    # serving the old corpus.
+    buildFilter:
+      paths:
+        - backend/**
+        - data/questions.json
+        - data/embeddings.npy
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
@@ -19,6 +27,11 @@ services:
     # Same service, so the public URL and the backend's CORS allowlist are
     # unchanged. Reverting is this one value.
     rootDir: site
+    # The site builds every page from ../data/questions.json, outside rootDir.
+    buildFilter:
+      paths:
+        - site/**
+        - data/questions.json
     buildCommand: npm install && npm run build && node scripts/check-links.mjs
     staticPublishPath: dist
     envVars:
