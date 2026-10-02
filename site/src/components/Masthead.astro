@@ -1,8 +1,10 @@
 ---
 import ThemeToggle from './ThemeToggle.astro';
-import { withExamCrumb } from '../lib/exams.js';
+import { examForPath, withExamCrumb } from '../lib/exams.js';
 
 const crumbs = withExamCrumb(Astro.url.pathname, Astro.props.crumbs ?? []);
+// The masthead sits inside an exam's booklet, so its sections are that exam's.
+const exam = examForPath(Astro.url.pathname);
 ---
 
 <header class="masthead">
@@ -12,9 +14,15 @@ const crumbs = withExamCrumb(Astro.url.pathname, Astro.props.crumbs ?? []);
       <span class="wordmark-deva" lang="hi">सवाल बॉक्स</span>
     </a>
     <nav class="masthead-nav" aria-label="Sections">
-      <a href="/upsc/subjects">Subjects</a>
-      <a href="/upsc/years">Years</a>
-      <a href="/search">Search</a>
+      {
+        exam && (
+          <>
+            <a href={`${exam.path}/subjects`}>Subjects</a>
+            <a href={`${exam.path}/years`}>Years</a>
+            <a href={`${exam.path}/search`}>Search</a>
+          </>
+        )
+      }
       <ThemeToggle />
     </nav>
   </div>

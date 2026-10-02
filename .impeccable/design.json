@@ -813,7 +813,7 @@
       "name": "Primary Button (Search)",
       "kind": "button",
       "refersTo": "button-primary",
-      "description": "The single filled-green action on a page: the search submit.",
+      "description": "The single filled-green action on a page: its primary action (the search submit inside an exam; Open the booklet on the homepage rack).",
       "html": "<button class=\"ds-btn-primary\" type=\"submit\">Search</button>",
       "css": ".ds-btn-primary { font-family: var(--font-structure, 'Archivo', system-ui, sans-serif); font-weight: 700; font-size: 0.95rem; padding: 0.85rem 1.6rem; color: var(--field-ink, #f4f6f1); background: var(--field, #0f3d2e); border: 2px solid var(--rule-strong, #14181a); border-radius: 0; cursor: pointer; } .ds-btn-primary:hover { background: var(--field-deep, #0a2c21); } .ds-btn-primary:focus-visible { outline: 2px solid var(--focus, #0f3d2e); outline-offset: 2px; }"
     },
@@ -945,7 +945,7 @@
     ],
     "dos": [
       "Do fill whole regions with Institutional Green (masthead, series band, colophon, the one primary button, the current pager cell) and use Green Text Ink whenever green must be read as text.",
-      "Do keep exactly one filled-green action per page, the search submit; every other action is outlined in a 2px Heavy Rule on paper.",
+      "Do keep exactly one filled-green action per page, the page's primary action: the search submit inside an exam, Open the booklet on the homepage rack. Every other action is outlined in a 2px Heavy Rule on paper.",
       "Do draw structure with the two rule weights: 2px Heavy Rule for frames and edges, 1px hairline for grouping, dashed for folds and seal lines, dotted for leaders.",
       "Do set every question serial, count, code, year and option key in Courier Prime, and nothing else.",
       "Do cap reading text at 68ch and keep question text pre-wrapped.",

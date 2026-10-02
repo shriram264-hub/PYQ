@@ -258,7 +258,7 @@ All three are self-hosted through fontsource; nothing loads from a font CDN.
 
 ## Layout
 
-One centred sheet, `min(100% - 2rem, 76rem)`, used by every band: masthead, main, colophon. Green bands run full-bleed while their contents sit on the sheet. On the homepage the search strip is pulled up by clamp(-1.25rem, -2vw, -0.75rem) so the ruled box overlaps the masthead's bottom rule, the way a form box sits on a printed band.
+One centred sheet, `min(100% - 2rem, 76rem)`, used by every band: masthead, main, colophon. Green bands run full-bleed while their contents sit on the sheet. The homepage carries no search: search lives inside each exam (`/upsc/search`), so the homepage opens straight from the masthead onto the rack of exam booklets.
 
 Rhythm is in rem. Rows and inline controls separate at 0.35 to 0.6rem; box interiors pad at 1 to 1.1rem; grid gutters sit at 1.25rem; sections are spaced by clamp(2.5rem, 6vw, 4rem) on the homepage and clamp(1.5rem, 4vw, 2.75rem) on listing pages. Listing heads close with a 2px heavy rule before content.
 
@@ -331,7 +331,7 @@ Numbered rows with a serial marker, an Archivo title, a dotted hairline leader, 
 
 ### Do:
 - **Do** fill whole regions with Institutional Green (masthead, series band, colophon, the one primary button, the current pager cell) and use Green Text Ink whenever green must be read as text.
-- **Do** keep exactly one filled-green action per page, the search submit; every other action is outlined in a 2px Heavy Rule on paper.
+- **Do** keep exactly one filled-green action per page, the page's primary action: the search submit inside an exam, Open the booklet on the homepage rack. Every other action is outlined in a 2px Heavy Rule on paper.
 - **Do** draw structure with the two rule weights: 2px Heavy Rule for frames and edges, 1px hairline for grouping, dashed for folds and seal lines, dotted for leaders.
 - **Do** set every question serial, count, code, year and option key in Courier Prime, and nothing else.
 - **Do** cap reading text at 68ch and keep question text pre-wrapped.

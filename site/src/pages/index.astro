@@ -18,8 +18,7 @@ const specimen = ALL_QUESTIONS.find((q) => q.year === 2021 && q.q_no === 32);
 const LIVE = [
   {
     title: 'Search by what a question is about',
-    body: 'Describe a topic in your own words and get the questions that asked about it, ranked by how closely they match.',
-    href: '/search',
+    body: "Inside each exam's booklet, describe a topic in your own words and get the questions that asked about it, ranked by how closely they match.",
   },
   {
     title: 'Browse by subject, year and topic',
@@ -43,7 +42,8 @@ const COMING = [
 // named once here, as a fact, because it is the only one a visitor can open.
 const description = `Past exam questions with official answers, searchable by what they're about. First exam open: UPSC Prelims, ${c.total.toLocaleString('en-IN')} questions from ${c.minYear}–${c.maxYear}. Free, no sign-up.`;
 
-// Tells search engines the site's name and where its search lives.
+// Tells search engines the site's name. There is no site-wide SearchAction:
+// search lives inside each exam, and this page speaks for none of them.
 const website = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
@@ -51,15 +51,8 @@ const website = {
   alternateName: 'सवाल बॉक्स',
   url: new URL('/', Astro.site).href,
   description,
-  potentialAction: {
-    '@type': 'SearchAction',
-    target: {
-      '@type': 'EntryPoint',
-      urlTemplate: `${new URL('/search', Astro.site).href}?q={search_term_string}`,
-    },
-    'query-input': 'required name=search_term_string',
-  },
 };
+const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUERY)}`;
 ---
 
 <Document title="Past Exam Questions, Searchable by Topic" description={description}>
@@ -73,7 +66,6 @@ const website = {
       <nav class="mast-nav" aria-label="Sections">
         <a href="#exams">Exams</a>
         <a href="#contents">What's inside</a>
-        <a href="/search">Search</a>
         <ThemeToggle />
       </nav>
       <h1 class="mast-line">Past exam questions, searchable by what they're about.</h1>
@@ -81,16 +73,6 @@ const website = {
   </header>
 
   <main>
-    <section class="sheet strip" aria-label="Search">
-      <form class="strip-form ruled" action="/search" method="get" role="search">
-        <label class="field-label" for="q">Search past exam questions</label>
-        <div class="strip-row">
-          <input id="q" name="q" type="search" autocomplete="off" placeholder="e.g. monsoon and El Nino" required />
-          <button type="submit">Search</button>
-        </div>
-      </form>
-    </section>
-
     <section id="exams" class="sheet rack" aria-labelledby="rack-heading">
       <h2 id="rack-heading" class="visually-hidden">Exams</h2>
       <div class="rack-shelf">
@@ -150,14 +132,14 @@ const website = {
     <section class="sheet specimen" aria-labelledby="specimen-heading">
       <h2 id="specimen-heading">A search that reads past the wording</h2>
       <p class="reading specimen-lede">
-        Search <a class="query" href={`/search?q=${encodeURIComponent(SPECIMEN_QUERY)}`}>{SPECIMEN_QUERY}</a>{' '}and
+        Search <a class="query" href={specimenSearch}>{SPECIMEN_QUERY}</a>{' '}and
         among the results is this {specimen.year} {upsc.short} Prelims question. Its wording never names the
         civilisation, so searching the paper for those words would miss it. Try it before you open
         the answer.
       </p>
       <QuestionBlock q={specimen} />
       <p class="specimen-run">
-        <a href={`/search?q=${encodeURIComponent(SPECIMEN_QUERY)}`}>Run this search yourself</a>
+        <a href={specimenSearch}>Run this search yourself</a>
       </p>
     </section>
 
@@ -283,58 +265,11 @@ const website = {
     color: var(--field-ink);
   }
 
-  /* --- search strip: the primary action --- */
-
-  .strip {
-    margin-top: clamp(-1.25rem, -2vw, -0.75rem);
-  }
-
-  .strip-form {
-    padding: 1rem 1.1rem;
-  }
-
-  .strip-row {
-    display: flex;
-    gap: 0.6rem;
-    margin-top: 0.4rem;
-  }
-
-  .strip-row input {
-    flex: 1;
-    min-width: 0;
-    font-family: var(--font-read);
-    font-size: 1.08rem;
-    padding: 0.85rem 0.95rem;
-    color: var(--ink);
-    background: var(--ground);
-    border: var(--rule-heavy) solid var(--rule-strong);
-    border-radius: 0;
-  }
-
-  .strip-row input::placeholder {
-    color: var(--ink-faint);
-  }
-
-  .strip-row button {
-    font-family: var(--font-structure);
-    font-weight: 700;
-    font-size: 0.95rem;
-    padding: 0.85rem 1.6rem;
-    color: var(--field-ink);
-    background: var(--field);
-    border: var(--rule-heavy) solid var(--rule-strong);
-    border-radius: 0;
-    cursor: pointer;
-  }
-
-  .strip-row button:hover {
-    background: var(--field-deep);
-  }
-
-  /* --- the rack --- */
+  /* --- the rack: the page's first act. Search lives inside each booklet,
+     so choosing an exam is what this page asks of the visitor. --- */
 
   .rack {
-    padding-block: clamp(2rem, 5vw, 3.25rem) 0;
+    padding-block: clamp(1.75rem, 4vw, 2.75rem) 0;
   }
 
   .rack-shelf {
@@ -470,7 +405,8 @@ const website = {
     z-index: 1;
   }
 
-  /* Outlined, not filled: search is the page's one filled-green action. */
+  /* Filled: opening a booklet is this page's primary action (search lives
+     inside the booklet), so it takes the page's one filled-green control. */
   .cover-open-cta {
     margin-top: auto;
     align-self: flex-start;
@@ -479,8 +415,8 @@ const website = {
     font-weight: 700;
     font-size: 0.95rem;
     text-decoration: none;
-    color: var(--field-text);
-    background: var(--paper);
+    color: var(--field-ink);
+    background: var(--field);
     border: var(--rule-heavy) solid var(--rule-strong);
   }
 
@@ -495,7 +431,7 @@ const website = {
 
   .cover-open:hover .cover-open-cta,
   .cover-open-cta:focus-visible {
-    background: var(--ground);
+    background: var(--field-deep);
   }
 
   /*
@@ -710,10 +646,6 @@ const website = {
 
     .mast-nav {
       flex-wrap: wrap;
-    }
-
-    .strip-row {
-      flex-direction: column;
     }
 
     .cover-fields {

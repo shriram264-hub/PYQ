@@ -1,14 +1,15 @@
 ---
 import { EXAMS, examForPath } from '../lib/exams.js';
 
-// Inside an exam, the footer offers that exam's own indexes. Everywhere else
-// (the homepage, search) it offers one entry per exam, so it never speaks for
-// a single exam on a page that belongs to all of them.
+// Inside an exam, the footer offers that exam's own indexes and search.
+// Everywhere else (the homepage) it offers one entry per exam, so it never
+// speaks for a single exam on a page that belongs to all of them.
 const exam = examForPath(Astro.url.pathname);
 const links = exam
   ? [
       { name: 'All subjects', href: `${exam.path}/subjects` },
       { name: 'All years', href: `${exam.path}/years` },
+      { name: 'Search', href: `${exam.path}/search` },
     ]
   : EXAMS.map((e) => ({ name: e.name, href: e.path }));
 
@@ -22,7 +23,6 @@ const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.
     </p>
     <nav aria-label="Footer">
       {links.map((link) => <a href={link.href}>{link.name}</a>)}
-      <a href="/search">Search</a>
     </nav>
   </div>
 </footer>
