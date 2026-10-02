@@ -55,7 +55,7 @@ test('saveState and loadState round-trip with a fake storage object', () => {
   assert.deepEqual(loaded, state);
 });
 
-test('loadState returns emptyState when localStorage throws on access', () => {
+test('loadState returns emptyState when getItem throws', () => {
   const thrower = {};
   Object.defineProperty(thrower, 'getItem', {
     get() {
@@ -71,7 +71,7 @@ test('loadState returns emptyState when localStorage throws on access', () => {
   }
 });
 
-test('saveState does not throw when localStorage throws', () => {
+test('saveState does not throw when setItem throws', () => {
   const thrower = {};
   Object.defineProperty(thrower, 'setItem', {
     get() {
@@ -85,6 +85,29 @@ test('saveState does not throw when localStorage throws', () => {
     });
   } finally {
     delete thrower.setItem;
+  }
+});
+
+test('loadState and saveState handle blocked globalThis.localStorage', () => {
+  const originalDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'localStorage');
+  try {
+    Object.defineProperty(globalThis, 'localStorage', {
+      get() {
+        throw new Error('SecurityError: localStorage access blocked');
+      },
+      configurable: true,
+    });
+    const result = loadState();
+    assert.deepEqual(result, emptyState());
+    assert.doesNotThrow(() => {
+      saveState(emptyState());
+    });
+  } finally {
+    if (originalDescriptor) {
+      Object.defineProperty(globalThis, 'localStorage', originalDescriptor);
+    } else {
+      delete globalThis.localStorage;
+    }
   }
 });
 
