@@ -84,7 +84,10 @@ const exam = examForPath(Astro.url.pathname);
 
   .masthead-nav {
     display: flex;
-    gap: 1.2rem;
+    /* Wraps on a narrow phone, where Subjects, Years, Search, Sign in and the
+       theme toggle together are wider than the sheet. */
+    flex-wrap: wrap;
+    gap: 0.6rem 1.2rem;
     font-family: var(--font-structure);
     font-size: 0.88rem;
     font-weight: 600;

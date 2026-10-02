@@ -8,7 +8,9 @@ import { authEnabled } from '../lib/accounts/config.js';
 {
   authEnabled && (
     <div class="account" data-account>
-      <button type="button" class="account-btn" data-account-signin>Sign in</button>
+      {/* Hidden until the script has looked for a session: with JS off the button
+          would do nothing, and a signed-in reader would see it flash. */}
+      <button type="button" class="account-btn" data-account-signin hidden>Sign in</button>
       <div class="account-user" data-account-user hidden>
         <button type="button" class="account-btn account-initial" data-account-toggle aria-haspopup="true" aria-expanded="false">
           <span data-account-initial></span>
@@ -28,7 +30,13 @@ import { authEnabled } from '../lib/accounts/config.js';
 
 <style>
   .account { position: relative; }
+  /* Without scripting nothing in here can ever show: drop the empty box so it
+     does not leave a stray gap in the nav. */
+  @media (scripting: none) {
+    .account { display: none; }
+  }
   .account-btn {
+    white-space: nowrap;
     padding: 0.25rem 0.6rem;
     /* Match the theme toggle beside it (its 0.95rem icon sets its height) so
        the two outlined controls read as one pair. No display is set here: the
@@ -88,6 +96,18 @@ import { authEnabled } from '../lib/accounts/config.js';
     color: var(--ink);
     border: var(--rule-heavy) solid var(--rule-strong);
     font-size: 0.85rem;
+  }
+  /* On a phone the control sits a long way from the right edge, so a note
+     anchored to it would run off the left of the screen. Pin it to the
+     viewport instead; account.js sets --account-note-top to just under the
+     control. */
+  @media (max-width: 40rem) {
+    .account-note {
+      position: fixed;
+      inset-inline: 1rem;
+      width: auto;
+      top: var(--account-note-top, 1rem);
+    }
   }
   .visually-hidden {
     position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
