@@ -641,6 +641,136 @@
       "sources": [
         "https://www.examrace.com/IAS/IAS-Prelims-Papers/General-Studies/IAS-Prelims-General-Studies-Paper-1995-Part-8.html"
       ]
+    },
+    {
+      "year": 2005,
+      "q_no": 118,
+      "why": "Missing from the source PDF. Condition (ii) reads \"4 items less\": with \"2\", as one copy has it, no option is impossible; with \"4\", exactly one is.",
+      "verified": "2026-10-02",
+      "sources": [
+        "https://iasexamportal.com/ias/ias-general-studies-prelims-question-paper-2005-part-5",
+        "https://examrobot.com/analysis/ias/2005"
+      ],
+      "add": {
+        "subject": "Science & Technology",
+        "subtopic": "Quantitative Aptitude",
+        "difficulty": "",
+        "question": "There are 6 persons: A, B, C, D, E and F.\n(i) A has 3 items more than C\n(ii) D has 4 items less than B\n(iii) E has 6 items less than F\n(iv) C has 2 items more than E\n(v) F has 3 items more than D\nWhich one of the following figures can not be equal to the total number of items possessed by all the 6 persons?",
+        "a": "41",
+        "b": "47",
+        "c": "53",
+        "d": "58",
+        "answer": "d"
+      }
+    },
+    {
+      "year": 2007,
+      "q_no": 148,
+      "why": "Missing from the source PDF.",
+      "verified": "2026-10-02",
+      "sources": [
+        "https://iasexamportal.com/ias/ias-general-studies-prelims-question-paper-2007-part-6",
+        "https://www.gktoday.in/question/a-train-completes-a-journey-with-a-few-stoppages-in-between-at-an-aver-249942"
+      ],
+      "add": {
+        "subject": "Science & Technology",
+        "subtopic": "Quantitative Aptitude",
+        "difficulty": "",
+        "question": "A train completes a journey with a few stoppages in between at an average speed of 40 km per hour. If the train had not stopped anywhere, it would have completed the journey at an average speed of 60 km per hour. On an average, how many minutes per hour does the train stop during the journey?",
+        "a": "20 minutes per hour",
+        "b": "18 minutes per hour",
+        "c": "15 minutes per hour",
+        "d": "10 minutes per hour",
+        "answer": "a"
+      }
+    },
+    {
+      "year": 2007,
+      "q_no": 149,
+      "why": "Missing from the source PDF.",
+      "verified": "2026-10-02",
+      "sources": [
+        "https://iasexamportal.com/ias/ias-general-studies-prelims-question-paper-2007-part-6",
+        "https://examrobot.com/content/average-salary-100-employees-office-rs-16000-month-management-decided-raise-salary-every"
+      ],
+      "add": {
+        "subject": "Science & Technology",
+        "subtopic": "Quantitative Aptitude",
+        "difficulty": "",
+        "question": "The average salary of 100 employees in an office is Rs 16,000 per month. The management decided to raise salary of every employee by 5% but stopped a transport allowance of Rs 800 per month which was paid earlier to every employee. What will be the new average monthly salary?",
+        "a": "Rs 16,000",
+        "b": "Rs 16,500",
+        "c": "Rs 16,800",
+        "d": "Cannot be known since data are insufficient",
+        "answer": "a"
+      }
+    },
+    {
+      "year": 2007,
+      "q_no": 150,
+      "why": "Missing from the source PDF. The one copy that prints a Q150 repeats Q120 there; this is the only 2007 question absent from the corpus, so it fills the last gap.",
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.examrace.com/IAS/IAS-Prelims-Papers/General-Studies/IAS-Prelims-General-Studies-Paper-2007-Part-2.html",
+        "https://en.wikipedia.org/wiki/2006_FIFA_World_Player_of_the_Year"
+      ],
+      "add": {
+        "subject": "Current Affairs",
+        "subtopic": "Other Sports & Personalities",
+        "difficulty": "",
+        "question": "Who among the following was chosen as the FIFA World Player of the Year for the year 2006?",
+        "a": "Zinedine Zidane",
+        "b": "Fabio Cannavaro",
+        "c": "Ronaldinho",
+        "d": "Thierry Henry",
+        "answer": "b"
+      }
+    },
+    {
+      "year": 2000,
+      "q_no": 77,
+      "why": "The source PDF repeats 2000 Q55 (megacities) under Q77.",
+      "verified": "2026-10-02",
+      "sources": [
+        "https://examrobot.com/content/which-one-following-statements-true-according-1991-census-data",
+        "https://www.examrace.com/IAS/IAS-Prelims-Papers/General-Studies/IAS-Prelims-General-Studies-Paper-2000-Part-6.html"
+      ],
+      "set": {
+        "subject": "Geography",
+        "subtopic": "Population & Demography",
+        "difficulty": "",
+        "question": "Which one of the following statements is true according to 1991 Census data?",
+        "a": "U.P. has the highest density of population in India",
+        "b": "Himachal Pradesh has the highest female to male sex ratio in India",
+        "c": "West Bengal has the highest growth rate of population in India",
+        "d": "Bihar has the lowest literacy rate in India",
+        "answer": "d",
+        "answer_note": "",
+        "status": "ok"
+      }
+    },
+    {
+      "year": 2002,
+      "q_no": 50,
+      "why": "The source PDF holds a 2018 question (2018 Q50, high saving economy) under 2002 Q50.",
+      "verified": "2026-10-02",
+      "sources": [
+        "https://www.examrace.com/IAS/IAS-Prelims-Papers/General-Studies/IAS-Prelims-General-Studies-Paper-2002-Part-8.html",
+        "https://edukemy.com/blog/upsc-prelims-topic-wise-questions-biology-environment-and-ecology/"
+      ],
+      "set": {
+        "subject": "Environment & Ecology",
+        "subtopic": "Biodiversity & Conservation",
+        "difficulty": "",
+        "question": "Match List I (Indian Wildlife Species) with List II (Scientific Names) and select the correct answer using the codes given below the lists:\nList I (Indian Wildlife Species)\nA. Asiatic Wild Ass\nB. Barasingha\nC. Chinkara\nD. Nilgai\nList II (Scientific Names)\n1. Boselaphus tragocamelus\n2. Cervus duvauceli\n3. Equus hemionus\n4. Gazella gazella\nCodes: A B C D",
+        "a": "2 3 1 4",
+        "b": "3 2 4 1",
+        "c": "2 3 4 1",
+        "d": "3 2 1 4",
+        "answer": "b",
+        "answer_note": "",
+        "status": "ok"
+      }
     }
   ]
 }

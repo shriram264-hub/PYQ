@@ -141,13 +141,29 @@ def apply_corrections(questions, path):
     by_key = {(q["year"], q["q_no"]): q for q in questions}
     patches = json.loads(path.read_text(encoding="utf-8"))["patches"]
     for p in patches:
-        q = by_key.get((p["year"], p["q_no"]))
+        key = (p["year"], p["q_no"])
+        q = by_key.get(key)
+        if "add" in p:
+            # A question the PDF omits entirely, sourced and verified elsewhere.
+            if q is not None:
+                sys.exit(f"corrections.json: {p['year']} Q{p['q_no']} already exists; use set, not add")
+            record = {"year": p["year"], "q_no": p["q_no"], "answer_note": "", "status": "ok", **p["add"]}
+            # Keep paper order: after the nearest earlier question of that year.
+            before = [i for i, r in enumerate(questions) if r["year"] == p["year"] and r["q_no"] < p["q_no"]]
+            questions.insert(before[-1] + 1 if before else len(questions), record)
+            by_key[key] = record
+            continue
         if q is None:
             sys.exit(f"corrections.json: {p['year']} Q{p['q_no']} is not in the extracted data")
         if p.get("drop"):
             # A record that is not a real question (e.g. the PDF repeating
             # another question under this number). The number stays a gap.
             questions.remove(q)
+            continue
+        if "set" in p:
+            # The PDF holds the wrong question under this number (a copy of
+            # another one); replace the record's content wholesale.
+            q.update(p["set"])
             continue
         for find, repl in p["replace"]:
             hits = q[p["field"]].count(find)
