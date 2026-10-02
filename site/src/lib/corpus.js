@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { questionKey } from './accounts/qkey.js';
 
 // Build-time only: the corpus is baked into static pages, never fetched at runtime.
 // Resolved from the working directory rather than import.meta.url, because the
@@ -42,6 +43,7 @@ export const ALL_QUESTIONS = questions.map((q) => {
     subjectSlug: slugify(subject),
     subtopicSlug: slugify(q.subtopic),
     slug: `${q.year}-q${q.q_no}-${slugify(q.question.slice(0, 60))}`,
+    qkey: questionKey('upsc', q.year, q.q_no),
   };
 });
 

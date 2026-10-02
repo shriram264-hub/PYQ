@@ -119,7 +119,7 @@ const crumbs = [{ name: 'Search', href: '/upsc/search' }];
          ${q.answer_note ? `<p class="qnote">${esc(q.answer_note)}</p>` : ''}</div></details>`
       : `<p class="qanswer-none">No answer is recorded for this question.</p>`;
 
-    return `<article class="qblock">
+    return `<article class="qblock" data-qkey="upsc-${q.year}-${q.q_no}">
       <div class="qhead">
         <a class="serial qref" href="/upsc/question/${qSlug}" tabindex="-1">${q.year} · Q${q.q_no}</a>
         <a href="/upsc/subject/${sSlug}">${esc(subject)}</a>

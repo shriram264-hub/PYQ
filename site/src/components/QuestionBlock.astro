@@ -8,7 +8,7 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
 const href = `/upsc/question/${q.slug}`;
 ---
 
-<article class="qblock">
+<article class="qblock" data-qkey={q.qkey}>
   <div class="qhead">
     {
       // The serial is the visible permalink cue. It is a mouse shortcut only:
