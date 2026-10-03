@@ -1,9 +1,9 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
 
-// The canonical origin. Switches to https://sawaalbox.com once that domain is
-// registered; until then canonical URLs must point at the origin actually serving.
-const site = process.env.SITE_URL || 'https://upsc-pyq-search-s778.onrender.com';
+// The canonical origin. The old Render address still serves the same pages, so
+// canonical URLs point here to keep search engines on one address.
+const site = process.env.SITE_URL || 'https://sawaalbox.in';
 
 export default defineConfig({
   site,

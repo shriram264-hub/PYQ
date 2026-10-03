@@ -17,8 +17,10 @@ services:
     envVars:
       - key: PYTHON_VERSION
         value: 3.12.11
+      # Every origin that serves the site: the domain, the old Render address
+      # (still live, so old links keep searching) and local dev servers.
       - key: ALLOWED_ORIGINS
-        value: https://upsc-pyq-search-s778.onrender.com,http://localhost:5173
+        value: https://sawaalbox.in,https://upsc-pyq-search-s778.onrender.com,http://localhost:4321,http://localhost:5173
 
   - type: web
     name: upsc-pyq-search
@@ -38,7 +40,7 @@ services:
       # Baked into the client at build time; the search island calls this.
       - key: PUBLIC_API_BASE
         value: https://upsc-pyq-search-api.onrender.com
-      # Canonical origin for canonical tags, OG urls and the sitemap.
-      # Change this one value when sawaalbox.com is registered.
+      # Canonical origin for canonical tags, OG urls and the sitemap. The domain
+      # is attached to this service in Render (www redirects to it).
       - key: SITE_URL
-        value: https://upsc-pyq-search-s778.onrender.com
+        value: https://sawaalbox.in

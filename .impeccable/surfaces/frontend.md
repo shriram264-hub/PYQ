@@ -29,6 +29,6 @@ Constraints: backend is a 512MB free-tier instance that sleeps when idle, so the
 
 ## Unresolved
 
-- sawaalbox.com is not registered yet; the site ships on the existing Render URL until it is.
+- Resolved 2026-10-03: the site's domain is sawaalbox.in; the Render URL still serves it, with canonical links to the domain.
 - Monetization model (subscription vs paid features) undecided; nothing in this build may assume a paywall.
 - Whether individual question pages carry Hindi alongside English (real papers are bilingual, but the extracted corpus is English-only — the bilingual line in the masthead must not imply bilingual question content that does not exist).

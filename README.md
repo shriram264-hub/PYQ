@@ -41,7 +41,7 @@ python build_index.py
 
 ## Live site
 
-- Frontend: https://upsc-pyq-search-s778.onrender.com
+- Site: https://sawaalbox.in (also served at https://upsc-pyq-search-s778.onrender.com, whose pages point their canonical links at the domain)
 - Backend API: https://upsc-pyq-search-api.onrender.com
 
 ## Deploying (Render)
@@ -55,8 +55,9 @@ This repo includes a `render.yaml` Blueprint that deploys both services on Rende
 3. Click **Apply** to deploy.
 
 Service names are global across Render, so a taken name gets a random suffix appended to its `onrender.com` URL — which is what happened here (`upsc-pyq-search` → `upsc-pyq-search-s778`). If you redeploy under different names, update the two cross-referencing env vars in `render.yaml` to match the real URLs:
-- `upsc-pyq-search-api`'s `ALLOWED_ORIGINS` must include the frontend's actual URL, or every browser request fails CORS
-- `upsc-pyq-search`'s `VITE_API_BASE` must be the backend's actual URL (redeploy the frontend after changing it — it's baked in at build time)
+- `upsc-pyq-search-api`'s `ALLOWED_ORIGINS` must include every origin the site is served from (the domain and the `onrender.com` URL), or browser searches from that origin fail CORS
+- `upsc-pyq-search`'s `PUBLIC_API_BASE` must be the backend's actual URL (redeploy the site after changing it — it's baked in at build time)
+- `upsc-pyq-search`'s `SITE_URL` is the canonical origin (the custom domain)
 
 ### Why the backend uses ONNX, not PyTorch
 
