@@ -43,8 +43,9 @@ const href = `/upsc/question/${q.slug}`;
   </ol>
 
   {/* Empty slot for the progress marks. marks.js fills it; it is rendered here so the page
-      reserves the space up front and nothing shifts when the script runs. */}
-  <div class="qmarks" role="group" aria-label="Your progress and lists for this question"></div>
+      reserves the space up front and nothing shifts when the script runs. It carries no
+      role or name until then (marks.js gives it both, naming the question's serial). */}
+  <div class="qmarks"></div>
 
   {
     q.answer ? (

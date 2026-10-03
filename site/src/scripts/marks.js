@@ -1,4 +1,5 @@
 import { STORAGE_KEY, enqueue, loadState, saveState, setMark } from '../lib/accounts/progress-store.js';
+import { serialOf } from '../lib/accounts/summary.js';
 // The "Save to list" panel. Imported here, not from the pages, so there is one
 // module instance and its listeners register once (see the note on sync.js).
 import './save-to-list.js';
@@ -21,12 +22,16 @@ function ensureControls(block) {
   if (!group) {
     group = document.createElement('div');
     group.className = 'qmarks';
-    group.setAttribute('role', 'group');
-    group.setAttribute('aria-label', 'Your progress and lists for this question');
     // Between the options and the sealed answer: decide, then check.
     block.insertBefore(group, block.querySelector(':scope > .qanswer, :scope > .qanswer-none'));
   }
   if (!group.querySelector('.qmark')) {
+    // The slot is served bare: with scripting off it stays empty, and an empty
+    // named group is noise to a screen reader. Once filled it is a group named
+    // by its question's serial, so "Mark done" is heard as belonging to
+    // "2019 · Q7" rather than as one of 25 identical buttons.
+    group.setAttribute('role', 'group');
+    group.setAttribute('aria-label', `Your progress and lists for ${serialOf(block.dataset.qkey)}`);
     for (const c of CONTROLS) {
       const b = document.createElement('button');
       b.type = 'button';
