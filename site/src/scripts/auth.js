@@ -1,4 +1,4 @@
-import { SUPABASE_URL, SUPABASE_KEY, storageKeyFor } from '../lib/accounts/config.js';
+import { SUPABASE_URL, SUPABASE_KEY, sessionHint, storageKeyFor } from '../lib/accounts/config.js';
 
 let clientPromise;
 
@@ -18,12 +18,10 @@ export function getClient() {
   return clientPromise;
 }
 
-/** True when a session is stored, or we are returning from Google with a code. */
+/** True when a session is stored, or we are returning from Google with a code (sessionHint). */
 export function mayHaveSession() {
   try {
-    const key = storageKeyFor(SUPABASE_URL);
-    if (localStorage.getItem(key)) return true;
-    return new URLSearchParams(location.search).has('code') && Boolean(localStorage.getItem(`${key}-code-verifier`));
+    return sessionHint(localStorage, location.search, storageKeyFor(SUPABASE_URL));
   } catch {
     return false;
   }
