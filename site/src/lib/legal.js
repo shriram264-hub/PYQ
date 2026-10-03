@@ -67,9 +67,10 @@
 //     sync-lists.js:88). A copy stays in this browser (item 1), with two pull
 //     markers `sawaalbox-sync-v1` and `sawaalbox-sync-lists-v1` holding the
 //     user id and a time (scripts/sync.js:20, sync-lists.js:18, lib/accounts/pull.js:52),
-//     removed on sign-out, and `sawaalbox-owner-v1` holding the id of the last
-//     account that synced on this browser, kept after sign-out so the next
-//     account to sign in here is recognised (lib/accounts/pull.js OWNER_KEY).
+//     removed on sign-out, and `sawaalbox-owner-v1` holding the id of the
+//     account whose data this browser holds (the last to sign in here), kept
+//     after sign-out so the next account to sign in here is recognised
+//     (lib/accounts/pull.js OWNER_KEY).
 // 10. Access rules: row-level security on every table; each signed-in user can
 //     read and change only their own rows, and nobody signed out can reach them
 //     (migration :40-77).

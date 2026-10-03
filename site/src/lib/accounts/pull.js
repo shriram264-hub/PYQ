@@ -30,11 +30,13 @@ export async function pullPages(client, table, columns, orderBy) {
 }
 
 /**
- * The id of the account that last completed a sync on this browser. Kept on
- * purpose when that account signs out, unlike the pull markers: it is how the
- * next run tells that a different account has signed in here, and that the
- * synced copy on this device belongs to someone else (see
- * rebaseForNewAccount in merge.js). Both syncs write it after a step succeeds.
+ * The id of the account whose data this browser holds. Kept on purpose when
+ * that account signs out, unlike the pull markers: it is how the next run
+ * tells that a different account has signed in here, and that the synced copy
+ * and queued changes on this device belong to someone else (see
+ * rebaseForNewAccount in merge.js). An account claims it at the start of its
+ * first run (claimDevice in scripts/sync.js), and both syncs write it again
+ * after a step succeeds.
  */
 export const OWNER_KEY = 'sawaalbox-owner-v1';
 

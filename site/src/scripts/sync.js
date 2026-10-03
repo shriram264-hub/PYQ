@@ -87,20 +87,28 @@ export async function syncProgress(client, user, { full = false } = {}) {
  * data from before owners were kept) merges everything, as any first sign-in
  * does. Throws when storage refuses the rebased state: merging A's copy as it
  * stands is what must not happen, so the run stops there and retries later.
+ *
+ * Then B claims the device at once, before any request: the owner is the
+ * account whose data the device now holds, not the last one a sync reached.
+ * Waiting for a sync to succeed would rebase again on every run that fails
+ * and drop B's own queued clears; and if B signed out while still offline,
+ * those clears would look like A's own to A's next sign-in and delete A's rows.
  */
 function claimDevice(user) {
   const owner = deviceOwner.read();
-  if (owner === null || owner === user.id) return;
-  const before = loadState();
-  const after = rebaseForNewAccount(before);
-  const size = (s) => [Object.keys(s.entries).length, s.pending.length, Object.keys(s.lists).length].join();
-  if (size(after) !== size(before)) {
-    if (!saveState(after)) throw new Error("another account's copy could not be cleared from this device");
-    // Storage changed under the page: marks and open panels redraw.
-    document.dispatchEvent(new CustomEvent('sawaalbox:synced'));
+  if (owner !== null && owner !== user.id) {
+    const before = loadState();
+    const after = rebaseForNewAccount(before);
+    const size = (s) => [Object.keys(s.entries).length, s.pending.length, Object.keys(s.lists).length].join();
+    if (size(after) !== size(before)) {
+      if (!saveState(after)) throw new Error("another account's copy could not be cleared from this device");
+      // Storage changed under the page: marks and open panels redraw.
+      document.dispatchEvent(new CustomEvent('sawaalbox:synced'));
+    }
+    progressPull.forget();
+    forgetListsPull();
   }
-  progressPull.forget();
-  forgetListsPull();
+  deviceOwner.remember(user.id);
 }
 
 // The sync wired to this page, if any: kept so a second startSync does not add
