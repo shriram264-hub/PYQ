@@ -299,10 +299,14 @@ document.addEventListener('click', (event) => {
 
 const signin = $('[data-signin]');
 const where = $('[data-where]');
+// The beta terms (account.astro): the same for a student about to sign in and
+// one already signed in, so it shows in both modes.
+const terms = $('[data-terms]');
 
 function showWhere(mode) {
   where.textContent = WHERE[mode];
   if (signin) signin.hidden = mode !== 'out';
+  if (terms) terms.hidden = false;
 }
 
 // Dark launch: authEnabled is false, so nothing below runs and the page says

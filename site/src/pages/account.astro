@@ -1,6 +1,7 @@
 ---
 import Listing from '../layouts/Listing.astro';
 import { authEnabled } from '../lib/accounts/config.js';
+import { LEGAL } from '../lib/legal.js';
 ---
 
 <Listing
@@ -19,6 +20,15 @@ import { authEnabled } from '../lib/accounts/config.js';
         <button type="button" class="acct-btn" data-signin hidden>
           Sign in
         </button>
+      )
+    }
+    {/* The beta terms, said before anyone signs in and kept in view after.
+        Shown with the line above once the session check has settled. */}
+    {
+      authEnabled && (
+        <p class="acct-terms" data-terms hidden>
+          {LEGAL.betaTerms} See the <a href="/terms">terms of use</a>.
+        </p>
       )
     }
     <p class="acct-note" role="status" data-where-note></p>
@@ -91,6 +101,14 @@ import { authEnabled } from '../lib/accounts/config.js';
 
   .acct-empty {
     margin: 0;
+    color: var(--ink-soft);
+  }
+
+  /* Its own row under the status line and the button. */
+  .acct-terms {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.92rem;
     color: var(--ink-soft);
   }
 
