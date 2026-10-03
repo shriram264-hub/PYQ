@@ -1,4 +1,7 @@
 import { STORAGE_KEY, enqueue, loadState, saveState, setMark } from '../lib/accounts/progress-store.js';
+// The "Save to list" panel. Imported here, not from the pages, so there is one
+// module instance and its listeners register once (see the note on sync.js).
+import './save-to-list.js';
 
 const CONTROLS = [
   { status: 'done', label: 'Mark done' },
@@ -33,8 +36,24 @@ function ensureControls(block) {
       b.setAttribute('aria-pressed', 'false');
       group.append(b);
     }
+    group.append(saveButton());
   }
   return group;
+}
+
+// Not a toggle, so no aria-pressed and no data-status: paintAll and the click
+// handler below act only on `.qmark[data-status]`. save-to-list.js owns this
+// button, and builds the panel it controls when it is first opened.
+let panels = 0;
+function saveButton() {
+  const b = document.createElement('button');
+  b.type = 'button';
+  b.className = 'qmark qmark-save';
+  b.textContent = 'Save to list';
+  // An id per button, not per question: the same question can be on a page twice.
+  b.setAttribute('aria-controls', `qlists-${++panels}`);
+  b.setAttribute('aria-expanded', 'false');
+  return b;
 }
 
 function blocksIn(root) {
@@ -46,14 +65,14 @@ export function paintAll(root = document) {
   const { entries } = current();
   for (const block of blocksIn(root)) {
     const status = entries[block.dataset.qkey]?.status;
-    for (const b of ensureControls(block).querySelectorAll('.qmark')) {
+    for (const b of ensureControls(block).querySelectorAll('.qmark[data-status]')) {
       b.setAttribute('aria-pressed', String(b.dataset.status === status));
     }
   }
 }
 
 document.addEventListener('click', (event) => {
-  const button = event.target.closest('.qmark');
+  const button = event.target.closest('.qmark[data-status]');
   if (!button) return;
   const key = button.closest('.qblock[data-qkey]').dataset.qkey;
   // Act on what the person is looking at, not on what storage says now: another

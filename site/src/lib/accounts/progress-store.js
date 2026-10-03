@@ -6,6 +6,26 @@ export function emptyState() {
   return { entries: {}, pending: [], lists: {} };
 }
 
+const isStrings = (v) => Array.isArray(v) && v.every((k) => typeof k === 'string');
+
+// syncedKeys is the base of the three-way list merge (see lists.js): the keys
+// the account held at the last sync. A list saved before it existed has none.
+function parseList(l) {
+  if (!l || typeof l !== 'object' || Array.isArray(l)) return null;
+  const syncedKeys = l.syncedKeys === undefined ? [] : l.syncedKeys;
+  if (
+    typeof l.name !== 'string' ||
+    l.name.length < 1 ||
+    l.name.length > 80 ||
+    !isStrings(l.keys) ||
+    !(l.remoteId === null || typeof l.remoteId === 'string') ||
+    !isStrings(syncedKeys)
+  ) {
+    return null;
+  }
+  return { name: l.name, keys: [...new Set(l.keys)], remoteId: l.remoteId, syncedKeys: [...new Set(syncedKeys)] };
+}
+
 export function parseState(raw) {
   try {
     const s = JSON.parse(raw);
@@ -31,10 +51,14 @@ export function parseState(raw) {
       pending = s.pending;
     }
 
-    // Validate and coerce lists
+    // Validate lists. Storage is the user's, and a list with a bad shape would
+    // make every sync throw, so such a list is dropped rather than trusted.
     const lists = {};
     if (s.lists && typeof s.lists === 'object' && !Array.isArray(s.lists)) {
-      Object.assign(lists, s.lists);
+      for (const [id, l] of Object.entries(s.lists)) {
+        const list = parseList(l);
+        if (list && id !== '__proto__') lists[id] = list;
+      }
     }
 
     return { entries, pending, lists };

@@ -162,3 +162,55 @@ test('parseState drops entries with missing updatedAt', () => {
   const result = parseState(JSON.stringify(input));
   assert.deepEqual(Object.keys(result.entries), ['b']);
 });
+
+// Lists: storage is the user's, so a malformed list is dropped, never trusted.
+const parseLists = (lists) => parseState(JSON.stringify({ entries: {}, pending: [], lists })).lists;
+
+test('parseState keeps a well-formed list, and gives an older one an empty base', () => {
+  const lists = parseLists({
+    a: { name: 'Polity', keys: ['k1', 'k2'], remoteId: 'R1', syncedKeys: ['k1'] },
+    b: { name: 'Maps', keys: [], remoteId: null },
+  });
+  assert.deepEqual(lists, {
+    a: { name: 'Polity', keys: ['k1', 'k2'], remoteId: 'R1', syncedKeys: ['k1'] },
+    b: { name: 'Maps', keys: [], remoteId: null, syncedKeys: [] },
+  });
+});
+
+test('parseState drops lists with a bad name, keys, remoteId or syncedKeys', () => {
+  const lists = parseLists({
+    ok: { name: 'Fine', keys: [], remoteId: null, syncedKeys: [] },
+    noName: { keys: [], remoteId: null },
+    emptyName: { name: '', keys: [], remoteId: null },
+    longName: { name: 'x'.repeat(81), keys: [], remoteId: null },
+    numName: { name: 7, keys: [], remoteId: null },
+    noKeys: { name: 'A', remoteId: null },
+    objKeys: { name: 'B', keys: {}, remoteId: null },
+    mixedKeys: { name: 'C', keys: ['a', 1], remoteId: null },
+    badRemote: { name: 'D', keys: [], remoteId: 5 },
+    missingRemote: { name: 'E', keys: [] },
+    badBase: { name: 'F', keys: [], remoteId: null, syncedKeys: 'a' },
+    mixedBase: { name: 'G', keys: [], remoteId: null, syncedKeys: [null] },
+    nullList: null,
+    stringList: 'Polity',
+    arrayList: [],
+  });
+  assert.deepEqual(Object.keys(lists), ['ok']);
+  assert.equal(parseLists({ n: { name: 'x'.repeat(80), keys: [], remoteId: null } }).n.name.length, 80);
+});
+
+test('parseState removes duplicate keys and refuses a prototype-polluting id', () => {
+  const lists = parseState(
+    '{"entries":{},"pending":[],"lists":{"a":{"name":"A","keys":["k","k"],"remoteId":null,"syncedKeys":["s","s"]},"__proto__":{"name":"X","keys":[],"remoteId":null}}}'
+  ).lists;
+  assert.deepEqual(lists.a.keys, ['k']);
+  assert.deepEqual(lists.a.syncedKeys, ['s']);
+  assert.deepEqual(Object.keys(lists), ['a']);
+  assert.equal(Object.getPrototypeOf(lists), Object.prototype);
+});
+
+test('parseState never throws on odd lists values', () => {
+  for (const lists of [null, 5, 'x', [], true]) {
+    assert.deepEqual(parseState(JSON.stringify({ entries: {}, pending: [], lists })).lists, {});
+  }
+});

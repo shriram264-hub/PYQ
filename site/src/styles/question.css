@@ -266,6 +266,29 @@ a.qref:hover {
   background: currentColor;
 }
 
+/* Save to list opens a panel; it does not switch anything on. So its square
+   is a disclosure caret drawn from two borders (down when shut, up when open),
+   not the fill that means "this mark is set". The margins keep the icon's
+   0.75rem footprint, so the label sits where the other buttons' labels do. */
+.qmark-save::before {
+  width: 0.4rem;
+  height: 0.4rem;
+  margin: 0 0.175rem;
+  border: 0;
+  border-right: var(--rule-heavy) solid currentColor;
+  border-bottom: var(--rule-heavy) solid currentColor;
+  transform: translateY(-0.12rem) rotate(45deg);
+}
+
+.qmark-save[aria-expanded='true'] {
+  color: var(--ink);
+  border-color: var(--rule-strong);
+}
+
+.qmark-save[aria-expanded='true']::before {
+  transform: translateY(0.12rem) rotate(-135deg);
+}
+
 /* Fingers need a bigger target than a cursor does. */
 @media (pointer: coarse) {
   .qmark {
@@ -276,8 +299,11 @@ a.qref:hover {
 /* The script adds the buttons after load. Where it will run, hold the row's
    room from first paint (and its margin, which an empty slot does not carry)
    so the question text below never moves. The heights equal the .qmark
-   min-heights above: one row, or two when the pair wraps on a very narrow
-   screen (under 20.85rem). */
+   min-heights above. The three buttons (measured with the web fonts: 118,
+   139 and 126px) fit one row from 29.3rem up, wrap to two below that, and to
+   three under 20.85rem. With the fallback face, which is narrower, they wrap a
+   little later, so the reserved room is never short. Re-measure these two
+   breakpoints if a label or the type size changes. */
 @media (scripting: enabled) {
   .qmarks {
     margin: 0 0 0.85rem;
@@ -291,14 +317,163 @@ a.qref:hover {
   }
 }
 
-@media (scripting: enabled) and (max-width: 20.85rem) {
+@media (scripting: enabled) and (max-width: 29.3rem) {
   .qmarks {
     min-height: calc(2 * 1.75rem + 0.5rem);
   }
 }
 
-@media (scripting: enabled) and (pointer: coarse) and (max-width: 20.85rem) {
+@media (scripting: enabled) and (pointer: coarse) and (max-width: 29.3rem) {
   .qmarks {
     min-height: calc(2 * 2.4rem + 0.5rem);
+  }
+}
+
+@media (scripting: enabled) and (max-width: 20.85rem) {
+  .qmarks {
+    min-height: calc(3 * 1.75rem + 2 * 0.5rem);
+  }
+}
+
+@media (scripting: enabled) and (pointer: coarse) and (max-width: 20.85rem) {
+  .qmarks {
+    min-height: calc(3 * 2.4rem + 2 * 0.5rem);
+  }
+}
+
+/* The Save to list panel: a recessed ruled sheet under the marks, opened by the
+   button above it. Ground on paper, like an input inside a paper box. */
+.qlists {
+  display: grid;
+  gap: 0.5rem;
+  margin: -0.35rem 0 0.85rem;
+  padding: 0.75rem 0.85rem;
+  max-width: 28rem;
+  background: var(--ground);
+  border: var(--rule-hair) solid var(--rule-strong);
+}
+
+/* display above would otherwise beat the hidden attribute */
+.qlists[hidden] {
+  display: none;
+}
+
+.qlists-rows {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.qlists-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 1.75rem;
+  font-family: var(--font-structure);
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+
+/* A ruled square that fills when ticked, like the answer seal and the marks,
+   with the tick cut out of the fill in paper. Drawn here because the browser's
+   own checkbox has rounded corners. */
+.qlists-row input {
+  appearance: none;
+  flex: none;
+  position: relative;
+  width: 1.1rem;
+  height: 1.1rem;
+  margin: 0;
+  background: var(--paper);
+  border: var(--rule-heavy) solid var(--rule-strong);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.qlists-row input:checked {
+  background: var(--field-text);
+}
+
+.qlists-row input:checked::after {
+  content: '';
+  position: absolute;
+  left: 0.27rem;
+  top: 0.04rem;
+  width: 0.28rem;
+  height: 0.55rem;
+  border-right: var(--rule-heavy) solid var(--paper);
+  border-bottom: var(--rule-heavy) solid var(--paper);
+  transform: rotate(45deg);
+}
+
+.qlists-empty {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+.qlists-new {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.3rem 0.5rem;
+  margin-top: 0.3rem;
+}
+
+.qlists-new .field-label {
+  grid-column: 1 / -1;
+}
+
+.qlists-new input {
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  font-family: var(--font-read);
+  font-size: 1rem;
+  color: var(--ink);
+  background: var(--paper);
+  border: var(--rule-heavy) solid var(--rule-strong);
+  border-radius: 0;
+}
+
+.qlists-new input::placeholder {
+  color: var(--ink-faint);
+}
+
+/* Outlined, never the filled green: that is the page's one primary action. */
+.qlists-add {
+  padding: 0.45rem 0.9rem;
+  font-family: var(--font-structure);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--field-text);
+  background: var(--paper);
+  border: var(--rule-heavy) solid var(--rule-strong);
+  border-radius: 0;
+  cursor: pointer;
+}
+
+.qlists-add:hover {
+  background: var(--ground);
+}
+
+.qlists-note {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.qlists-note:empty {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .qlists-row {
+    min-height: 2.4rem;
+  }
+
+  .qlists-new input,
+  .qlists-add {
+    min-height: 2.4rem;
   }
 }
