@@ -2,7 +2,8 @@ import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { STORAGE_KEY, emptyState, enqueue, loadState, saveState, setMark } from '../src/lib/accounts/progress-store.js';
 import { toggleKey } from '../src/lib/accounts/lists.js';
-import { SYNC_MARKER_KEY, startSync, syncLists, syncProgress } from '../src/scripts/sync.js';
+import { SYNC_MARKER_KEY, startSync, syncProgress } from '../src/scripts/sync.js';
+import { LISTS_MARKER_KEY, syncLists } from '../src/scripts/sync-lists.js';
 
 const USER = { id: 'user-1' };
 const OLD = '2026-10-01T10:00:00.000Z';
@@ -190,6 +191,8 @@ const click = (key, status, at) => document.dispatchEvent(new CustomEvent('sawaa
 const seed = (state) => assert.ok(saveState({ ...emptyState(), ...state }));
 const writeMarker = (ageMs, user = USER.id) =>
   store.set(SYNC_MARKER_KEY, JSON.stringify({ user, at: new Date(Date.now() - ageMs).toISOString() }));
+const writeListsMarker = (ageMs, user = USER.id) =>
+  store.set(LISTS_MARKER_KEY, JSON.stringify({ user, at: new Date(Date.now() - ageMs).toISOString() }));
 // The fake network settles on microtasks, so one timer turn lets everything finish.
 const idle = () => new Promise((resolve) => setTimeout(resolve, 5));
 function slowNetwork(client) {
@@ -499,7 +502,6 @@ test('syncing can start again after a sign-out', async () => {
 
 const list = (name, keys = [], remoteId = null, syncedKeys = []) => ({ name, keys, remoteId, syncedKeys });
 const lists = () => loadState().lists;
-const full = { full: true };
 
 // An account that already has this set (and its bookmarks), as another device left it.
 function remoteSet(client, id, name, keys = []) {
@@ -524,7 +526,7 @@ function tick(listId, key) {
 test('a new list is created on the account first, then its bookmarks are added', async () => {
   seed({ lists: { L1: list('Polity', ['a', 'b']) } });
   const client = fakeClient();
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(
     listCalls(client).map((c) => `${c.kind}:${c.table}`),
     ['select:bookmark_sets', 'select:bookmarks', 'insert:bookmark_sets', 'upsert:bookmarks']
@@ -548,7 +550,7 @@ test('the lists pull reads every page of sets and of bookmarks', async () => {
   const keys = Array.from({ length: 1500 }, (_, i) => `k${String(i).padStart(4, '0')}`);
   remoteSet(client, 'R1', 'Big', keys);
   seed({ lists: { L1: list('Big', keys, 'R1', keys) } });
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.equal(lists().L1.keys.length, 1500, 'a key beyond the first page is not mistaken for one removed elsewhere');
   const [first] = kinds(client, 'select', 'bookmarks');
   assert.deepEqual(first.order, ['set_id', 'question_key'], 'paged in primary-key order');
@@ -557,26 +559,58 @@ test('the lists pull reads every page of sets and of bookmarks', async () => {
   assert.deepEqual(listCalls(client).filter((c) => c.kind !== 'select'), []);
 });
 
-test('a key removed here is deleted from the account, one bookmark per request', async () => {
+test('a key removed here is deleted from the account', async () => {
   seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a', 'b']) } });
   const client = fakeClient();
   remoteSet(client, 'R1', 'Polity', ['a', 'b']);
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   const [del] = kinds(client, 'delete', 'bookmarks');
   assert.deepEqual(del.filters, [
     ['eq', 'set_id', 'R1'],
-    ['eq', 'question_key', 'b'],
+    ['eq', 'user_id', USER.id],
+    ['in', 'question_key', ['b']],
   ]);
   assert.deepEqual(remoteKeys(client, 'R1'), ['a']);
   assert.deepEqual(lists().L1, list('Polity', ['a'], 'R1', ['a']));
   assert.deepEqual(kinds(client, 'upsert', 'bookmarks'), []);
 });
 
+test('removals are one delete per set, not one per bookmark', async () => {
+  seed({
+    lists: {
+      L1: list('Polity', ['keep'], 'R1', ['keep', 'a', 'b']),
+      L2: list('Maps', [], 'R2', ['c']),
+    },
+  });
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['keep', 'a', 'b']);
+  remoteSet(client, 'R2', 'Maps', ['c']);
+  await syncLists(client, USER);
+  const dels = kinds(client, 'delete', 'bookmarks');
+  assert.deepEqual(
+    dels.map((d) => [d.filters[0][2], d.filters[2][2]]),
+    [['R1', ['a', 'b']], ['R2', ['c']]]
+  );
+  assert.deepEqual(remoteKeys(client, 'R1'), ['keep']);
+  assert.deepEqual(remoteKeys(client, 'R2'), []);
+});
+
+test('a long run of removals is split so the request URL stays short', async () => {
+  const keys = Array.from({ length: 250 }, (_, i) => `k${String(i).padStart(3, '0')}`);
+  seed({ lists: { L1: list('Big', [], 'R1', keys) } });
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Big', keys);
+  await syncLists(client, USER);
+  assert.deepEqual(kinds(client, 'delete', 'bookmarks').map((d) => d.filters[2][2].length), [100, 100, 50]);
+  assert.deepEqual(remoteKeys(client, 'R1'), []);
+  assert.deepEqual(lists().L1, list('Big', [], 'R1', []));
+});
+
 test('a key removed on another device leaves this one, and nothing is written', async () => {
   seed({ lists: { L1: list('Polity', ['a', 'b'], 'R1', ['a', 'b']) } });
   const client = fakeClient();
   remoteSet(client, 'R1', 'Polity', ['a']);
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(lists().L1, list('Polity', ['a'], 'R1', ['a']));
   assert.deepEqual(remoteKeys(client, 'R1'), ['a']);
   assert.deepEqual(listCalls(client).filter((c) => c.kind !== 'select'), []);
@@ -587,7 +621,7 @@ test('a list deleted on another device leaves this one', async () => {
   seed({ lists: { L1: list('Gone', ['a'], 'R9', ['a']), L2: list('Kept', ['k'], 'R2', ['k']) } });
   const client = fakeClient();
   remoteSet(client, 'R2', 'Kept', ['k']);
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(Object.keys(lists()), ['L2']);
   assert.deepEqual(setNames(client), ['Kept'], 'and is not recreated on the account');
 });
@@ -596,7 +630,7 @@ test('lists from another account are dropped, and this account sets arrive', asy
   seed({ lists: { L1: list('Theirs', ['a'], 'OTHER', ['a']) } });
   const client = fakeClient();
   remoteSet(client, 'R1', 'Mine', ['z']);
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(lists(), { R1: list('Mine', ['z'], 'R1', ['z']) });
 });
 
@@ -604,7 +638,7 @@ test('first sign-in: a list joins the account list of its name and the keys are 
   seed({ lists: { L1: list('Polity', ['mine', 'both']) } });
   const client = fakeClient();
   remoteSet(client, 'R1', 'Polity', ['both', 'theirs']);
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(remoteKeys(client, 'R1'), ['both', 'mine', 'theirs']);
   assert.deepEqual(kinds(client, 'insert', 'bookmark_sets'), [], 'no second set of that name');
   assert.deepEqual(kinds(client, 'upsert', 'bookmarks')[0].rows, [{ set_id: 'R1', question_key: 'mine', user_id: USER.id }]);
@@ -616,7 +650,7 @@ test('first sign-in: a list joins the account list of its name and the keys are 
 test('a set made on another device arrives as a list', async () => {
   const client = fakeClient();
   remoteSet(client, 'R1', 'Maps', ['q']);
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(lists(), { R1: list('Maps', ['q'], 'R1', ['q']) });
   assert.equal(synced, 1);
 });
@@ -626,7 +660,7 @@ test('a run with nothing to change saves nothing and fires no event', async () =
   const before = store.get(STORAGE_KEY);
   const client = fakeClient();
   remoteSet(client, 'R1', 'Polity', ['a']);
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.equal(store.get(STORAGE_KEY), before);
   assert.equal(synced, 0);
 });
@@ -636,7 +670,7 @@ test('a lists save keeps the marks and the queue as they are', async () => {
   const queued = loadState().pending;
   const client = fakeClient();
   remoteSet(client, 'R1', 'Maps', ['q']);
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(loadState().pending, queued);
   assert.deepEqual(loadState().entries, { a: entry('done', OLD, false) });
   assert.ok(lists().R1);
@@ -646,6 +680,7 @@ test('a lists save keeps the marks and the queue as they are', async () => {
 
 test('a clean targeted run does not touch the list tables', async () => {
   writeMarker(MIN);
+  writeListsMarker(MIN);
   seed({ lists: { L1: list('Polity', ['a', 'b'], 'R1', ['b', 'a']) } });
   mark('x', 'done', NEW); // progress has something to ask about, so a run happens
   const client = fakeClient();
@@ -655,10 +690,11 @@ test('a clean targeted run does not touch the list tables', async () => {
   assert.deepEqual(statuses(client), { x: 'done' });
 });
 
-test('syncLists on its own does nothing, and says nothing, for clean lists when not full', async () => {
+test('syncLists on its own does nothing, and says nothing, for clean lists while its marker is fresh', async () => {
+  writeListsMarker(MIN);
   seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
   const client = fakeClient();
-  await syncLists(client, USER, { full: false });
+  await syncLists(client, USER);
   assert.deepEqual(client.calls, []);
   assert.equal(synced, 0);
 });
@@ -670,6 +706,7 @@ for (const [name, dirty] of Object.entries({
 })) {
   test(`${name} makes a targeted run pull the lists`, async () => {
     writeMarker(MIN);
+    writeListsMarker(MIN);
     seed({ lists: { L1: dirty } });
     const client = fakeClient();
     remoteSet(client, 'R1', 'Polity', ['a']);
@@ -702,8 +739,9 @@ for (const failing of ['select:bookmark_sets', 'select:bookmarks', 'insert', 'up
     remoteSet(client, 'R2', 'Old', ['a', 'gone']);
     client.failOn = failing;
     const before = store.get(STORAGE_KEY);
-    await assert.rejects(syncLists(client, USER, full), { message: `${failing.split(':')[0]} refused` });
+    await assert.rejects(syncLists(client, USER), { message: `${failing.split(':')[0]} refused` });
     assert.equal(store.get(STORAGE_KEY), before);
+    assert.equal(store.has(LISTS_MARKER_KEY), false, 'a failed pull is not a pull');
     assert.equal(synced, 0);
   });
 }
@@ -712,23 +750,124 @@ test('a lists save that storage refuses is a failure: no event', async () => {
   const client = fakeClient();
   remoteSet(client, 'R1', 'Maps', ['q']);
   failWrites = true;
-  await assert.rejects(syncLists(client, USER, full), /lists could not be saved/);
+  await assert.rejects(syncLists(client, USER), /lists could not be saved/);
   assert.equal(synced, 0);
 });
 
-test('a failed lists pull on a full run makes the next run pull everything again', async () => {
+test('a lists step that keeps failing is retried each run, and never makes the progress step pull everything again', async () => {
   const client = fakeClient();
-  client.failOn = 'select:bookmarks';
-  await startSync(client, USER);
+  client.failOn = 'select:bookmark_sets';
+  await startSync(client, USER); // the first run: progress pulls everything, lists fail
   const [warning] = takeWarnings();
   assert.equal(warning[0], 'SawaalBox: will retry syncing lists');
-  assert.equal(store.has(SYNC_MARKER_KEY), false, 'the progress step renewed it; the failure took it back');
+  assert.ok(store.has(SYNC_MARKER_KEY), 'the progress marker stands');
+  assert.equal(store.has(LISTS_MARKER_KEY), false, 'nothing was pulled, so no lists marker');
+  assert.equal(kinds(client, 'select', 'bookmark_sets').length, 1);
+
+  for (const key of ['a', 'b']) {
+    mark(key, 'done', NEW);
+    window.dispatchEvent(new Event('online'));
+    await idle();
+    assert.equal(takeWarnings().length, 1, 'the lists step failed again');
+    const last = kinds(client, 'select').at(-1);
+    assert.deepEqual(last.filters, [['in', 'question_key', [key]]], `run for ${key}: progress asked only about its key`);
+    assert.equal(last.range, undefined);
+  }
+  assert.equal(kinds(client, 'select', 'bookmark_sets').length, 3, 'and lists were retried on every run');
+  assert.equal(kinds(client, 'select').filter((c) => c.range).length, 1, 'there was one full progress pull, the first');
 
   client.failOn = null;
   remoteSet(client, 'R1', 'Maps', ['q']);
   window.dispatchEvent(new Event('online'));
   await idle();
+  assert.deepEqual(takeWarnings(), []);
   assert.deepEqual(lists(), { R1: list('Maps', ['q'], 'R1', ['q']) });
+  assert.ok(store.has(LISTS_MARKER_KEY), 'a successful full lists pull writes it');
+});
+
+const LISTS_FULL_PULL_CASES = {
+  'no marker': () => {},
+  'a marker older than 10 minutes': () => writeListsMarker(11 * MIN),
+  'a marker for another user': () => writeListsMarker(MIN, 'someone-else'),
+  'a marker dated in the future': () => writeListsMarker(-MIN),
+  'an unreadable marker': () => store.set(LISTS_MARKER_KEY, '{nope'),
+};
+for (const [name, setup] of Object.entries(LISTS_FULL_PULL_CASES)) {
+  test(`${name}: the lists step pulls even though nothing is dirty, and writes its own marker`, async () => {
+    setup();
+    seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+    const client = fakeClient();
+    remoteSet(client, 'R1', 'Polity', ['a']);
+    await syncLists(client, USER);
+    assert.ok(kinds(client, 'select', 'bookmark_sets').length > 0);
+    const written = JSON.parse(store.get(LISTS_MARKER_KEY));
+    assert.equal(written.user, USER.id);
+    assert.ok(Date.now() - Date.parse(written.at) < MIN);
+    assert.equal(store.has(SYNC_MARKER_KEY), false, 'the progress marker is not the lists step\'s to write');
+  });
+}
+
+test('the lists marker is written only by a full pull that also saved: a targeted run leaves it, a failure does not write it', async () => {
+  writeListsMarker(MIN);
+  const marker = store.get(LISTS_MARKER_KEY);
+  seed({ lists: { L1: list('New', ['n']) } }); // dirty: a targeted pull
+  const client = fakeClient();
+  await syncLists(client, USER);
+  assert.equal(kinds(client, 'insert', 'bookmark_sets').length, 1);
+  assert.equal(store.get(LISTS_MARKER_KEY), marker, 'only a full pull renews it');
+
+  store.delete(LISTS_MARKER_KEY);
+  failWrites = true;
+  remoteSet(client, 'R9', 'Maps', ['q']);
+  await assert.rejects(syncLists(client, USER), /lists could not be saved/);
+  assert.equal(store.has(LISTS_MARKER_KEY), false, 'the pull worked but the save did not');
+});
+
+test('sign-out forgets both pull markers, and a run that outlives it leaves neither', async () => {
+  const client = fakeClient();
+  await startSync(client, USER);
+  assert.ok(store.has(SYNC_MARKER_KEY) && store.has(LISTS_MARKER_KEY));
+  document.dispatchEvent(new Event('sawaalbox:signed-out'));
+  assert.equal(store.has(SYNC_MARKER_KEY) || store.has(LISTS_MARKER_KEY), false);
+
+  const slow = fakeClient();
+  const release = slowNetwork(slow);
+  const run = startSync(slow, USER);
+  document.dispatchEvent(new Event('sawaalbox:signed-out'));
+  release();
+  await run;
+  assert.equal(store.has(SYNC_MARKER_KEY) || store.has(LISTS_MARKER_KEY), false);
+});
+
+test('after the set was created and the bookmarks refused, the next run adds them without creating the set again', async () => {
+  seed({ lists: { L1: list('New', ['n']) } });
+  const client = fakeClient();
+  client.failOn = 'upsert:bookmarks';
+  await assert.rejects(syncLists(client, USER), { message: 'upsert refused' });
+  assert.deepEqual(setNames(client), ['New'], 'the set was created before the refusal');
+  assert.deepEqual(lists().L1, list('New', ['n']), 'locally nothing changed');
+
+  client.failOn = null;
+  await syncLists(client, USER);
+  assert.equal(kinds(client, 'insert', 'bookmark_sets').length, 1, 'no second insert');
+  assert.deepEqual(setNames(client), ['New']);
+  assert.deepEqual(remoteKeys(client, 'S1'), ['n']);
+  assert.deepEqual(lists().L1, list('New', ['n'], 'S1', ['n']));
+});
+
+test('after a refused delete the next run sends it, and what was added stays added', async () => {
+  seed({ lists: { L1: list('Old', ['keep', 'fresh'], 'R1', ['keep', 'old']) } });
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Old', ['keep', 'old']);
+  client.failOn = 'delete';
+  await assert.rejects(syncLists(client, USER), { message: 'delete refused' });
+  assert.deepEqual(remoteKeys(client, 'R1'), ['fresh', 'keep', 'old'], 'the add landed, the delete did not');
+  assert.deepEqual(lists().L1, list('Old', ['keep', 'fresh'], 'R1', ['keep', 'old']), 'locally nothing changed');
+
+  client.failOn = null;
+  await syncLists(client, USER);
+  assert.deepEqual(remoteKeys(client, 'R1'), ['fresh', 'keep']);
+  assert.deepEqual(lists().L1, list('Old', ['keep', 'fresh'], 'R1', ['keep', 'fresh']));
 });
 
 test('progress failing does not hold the lists back, and lists failing does not undo progress', async () => {
@@ -742,7 +881,7 @@ test('progress failing does not hold the lists back, and lists failing does not 
   assert.equal(lists().L1.remoteId, 'S1');
 
   client.failOn = 'select:bookmark_sets';
-  window.dispatchEvent(new Event('online'));
+  tick('L1', 'y'); // a change the lists step has to send
   await idle();
   assert.equal(takeWarnings().length, 1);
   assert.deepEqual(statuses(client), { a: 'done' }, 'the progress step ran on its own');
@@ -754,14 +893,14 @@ test('a key saved while a lists run awaits the network survives it and is sent b
   seed({ lists: { L1: list('Polity', ['a']) } });
   const client = fakeClient();
   const release = slowNetwork(client);
-  const run = syncLists(client, USER, full);
+  const run = syncLists(client, USER);
   tick('L1', 'during'); // the person ticks another box while the account is being read
   release();
   await run;
   assert.deepEqual(remoteKeys(client, 'S1'), ['a'], 'the run sent only what it had seen');
   assert.deepEqual(lists().L1, list('Polity', ['a', 'during'], 'S1', ['a']), 'kept, and still unsynced');
 
-  await syncLists(client, USER, { full: false });
+  await syncLists(client, USER);
   assert.deepEqual(remoteKeys(client, 'S1'), ['a', 'during']);
   assert.deepEqual(lists().L1, list('Polity', ['a', 'during'], 'S1', ['a', 'during']));
 });
@@ -771,12 +910,12 @@ test('a key unticked while a lists run is in flight stays unticked and is delete
   const client = fakeClient();
   remoteSet(client, 'R1', 'Polity', ['a', 'b']);
   const release = slowNetwork(client);
-  const run = syncLists(client, USER, full);
+  const run = syncLists(client, USER);
   tick('L1', 'b');
   release();
   await run;
   assert.deepEqual(lists().L1, list('Polity', ['a'], 'R1', ['a', 'b']));
-  await syncLists(client, USER, { full: false });
+  await syncLists(client, USER);
   assert.deepEqual(remoteKeys(client, 'R1'), ['a']);
   assert.deepEqual(lists().L1, list('Polity', ['a'], 'R1', ['a']));
 });
@@ -785,14 +924,14 @@ test('a list created while a lists run awaits the network is kept as made, and t
   const client = fakeClient();
   remoteSet(client, 'R1', 'Maps', ['q']);
   const release = slowNetwork(client);
-  const run = syncLists(client, USER, full);
+  const run = syncLists(client, USER);
   seed({ ...loadState(), lists: { fresh: list('Fresh', ['f']) } });
   release();
   await run;
   assert.deepEqual(setNames(client), ['Maps'], 'the run had not seen it');
   assert.deepEqual(lists(), { fresh: list('Fresh', ['f']), R1: list('Maps', ['q'], 'R1', ['q']) });
 
-  await syncLists(client, USER, { full: false });
+  await syncLists(client, USER);
   assert.deepEqual(setNames(client), ['Fresh', 'Maps']);
   assert.deepEqual(lists().fresh, list('Fresh', ['f'], 'S1', ['f']));
 });
@@ -839,14 +978,14 @@ test('two devices creating the same list name end up on one set', async () => {
   seed({ lists: { L1: list('Polity', ['mine']) } });
   const client = fakeClient();
   const release = slowNetwork(client);
-  const run = syncLists(client, USER, full);
+  const run = syncLists(client, USER);
   await idle(); // the reads are done and held
   remoteSet(client, 'R7', 'Polity', ['theirs']); // the other device, after our read
   release();
   await assert.rejects(run, { code: '23505' }); // unique(user_id, name)
   assert.deepEqual(lists().L1, list('Polity', ['mine']), 'untouched');
 
-  await syncLists(client, USER, full); // the next run joins it by name
+  await syncLists(client, USER); // the next run joins it by name
   assert.deepEqual(setNames(client), ['Polity']);
   assert.deepEqual(remoteKeys(client, 'R7'), ['mine', 'theirs']);
   assert.equal(lists().L1.remoteId, 'R7');
@@ -858,11 +997,12 @@ test('removing a list key on one device and re-syncing another does not bring it
   const client = fakeClient();
   remoteSet(client, 'R1', 'Polity', ['a', 'b']);
   seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a', 'b']) } }); // device B
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(remoteKeys(client, 'R1'), ['a']);
 
+  store.delete(LISTS_MARKER_KEY); // device A has its own storage, and its own marker
   seed({ lists: { L1: list('Polity', ['a', 'b'], 'R1', ['a', 'b']) } }); // device A
-  await syncLists(client, USER, full);
+  await syncLists(client, USER);
   assert.deepEqual(remoteKeys(client, 'R1'), ['a'], 'the account still lacks b');
   assert.deepEqual(lists().L1.keys, ['a'], 'and A dropped it');
 });

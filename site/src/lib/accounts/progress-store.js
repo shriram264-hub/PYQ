@@ -1,3 +1,6 @@
+// lists.js imports nothing, so this cannot form a cycle.
+import { MAX_NAME } from './lists.js';
+
 // Progress lives on the device first. Signed out, this is all there is; signed
 // in, it is a cache of the account that renders instantly and survives offline.
 export const STORAGE_KEY = 'sawaalbox-progress-v1';
@@ -16,7 +19,7 @@ function parseList(l) {
   if (
     typeof l.name !== 'string' ||
     l.name.length < 1 ||
-    l.name.length > 80 ||
+    l.name.length > MAX_NAME ||
     !isStrings(l.keys) ||
     !(l.remoteId === null || typeof l.remoteId === 'string') ||
     !isStrings(syncedKeys)

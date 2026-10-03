@@ -236,6 +236,45 @@ test('a list without a remoteId whose name an already-synced list holds folds in
   assert.deepEqual(r.addBookmarks, [{ listId: 'L1', key: 'b' }]);
 });
 
+test('folding a same-named list into one that is deleting that key cancels the delete instead of adding it', () => {
+  // L1 removed b here (b is in its base and on the account); L2, a second copy of the name, still has b.
+  const r = mergeLists(
+    { L1: list('Polity', ['a'], 'R1', ['a', 'b']), L2: list('Polity', ['b']) },
+    [set('R1', 'Polity')],
+    [bm('R1', 'a'), bm('R1', 'b')]
+  );
+  assert.deepEqual(Object.keys(r.lists), ['L1']);
+  assert.deepEqual(r.lists.L1.keys, ['a', 'b']);
+  assert.deepEqual(sorted(r.lists.L1.syncedKeys), ['a', 'b']);
+  assert.deepEqual(r.deleteBookmarks, [], 'b is not deleted...');
+  assert.deepEqual(r.addBookmarks, [], '...and not uploaded either: it is already there');
+});
+
+test('folding still adds a key the owner is not deleting, and leaves its other deletes alone', () => {
+  const r = mergeLists(
+    { L1: list('Polity', ['a'], 'R1', ['a', 'b', 'c']), L2: list('Polity', ['b', 'new']) },
+    [set('R1', 'Polity')],
+    [bm('R1', 'a'), bm('R1', 'b'), bm('R1', 'c')]
+  );
+  assert.deepEqual(r.lists.L1.keys, ['a', 'b', 'new']);
+  assert.deepEqual(r.deleteBookmarks, [{ listId: 'L1', key: 'c' }]);
+  assert.deepEqual(r.addBookmarks, [{ listId: 'L1', key: 'new' }]);
+});
+
+test('a bookmark row paged in twice does not put a key in a list twice', () => {
+  const r = mergeLists(
+    { L1: list('Polity', ['a'], 'R1', ['a']) },
+    [set('R1', 'Polity'), set('R1', 'Polity')],
+    [bm('R1', 'a'), bm('R1', 'c'), bm('R1', 'c'), bm('R1', 'a')]
+  );
+  assert.deepEqual(r.lists.L1.keys, ['a', 'c']);
+  assert.deepEqual(r.lists.L1.syncedKeys, ['a', 'c']);
+  const adopted = mergeLists({}, [set('R2', 'Maps')], [bm('R2', 'q'), bm('R2', 'q')]);
+  assert.deepEqual(adopted.lists.R2.keys, ['q']);
+  const joined = mergeLists({ L1: list('Maps', ['x']) }, [set('R2', 'Maps')], [bm('R2', 'q'), bm('R2', 'q')]);
+  assert.deepEqual(joined.lists.L1.keys, ['x', 'q']);
+});
+
 test('mergeLists does not mutate what it was given', () => {
   const local = { L1: list('Polity', ['a', 'b'], 'R1', ['a']) };
   const copy = JSON.parse(JSON.stringify(local));

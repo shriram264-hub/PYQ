@@ -4,6 +4,9 @@
 //   syncedKeys  the keys the account held for it at the last sync (the "base").
 // The local id (the key in state.lists) never changes after creation; remoteId
 // is a separate field so ids held by an open panel stay valid across a sync.
+//
+// Keep this module free of imports: progress-store.js imports MAX_NAME from it,
+// so an import back would be a cycle.
 
 export const MAX_NAME = 80;
 
@@ -115,8 +118,11 @@ function mergeKeys(local, remoteKeys) {
  *  - A set no local list maps to is adopted, under its own id.
  */
 export function mergeLists(localLists, remoteSets, remoteBookmarks) {
-  const remote = new Map(remoteSets.map((s) => [s.id, { ...s, keys: [] }]));
-  for (const b of remoteBookmarks) remote.get(b.set_id)?.keys.push(b.question_key);
+  // Keys go through a Set: paging by offset can return a row twice when rows
+  // arrive between pages, and a list must never hold a key twice.
+  const remote = new Map(remoteSets.map((s) => [s.id, { ...s, keys: new Set() }]));
+  for (const b of remoteBookmarks) remote.get(b.set_id)?.keys.add(b.question_key);
+  for (const set of remote.values()) set.keys = [...set.keys];
   const setIdByName = new Map(remoteSets.map((s) => [s.name, s.id]));
 
   const result = new Map(); // local id -> merged list
@@ -156,7 +162,12 @@ export function mergeLists(localLists, remoteSets, remoteBookmarks) {
         if (into.keys.includes(key)) continue;
         into.keys.push(key);
         into.syncedKeys.push(key);
-        addBookmarks.push({ listId: owner, key });
+        // The owner may be deleting this very key (removed on this device): the
+        // other copy still has it, so the key stays and the delete is cancelled.
+        // Adding it as well would upload and delete the same row in one run.
+        const deleting = deleteBookmarks.findIndex((d) => d.listId === owner && d.key === key);
+        if (deleting >= 0) deleteBookmarks.splice(deleting, 1);
+        else addBookmarks.push({ listId: owner, key });
       }
     } else if (setId === undefined) {
       creating.set(l.name, id);
