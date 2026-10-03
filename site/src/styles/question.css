@@ -248,9 +248,13 @@ a.qref:hover {
   border: var(--rule-hair) solid currentColor;
 }
 
-.qmark:hover {
-  color: var(--ink);
-  border-color: var(--rule-strong);
+/* Only where there is a real hover. On a touch screen :hover sticks to the
+   last button tapped, so a mark just cleared would still look picked out. */
+@media (hover: hover) {
+  .qmark:hover {
+    color: var(--ink);
+    border-color: var(--rule-strong);
+  }
 }
 
 .qmark[aria-pressed='true'] {
