@@ -132,6 +132,13 @@ import { authEnabled } from '../lib/accounts/config.js';
   .account-menu > * + * { border-top: var(--rule-hair) solid var(--rule); }
   .account-menu a:hover,
   .account-menu button:hover { background: var(--ground); }
+  /* Sign out while the last sync runs (account.js): it says "Signing out…"
+     and takes no second press, so it stops looking pressable. */
+  .account-menu button[aria-disabled='true'] {
+    cursor: progress;
+    color: var(--ink-soft);
+    background: none;
+  }
   .account-note {
     position: absolute;
     right: 0;

@@ -109,16 +109,28 @@ if (authEnabled && root) {
   root.addEventListener('focusout', (e) => {
     if (!menu.hidden && !root.contains(e.relatedTarget)) close();
   });
-  // signOut gives the sync a last run of up to a few seconds first, so a second
-  // press in that time is the same sign-out, not another one.
+  // signOut gives the sync a last run of up to a few seconds first. Meanwhile
+  // the button says so, and is busy and disabled: a second press is the same
+  // sign-out, not another one. Disabled through aria-disabled and this flag,
+  // not the disabled attribute: disabling the focused button would drop focus
+  // to the page, and the focusout handler above would close the menu with
+  // "Signing out…" in it.
+  const signout = root.querySelector('[data-account-signout]');
   let signingOut = false;
-  root.querySelector('[data-account-signout]').addEventListener('click', async () => {
+  signout.addEventListener('click', async () => {
     if (signingOut) return;
     signingOut = true;
+    const label = signout.textContent;
+    signout.textContent = 'Signing out…';
+    signout.setAttribute('aria-busy', 'true');
+    signout.setAttribute('aria-disabled', 'true');
     try {
       await signOut();
     } finally {
       signingOut = false;
+      signout.textContent = label;
+      signout.removeAttribute('aria-busy');
+      signout.removeAttribute('aria-disabled');
     }
     // supabase-js has usually announced SIGNED_OUT by now; when it could not
     // (its chunk failed to load), this ends the session here. Either way, once.
