@@ -101,10 +101,14 @@ const crumbs = [{ name: 'Search', href: '/upsc/search' }];
   const canonical = (s) => ALIASES[s] || s;
 
   function questionHTML(q) {
+    // Year and number go into attributes and the address unescaped, so they
+    // are made numbers first: whatever the API sends, only digits reach the page.
+    const year = Number(q.year);
+    const qNo = Number(q.q_no);
     const subject = canonical(q.subject);
     const sSlug = slugify(subject);
     const tSlug = slugify(q.subtopic);
-    const qSlug = `${q.year}-q${q.q_no}-${slugify(String(q.question).slice(0, 60))}`;
+    const qSlug = `${year}-q${qNo}-${slugify(String(q.question).slice(0, 60))}`;
     const opts = ['a', 'b', 'c', 'd']
       .map(
         (k) =>
@@ -123,9 +127,9 @@ const crumbs = [{ name: 'Search', href: '/upsc/search' }];
          ${q.answer_note ? `<p class="qnote">${esc(q.answer_note)}</p>` : ''}</div></details>`
       : `<p class="qanswer-none">No answer is recorded for this question.</p>`;
 
-    return `<article class="qblock" data-qkey="upsc-${q.year}-${q.q_no}">
+    return `<article class="qblock" data-qkey="upsc-${year}-${qNo}">
       <div class="qhead">
-        <a class="serial qref" href="/upsc/question/${qSlug}" tabindex="-1">${q.year} · Q${q.q_no}</a>
+        <a class="serial qref" href="/upsc/question/${qSlug}" tabindex="-1">${year} · Q${qNo}</a>
         <a href="/upsc/subject/${sSlug}">${esc(subject)}</a>
         <span class="qsep" aria-hidden="true">›</span>
         <a href="/upsc/topic/${sSlug}/${tSlug}">${esc(q.subtopic)}</a>
