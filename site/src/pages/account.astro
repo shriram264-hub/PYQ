@@ -230,9 +230,15 @@ import { LEGAL } from '../lib/legal.js';
     color: var(--ink);
     overflow-wrap: anywhere;
   }
-  /* A key the index does not know is shown as the key, quietly. */
+  /* A row with no title (its year file still loading, or a key the index
+     does not know) gives the serial the title's column too, so Remove stays
+     a small button at the right instead of stretching across the gap. */
+  .acct-ref[data-waiting],
   .acct-ref[data-unplaced] {
     grid-column: 1 / 3;
+  }
+  /* A key the index does not know is shown as the key, quietly. */
+  .acct-ref[data-unplaced] {
     font-weight: 400;
     color: var(--ink-soft);
   }
@@ -307,6 +313,12 @@ import { LEGAL } from '../lib/legal.js';
     }
     .acct-ref {
       grid-column: 1 / -1;
+    }
+    /* A row with no title has nothing to put under the serial: the serial
+       keeps the first column and Remove the second, on one line. */
+    .acct-ref[data-waiting],
+    .acct-ref[data-unplaced] {
+      grid-column: 1;
     }
   }
 

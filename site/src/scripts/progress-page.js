@@ -117,7 +117,9 @@ function item({ scope, key, from, pending }) {
     link.dataset.kind = 'link';
     li.append(ref, el('span', 'acct-q', link));
   } else if (waiting) {
-    li.append(text('span', 'serial acct-ref', q.serial));
+    const ref = text('span', 'serial acct-ref', q.serial);
+    ref.dataset.waiting = '';
+    li.append(ref);
   } else {
     const ref = text('span', 'serial acct-ref', key);
     ref.dataset.unplaced = '';
