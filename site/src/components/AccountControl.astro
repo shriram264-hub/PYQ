@@ -56,6 +56,33 @@ import { authEnabled } from '../lib/accounts/config.js';
   @media (scripting: none) {
     .account { display: none; }
   }
+  /* Sign in is served hidden and shown once account.js has looked for a
+     session. Where scripts run, its box stays in the layout while it waits,
+     invisible (and so neither focusable nor announced), so the nav takes its
+     final width at first paint and nothing shifts, or wraps on a narrow
+     phone, when it appears. The signed-in control shares the same cell, at its
+     end beside the theme toggle, so a signed-in load does not shift either.
+     Measured from the button itself, so it holds for either font. */
+  @media (scripting: enabled) {
+    .account {
+      display: grid;
+      justify-items: end;
+      align-items: center;
+    }
+    .account > [data-account-signin],
+    .account > [data-account-user] {
+      grid-area: 1 / 1;
+    }
+    .account > [data-account-signin][hidden] {
+      display: block;
+      visibility: hidden;
+    }
+    /* Sized by its button, as Sign in is, not by a line box a few pixels
+       taller, so the row keeps its height when it takes Sign in's place. */
+    .account > [data-account-user]:not([hidden]) {
+      display: flex;
+    }
+  }
   .account-btn {
     white-space: nowrap;
     padding: 0.25rem 0.6rem;
