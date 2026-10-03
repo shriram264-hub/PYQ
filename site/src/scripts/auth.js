@@ -41,12 +41,32 @@ export function initialOf(user) {
   return [...upper].length === 1 ? upper : first;
 }
 
-// What Supabase and Google append to the address when they send the reader back.
+// What Supabase and Google append to the address when they send the reader
+// back: in the query for the PKCE flow, and in the hash for some errors.
 const RETURN_PARAMS = ['code', 'error', 'error_code', 'error_description'];
 
-function urlWithoutReturnParams() {
-  const url = new URL(location.href);
+const hashParams = (url) => new URLSearchParams(url.hash.slice(1));
+
+/** Whether the address carries anything sign-in sent back, in the query or the hash. */
+export function hasReturnParams(href) {
+  const url = new URL(href);
+  const hash = hashParams(url);
+  return RETURN_PARAMS.some((name) => url.searchParams.has(name) || hash.has(name));
+}
+
+/**
+ * The address without the sign-in return parameters, from the query and the
+ * hash. Everything else stays; a hash that holds none of them (an anchor) is
+ * not touched.
+ */
+export function withoutReturnParams(href) {
+  const url = new URL(href);
   for (const name of RETURN_PARAMS) url.searchParams.delete(name);
+  const hash = hashParams(url);
+  if (RETURN_PARAMS.some((name) => hash.has(name))) {
+    for (const name of RETURN_PARAMS) hash.delete(name);
+    url.hash = hash.toString();
+  }
   return url;
 }
 
@@ -56,16 +76,15 @@ function urlWithoutReturnParams() {
  * history.state stays, so the reader lands exactly where they were.
  */
 export function cleanReturnParams() {
-  const params = new URLSearchParams(location.search);
-  if (!RETURN_PARAMS.some((name) => params.has(name))) return;
-  history.replaceState(history.state, '', urlWithoutReturnParams());
+  if (!hasReturnParams(location.href)) return;
+  history.replaceState(history.state, '', withoutReturnParams(location.href));
 }
 
 export async function signIn() {
   const client = await getClient();
   // Come back to this exact page, query string included (a search keeps its
   // results). The hash is dropped: Supabase may append its own fragment.
-  const back = urlWithoutReturnParams();
+  const back = withoutReturnParams(location.href);
   back.hash = '';
   const { error } = await client.auth.signInWithOAuth({
     provider: 'google',

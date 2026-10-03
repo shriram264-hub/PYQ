@@ -1,5 +1,5 @@
 import { authEnabled } from '../lib/accounts/config.js';
-import { cleanReturnParams, getClient, initialOf, mayHaveSession, signIn, signOut } from './auth.js';
+import { cleanReturnParams, getClient, hasReturnParams, initialOf, mayHaveSession, signIn, signOut } from './auth.js';
 
 const root = document.querySelector('[data-account]');
 
@@ -34,10 +34,10 @@ function show(user) {
 }
 
 async function start() {
-  const params = new URLSearchParams(location.search);
   // Coming back from Google: with a code we should end up signed in, and with
-  // an error the sign-in was refused. Either way, no user means we say so.
-  const returning = params.has('code') || params.has('error_description');
+  // an error (in the query, or in the hash) the sign-in was refused. Either
+  // way, no user means we say so.
+  const returning = hasReturnParams(location.href);
   let user = null;
   let client = null;
   try {
