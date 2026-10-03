@@ -1,5 +1,5 @@
 import { STORAGE_KEY, loadState, saveState } from '../lib/accounts/progress-store.js';
-import { createList, newListId, toggleKey } from '../lib/accounts/lists.js';
+import { MAX_NAME, createList, newListId, toggleKey } from '../lib/accounts/lists.js';
 
 // The panel behind a question's "Save to list" button: a checkbox per list and
 // a form for a new one. It writes to storage and announces the change with
@@ -11,6 +11,16 @@ const NOT_SAVED = 'Your browser would not save that. Check that it lets this sit
 const buttonOf = new WeakMap(); // panel -> the button that opens it
 const keyOf = (el) => el.closest('.qblock[data-qkey]').dataset.qkey;
 const panelOf = (button) => document.getElementById(button.getAttribute('aria-controls'));
+
+// The panel's one live region. It is always rendered (a region that is created
+// or un-hidden together with its text may not be announced), and while it says
+// nothing, or something only a screen reader needs, it is visually removed and
+// takes no room (see .qlists-note). A failure is shown as well as announced.
+function say(panel, text, { error = false } = {}) {
+  const note = panel.querySelector('.qlists-note');
+  note.textContent = text;
+  note.toggleAttribute('data-error', error && Boolean(text));
+}
 
 function announce(listId, key, added) {
   document.dispatchEvent(new CustomEvent('sawaalbox:list', { detail: { listId, key, added } }));
@@ -39,7 +49,7 @@ function buildPanel(button) {
   const input = document.createElement('input');
   input.id = `${panel.id}-name`;
   input.type = 'text';
-  input.maxLength = 80;
+  input.maxLength = MAX_NAME;
   input.autocomplete = 'off';
   input.placeholder = 'e.g. Polity revision';
   const add = document.createElement('button');
@@ -104,7 +114,7 @@ function setOpen(button, panel, open) {
   panel.hidden = !open;
   button.setAttribute('aria-expanded', String(open));
   if (open) {
-    panel.querySelector('.qlists-note').textContent = '';
+    say(panel, '');
     refresh(panel);
   }
 }
@@ -132,10 +142,11 @@ document.addEventListener('change', (event) => {
   if (state === before || added !== box.checked) return refreshOpen();
   if (!saveState(state)) {
     box.checked = !box.checked;
-    panel.querySelector('.qlists-note').textContent = NOT_SAVED;
+    say(panel, NOT_SAVED, { error: true });
     return;
   }
-  panel.querySelector('.qlists-note').textContent = '';
+  const name = state.lists[box.dataset.list].name;
+  say(panel, added ? `Saved to "${name}".` : `Removed from "${name}".`);
   announce(box.dataset.list, keyOf(box), added);
   refreshOpen(); // the same question can be open in a second panel
 });
@@ -153,7 +164,7 @@ document.addEventListener('submit', (event) => {
     const { state } = toggleKey(createList(loadState(), input.value, id), id, key);
     if (!saveState(state)) throw new Error(NOT_SAVED);
     input.value = '';
-    panel.querySelector('.qlists-note').textContent = '';
+    say(panel, `Saved to "${state.lists[id].name}".`);
     announce(id, key, true);
     refreshOpen();
   } catch (e) {

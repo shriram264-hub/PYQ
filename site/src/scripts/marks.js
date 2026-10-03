@@ -22,7 +22,7 @@ function ensureControls(block) {
     group = document.createElement('div');
     group.className = 'qmarks';
     group.setAttribute('role', 'group');
-    group.setAttribute('aria-label', 'Your progress on this question');
+    group.setAttribute('aria-label', 'Your progress and lists for this question');
     // Between the options and the sealed answer: decide, then check.
     block.insertBefore(group, block.querySelector(':scope > .qanswer, :scope > .qanswer-none'));
   }
