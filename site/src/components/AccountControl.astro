@@ -12,11 +12,14 @@ import { authEnabled } from '../lib/accounts/config.js';
           would do nothing, and a signed-in reader would see it flash. */}
       <button type="button" class="account-btn" data-account-signin hidden>Sign in</button>
       <div class="account-user" data-account-user hidden>
-        <button type="button" class="account-btn account-initial" data-account-toggle aria-haspopup="true" aria-expanded="false">
+        {/* A disclosure, not an ARIA menu: it shows a link and a button, reached
+            with Tab like any others, so it is announced as a button that
+            expands what it controls, with no menu roles to promise arrow keys. */}
+        <button type="button" class="account-btn account-initial" data-account-toggle aria-controls="account-menu" aria-expanded="false">
           <span data-account-initial></span>
           <span class="visually-hidden">Your account</span>
         </button>
-        <div class="account-menu" data-account-menu hidden>
+        <div class="account-menu" id="account-menu" data-account-menu hidden>
           <a href="/account">My progress and lists</a>
           <button type="button" data-account-signout>Sign out</button>
         </div>
