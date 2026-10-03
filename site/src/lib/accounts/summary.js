@@ -35,6 +35,20 @@ export function indexPathsFor(state) {
   return [...paths].sort();
 }
 
+/**
+ * The index files the state needs that have not settled: not asked for yet, or
+ * still loading. `status` maps an index path to 'loading' | 'loaded' | 'failed'
+ * (a path the page has not asked for is simply absent). Until this is empty the
+ * page holds back the subject counts, and shows a question by its serial rather
+ * than by its key, because the title that replaces it is on its way.
+ */
+export function pendingPaths(state, status) {
+  return indexPathsFor(state).filter((path) => {
+    const s = status.get(path);
+    return s !== 'loaded' && s !== 'failed';
+  });
+}
+
 /** "2019 · Q7", the serial printed on the question itself; the key as stored when it is not one of ours. */
 export function serialOf(key) {
   const k = parseKey(key);
@@ -44,12 +58,16 @@ export function serialOf(key) {
 // The index is data fetched from a file, and the keys are the user's storage:
 // own properties only (a stored key of "constructor" is not a question), and an
 // entry that is not shaped [path, subject, title] is not trusted. The path
-// becomes a link, so it must be a path on this site ("/x", never "//host" or a
-// "javascript:" URL).
+// becomes a link, so it must be exactly a question page on this site
+// (`/<exam>/question/<slug>`, slugs being lowercase letters, digits and hyphens).
+// A looser "starts with one slash" lets `/\host` and `/<tab>/host` through, and
+// browsers read both as `//host`.
+const QUESTION_PATH = /^\/[a-z0-9-]+\/question\/[a-z0-9-]+$/;
+
 function lookup(index, key) {
   if (!Object.hasOwn(index, key)) return null;
   const q = index[key];
-  return Array.isArray(q) && q.length >= 3 && q.every((x) => typeof x === 'string') && /^\/(?!\/)/.test(q[0])
+  return Array.isArray(q) && q.length >= 3 && q.every((x) => typeof x === 'string') && QUESTION_PATH.test(q[0])
     ? { path: q[0], subject: q[1], title: q[2] }
     : null;
 }

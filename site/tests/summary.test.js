@@ -1,6 +1,14 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { describe, indexPath, indexPathsFor, parseKey, serialOf, summarise } from '../src/lib/accounts/summary.js';
+import {
+  describe,
+  indexPath,
+  indexPathsFor,
+  parseKey,
+  pendingPaths,
+  serialOf,
+  summarise,
+} from '../src/lib/accounts/summary.js';
 
 const entry = (status, updatedAt = '2026-01-01T00:00:00.000Z') => ({ status, updatedAt, synced: false });
 const list = (name, keys = []) => ({ name, keys, remoteId: null, syncedKeys: [] });
@@ -51,6 +59,38 @@ test('a key that names no year is skipped, not fetched', () => {
   assert.deepEqual(indexPathsFor(state({ garbage: entry('done'), 'upsc-2020-2': entry('done') })), ['/upsc/index/2020.json']);
 });
 
+// --- Which index files are still on their way. ---
+
+const status = (o) => new Map(Object.entries(o));
+const needs = state(
+  { 'upsc-2019-7': entry('done'), 'upsc-2018-1': entry('review') },
+  { L1: list('Maps', ['upsc-2017-3']) }
+);
+
+test('every needed file is pending until the page has asked for it and it has settled', () => {
+  assert.deepEqual(pendingPaths(needs, status({})), ['/upsc/index/2017.json', '/upsc/index/2018.json', '/upsc/index/2019.json']);
+});
+
+test('a file that is loading is pending; one that loaded or failed is not', () => {
+  assert.deepEqual(
+    pendingPaths(needs, status({ '/upsc/index/2019.json': 'loading', '/upsc/index/2018.json': 'loaded', '/upsc/index/2017.json': 'failed' })),
+    ['/upsc/index/2019.json']
+  );
+  assert.deepEqual(
+    pendingPaths(needs, status({ '/upsc/index/2019.json': 'loaded', '/upsc/index/2018.json': 'loaded', '/upsc/index/2017.json': 'failed' })),
+    []
+  );
+});
+
+test('a file the state does not need never keeps the page waiting', () => {
+  const s = status({ '/upsc/index/2019.json': 'loaded', '/upsc/index/2016.json': 'loading' });
+  assert.deepEqual(pendingPaths(state({ 'upsc-2019-7': entry('done') }), s), []);
+});
+
+test('nothing stored is never pending', () => {
+  assert.deepEqual(pendingPaths(state(), status({})), []);
+});
+
 test('a key shows as its printed serial, or as itself when it is not one of ours', () => {
   assert.equal(serialOf('upsc-2019-7'), '2019 · Q7');
   assert.equal(serialOf('whatever'), 'whatever');
@@ -79,11 +119,31 @@ test('describe leaves an unknown key as the key, with no path, subject or title'
 });
 
 test('describe does not trust what is not a question entry', () => {
-  const index = { 'upsc-2019-1': 'nope', 'upsc-2019-2': ['/p', 3, 'x'], 'upsc-2019-3': ['/p', 'S'], 'upsc-2019-4': null };
+  // Each has a good path, so only its shape can be what is refused.
+  const good = '/upsc/question/2019-q1-x';
+  const index = { 'upsc-2019-1': 'nope', 'upsc-2019-2': [good, 3, 'x'], 'upsc-2019-3': [good, 'S'], 'upsc-2019-4': null, 'upsc-2019-5': [good, 'S', 7] };
   for (const key of Object.keys(index)) assert.equal(describe(key, index).path, null, key);
   // The path becomes a link: only a path on this site is one.
-  for (const path of ['//evil.example/x', 'javascript:alert(1)', 'https://evil.example/', 'upsc/question/x', '']) {
+  const offSite = [
+    '//evil.example/x',
+    '/\\evil.example/x', // a browser reads "/\" as "//"
+    '/\t/evil.example', // and drops the tab, leaving "//"
+    '/\n/evil.example',
+    'javascript:alert(1)',
+    'https://evil.example/',
+    'upsc/question/x',
+    '/other/page',
+    '/upsc/question/',
+    '/upsc/question/x/../../y',
+    '/upsc/question/x?next=//evil.example',
+    '/upsc/question/Ab',
+    '',
+  ];
+  for (const path of offSite) {
     assert.equal(describe('upsc-2019-9', { 'upsc-2019-9': [path, 'S', 'T'] }).path, null, JSON.stringify(path));
+  }
+  for (const path of ['/upsc/question/2019-q7-which-one-is-not-a-harappan-site', '/upsc/question/x', '/neet/question/2020-q1-a']) {
+    assert.equal(describe('upsc-2019-9', { 'upsc-2019-9': [path, 'S', 'T'] }).path, path, path);
   }
   // A stored key is the user's: "constructor" is not a question just because every object has one.
   for (const key of ['constructor', 'toString', '__proto__', 'hasOwnProperty']) {
