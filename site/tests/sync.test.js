@@ -11,6 +11,15 @@ const NEW = '2026-10-02T10:00:00.000Z';
 const NEWER = '2026-10-03T10:00:00.000Z';
 const MIN = 60 * 1000;
 
+// Marks are kept only under question keys of the shape the account accepts
+// (parseState drops any other), so the progress tests use real ones.
+const A = 'upsc-2019-1';
+const B = 'upsc-2019-2';
+const C = 'upsc-2019-3';
+const D = 'upsc-2019-4';
+const X = 'upsc-2020-1';
+const GONE = 'upsc-2019-9';
+
 const entry = (status, updatedAt, synced = false) => ({ status, updatedAt, synced });
 const row = (question_key, status, updated_at) => ({ user_id: USER.id, question_key, status, updated_at });
 
@@ -204,33 +213,33 @@ function slowNetwork(client) {
 // --- What a sync does. ---
 
 test('an unsynced local mark is uploaded and becomes synced', async () => {
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   const client = fakeClient();
   await syncProgress(client, USER);
   const [upload] = kinds(client, 'upsert');
-  assert.deepEqual(upload.rows, [{ question_key: 'a', status: 'done', updated_at: OLD, user_id: USER.id }]);
+  assert.deepEqual(upload.rows, [{ question_key: A, status: 'done', updated_at: OLD, user_id: USER.id }]);
   assert.deepEqual(upload.options, { onConflict: 'user_id,question_key' });
-  assert.deepEqual(loadState().entries, { a: entry('done', OLD, true) });
+  assert.deepEqual(loadState().entries, { [A]: entry('done', OLD, true) });
   assert.deepEqual(loadState().pending, []);
   assert.equal(synced, 1);
 });
 
 test('account marks arrive on this device, and marks cleared elsewhere leave it', async () => {
-  seed({ entries: { gone: entry('done', OLD, true) } });
-  await syncProgress(fakeClient([row('b', 'review', NEW)]), USER);
-  assert.deepEqual(loadState().entries, { b: entry('review', NEW, true) });
+  seed({ entries: { [GONE]: entry('done', OLD, true) } });
+  await syncProgress(fakeClient([row(B, 'review', NEW)]), USER);
+  assert.deepEqual(loadState().entries, { [B]: entry('review', NEW, true) });
   assert.equal(synced, 1);
 });
 
 test('a pending delete newer than the account row issues a conditional delete and the entry stays gone', async () => {
-  mark('a', 'done', OLD);
-  mark('a', null, NEW);
-  const client = fakeClient([row('a', 'done', OLD)]);
+  mark(A, 'done', OLD);
+  mark(A, null, NEW);
+  const client = fakeClient([row(A, 'done', OLD)]);
   await syncProgress(client, USER);
   const [del] = kinds(client, 'delete');
   assert.deepEqual(del.filters, [
     ['eq', 'user_id', USER.id],
-    ['eq', 'question_key', 'a'],
+    ['eq', 'question_key', A],
     ['lt', 'updated_at', NEW],
   ]);
   assert.deepEqual(statuses(client), {});
@@ -239,77 +248,77 @@ test('a pending delete newer than the account row issues a conditional delete an
 });
 
 test('a newer edit another device makes before the delete lands survives it', async () => {
-  mark('a', 'done', OLD);
-  mark('a', null, NEW);
-  const client = fakeClient([row('a', 'done', OLD)]);
+  mark(A, 'done', OLD);
+  mark(A, null, NEW);
+  const client = fakeClient([row(A, 'done', OLD)]);
   const release = slowNetwork(client);
   const run = syncProgress(client, USER);
-  client.table.set('a', row('a', 'review', NEWER)); // the other device, after our read
+  client.table.set(A, row(A, 'review', NEWER)); // the other device, after our read
   release();
   await run;
-  assert.deepEqual(statuses(client), { a: 'review' });
+  assert.deepEqual(statuses(client), { [A]: 'review' });
   assert.deepEqual(loadState().pending, []);
 });
 
 test('an account row newer than a pending delete wins and the pending delete is cleared', async () => {
-  mark('a', 'done', OLD);
-  mark('a', null, NEW);
-  const client = fakeClient([row('a', 'review', NEWER)]);
+  mark(A, 'done', OLD);
+  mark(A, null, NEW);
+  const client = fakeClient([row(A, 'review', NEWER)]);
   await syncProgress(client, USER);
   assert.deepEqual(kinds(client, 'delete'), []);
-  assert.deepEqual(loadState().entries, { a: entry('review', NEWER, true) });
+  assert.deepEqual(loadState().entries, { [A]: entry('review', NEWER, true) });
   assert.deepEqual(loadState().pending, []);
 });
 
 test('a mark made while a run awaits the network survives the run and stays pending', async () => {
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   const client = fakeClient();
   const release = slowNetwork(client);
   const run = syncProgress(client, USER);
-  mark('b', 'review', NEW); // the person taps while the account is being read
+  mark(B, 'review', NEW); // the person taps while the account is being read
   release();
   await run;
-  assert.deepEqual(loadState().entries, { a: entry('done', OLD, true), b: entry('review', NEW, false) });
-  assert.deepEqual(loadState().pending, [{ type: 'upsert', key: 'b', status: 'review', at: NEW }]);
+  assert.deepEqual(loadState().entries, { [A]: entry('done', OLD, true), [B]: entry('review', NEW, false) });
+  assert.deepEqual(loadState().pending, [{ type: 'upsert', key: B, status: 'review', at: NEW }]);
 });
 
 test('marks made during a run trigger exactly one follow-up run, which uploads them', async () => {
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   const client = fakeClient();
   const release = slowNetwork(client);
   const first = startSync(client, USER);
-  click('b', 'review', NEW);
-  click('c', 'done', NEW); // two taps, one follow-up
+  click(B, 'review', NEW);
+  click(C, 'done', NEW); // two taps, one follow-up
   release();
   await first;
   assert.equal(synced, 2);
   const targeted = kinds(client, 'select').filter((c) => c.filters.length);
   assert.equal(targeted.length, 1);
-  assert.deepEqual(targeted[0].filters, [['in', 'question_key', ['b', 'c']]]);
-  assert.deepEqual(statuses(client), { a: 'done', b: 'review', c: 'done' });
+  assert.deepEqual(targeted[0].filters, [['in', 'question_key', [B, C]]]);
+  assert.deepEqual(statuses(client), { [A]: 'done', [B]: 'review', [C]: 'done' });
   assert.deepEqual(loadState().pending, []);
 });
 
 test('re-marking a question during a run is not overwritten by the run', async () => {
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   const client = fakeClient();
   const release = slowNetwork(client);
   const first = startSync(client, USER);
-  click('a', 'review', NEW);
+  click(A, 'review', NEW);
   release();
   await first;
-  assert.deepEqual(statuses(client), { a: 'review' });
-  assert.deepEqual(loadState().entries, { a: entry('review', NEW, true) });
+  assert.deepEqual(statuses(client), { [A]: 'review' });
+  assert.deepEqual(loadState().entries, { [A]: entry('review', NEW, true) });
 });
 
 // --- Failure. ---
 
 for (const failing of ['select', 'upsert', 'delete']) {
   test(`a failed ${failing} request leaves storage untouched and fires no synced event`, async () => {
-    mark('a', 'done', OLD);
-    mark('a', null, NEW); // a pending delete, for the account's older copy
-    mark('b', 'review', NEW); // and a mark to upload
-    const client = fakeClient([row('a', 'done', OLD)]);
+    mark(A, 'done', OLD);
+    mark(A, null, NEW); // a pending delete, for the account's older copy
+    mark(B, 'review', NEW); // and a mark to upload
+    const client = fakeClient([row(A, 'done', OLD)]);
     client.failOn = failing;
     const before = store.get(STORAGE_KEY);
     await assert.rejects(syncProgress(client, USER), { message: `${failing} refused` });
@@ -320,7 +329,7 @@ for (const failing of ['select', 'upsert', 'delete']) {
 }
 
 test('a failed run is logged, and the next trigger retries it', async () => {
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   const client = fakeClient();
   client.failOn = 'select';
   await startSync(client, USER); // never rejects: the failure is logged
@@ -332,20 +341,20 @@ test('a failed run is logged, and the next trigger retries it', async () => {
   window.dispatchEvent(new Event('online'));
   await idle();
   assert.equal(synced, 1);
-  assert.deepEqual(statuses(client), { a: 'done' });
+  assert.deepEqual(statuses(client), { [A]: 'done' });
 });
 
 test('a save that storage refuses is a failure: no event, no marker', async () => {
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   failWrites = true;
-  await assert.rejects(syncProgress(fakeClient([row('b', 'done', OLD)]), USER), /could not be saved/);
+  await assert.rejects(syncProgress(fakeClient([row(B, 'done', OLD)]), USER), /could not be saved/);
   assert.equal(synced, 0);
   assert.equal(store.has(SYNC_MARKER_KEY), false);
 });
 
 test('blocked storage is a failure too, not a crash', async () => {
   blocked = true;
-  await assert.rejects(syncProgress(fakeClient([row('b', 'done', OLD)]), USER), /could not be saved/);
+  await assert.rejects(syncProgress(fakeClient([row(B, 'done', OLD)]), USER), /could not be saved/);
   assert.equal(synced, 0);
 });
 
@@ -354,28 +363,28 @@ test('blocked storage is a failure too, not a crash', async () => {
 test('with a recent full pull, a run asks only about the pending questions and leaves the rest alone', async () => {
   writeMarker(MIN);
   const marker = store.get(SYNC_MARKER_KEY);
-  seed({ entries: { c: entry('done', OLD, false), d: entry('review', OLD, true) } });
-  mark('a', 'done', NEW);
-  const client = fakeClient([row('a', 'review', OLD), row('x', 'done', OLD)]);
+  seed({ entries: { [C]: entry('done', OLD, false), [D]: entry('review', OLD, true) } });
+  mark(A, 'done', NEW);
+  const client = fakeClient([row(A, 'review', OLD), row(X, 'done', OLD)]);
   await syncProgress(client, USER);
   const selects = kinds(client, 'select');
   assert.equal(selects.length, 1);
-  assert.deepEqual(selects[0].filters, [['in', 'question_key', ['a']]]);
+  assert.deepEqual(selects[0].filters, [['in', 'question_key', [A]]]);
   assert.equal(selects[0].range, undefined);
   assert.deepEqual(loadState().entries, {
-    a: entry('done', NEW, true),
-    c: entry('done', OLD, false), // not asked about: not uploaded, flag unchanged
-    d: entry('review', OLD, true), // not asked about: not dropped for being absent from the reply
+    [A]: entry('done', NEW, true),
+    [C]: entry('done', OLD, false), // not asked about: not uploaded, flag unchanged
+    [D]: entry('review', OLD, true), // not asked about: not dropped for being absent from the reply
   });
-  assert.deepEqual(statuses(client), { a: 'done', x: 'done' });
+  assert.deepEqual(statuses(client), { [A]: 'done', [X]: 'done' });
   assert.equal(store.get(SYNC_MARKER_KEY), marker, 'only a full pull renews the marker');
   assert.equal(synced, 1);
 });
 
 test('with a recent full pull and nothing pending, a run does nothing', async () => {
   writeMarker(MIN);
-  seed({ entries: { c: entry('done', OLD, true) } });
-  const client = fakeClient([row('x', 'done', OLD)]);
+  seed({ entries: { [C]: entry('done', OLD, true) } });
+  const client = fakeClient([row(X, 'done', OLD)]);
   await syncProgress(client, USER);
   assert.deepEqual(client.calls, []);
   assert.equal(synced, 0);
@@ -391,29 +400,32 @@ const FULL_PULL_CASES = {
 for (const [name, setup] of Object.entries(FULL_PULL_CASES)) {
   test(`${name}: the run pulls every row and renews the marker`, async () => {
     setup();
-    mark('a', 'done', NEW);
-    const client = fakeClient([row('x', 'done', OLD)]);
+    mark(A, 'done', NEW);
+    const client = fakeClient([row(X, 'done', OLD)]);
     await syncProgress(client, USER);
     const [first] = kinds(client, 'select');
     assert.deepEqual(first.filters, []);
     assert.deepEqual(first.range, [0, 999]);
-    assert.deepEqual(loadState().entries, { a: entry('done', NEW, true), x: entry('done', OLD, true) });
+    assert.deepEqual(loadState().entries, { [A]: entry('done', NEW, true), [X]: entry('done', OLD, true) });
     const written = JSON.parse(store.get(SYNC_MARKER_KEY));
     assert.equal(written.user, USER.id);
     assert.ok(Date.now() - Date.parse(written.at) < MIN);
   });
 }
 
+// Many distinct keys, all of the accepted shape: question n of 2010.
+const nth = (i) => `upsc-2010-${i}`;
+
 test('up to 100 pending questions are asked about by key; more than that pulls everything', async () => {
   writeMarker(MIN);
-  for (let i = 0; i < 100; i++) mark(`k${i}`, 'done', NEW);
+  for (let i = 0; i < 100; i++) mark(nth(i), 'done', NEW);
   const client = fakeClient();
   await syncProgress(client, USER);
   const [targeted] = kinds(client, 'select');
   assert.equal(targeted.filters[0][2].length, 100);
 
-  mark('k100', 'done', NEWER);
-  for (let i = 0; i < 100; i++) mark(`k${i}`, 'review', NEWER);
+  mark(nth(100), 'done', NEWER);
+  for (let i = 0; i < 100; i++) mark(nth(i), 'review', NEWER);
   const again = fakeClient();
   await syncProgress(again, USER);
   const [full] = kinds(again, 'select');
@@ -421,18 +433,23 @@ test('up to 100 pending questions are asked about by key; more than that pulls e
   assert.deepEqual(full.range, [0, 999]);
 });
 
+// More rows than one page holds: a thousand questions a year, from 2000.
+const many = (n) => Array.from({ length: n }, (_, i) => `upsc-${2000 + Math.floor(i / 1000)}-${i % 1000}`);
+
 test('a full pull reads every page of the account', async () => {
-  const rows = Array.from({ length: 2500 }, (_, i) => row(`k${String(i).padStart(4, '0')}`, 'done', OLD));
-  const client = fakeClient(rows);
-  seed({ entries: { k2400: entry('done', OLD, true) } });
+  const keys = many(2500);
+  const client = fakeClient(keys.map((k) => row(k, 'done', OLD)));
+  const late = 'upsc-2002-400'; // sorts into the third page
+  assert.ok(keys.includes(late));
+  seed({ entries: { [late]: entry('done', OLD, true) } });
   await syncProgress(client, USER);
   assert.equal(Object.keys(loadState().entries).length, 2500);
-  assert.ok(loadState().entries.k2400, 'a synced mark beyond the first page is not mistaken for one cleared elsewhere');
+  assert.ok(loadState().entries[late], 'a synced mark beyond the first page is not mistaken for one cleared elsewhere');
   assert.deepEqual(kinds(client, 'select').map((c) => c.range), [[0, 999], [1000, 1999], [2000, 2999], [2500, 3499]]);
 });
 
 test('a server row cap below the page size neither skips rows nor ends the pull early', async () => {
-  const rows = Array.from({ length: 1000 }, (_, i) => row(`k${String(i).padStart(4, '0')}`, 'done', OLD));
+  const rows = many(1000).map((k) => row(k, 'done', OLD));
   await syncProgress(fakeClient(rows, { maxRows: 400 }), USER);
   assert.equal(Object.keys(loadState().entries).length, 1000);
 });
@@ -441,25 +458,25 @@ test('a server row cap below the page size neither skips rows nor ends the pull 
 
 test('startSync syncs at once, and a second startSync adds no second set of listeners', async () => {
   const client = fakeClient();
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   await startSync(client, USER);
   assert.equal(synced, 1);
   await startSync(client, USER); // nothing pending, recent pull: nothing to do
   assert.equal(synced, 1);
 
-  click('b', 'done', NEW);
+  click(B, 'done', NEW);
   await idle();
   assert.equal(synced, 2, 'one tap, one run');
-  assert.deepEqual(statuses(client), { a: 'done', b: 'done' });
+  assert.deepEqual(statuses(client), { [A]: 'done', [B]: 'done' });
 });
 
 test('coming back online starts a run', async () => {
   const client = fakeClient();
   await startSync(client, USER);
-  mark('a', 'done', NEW); // made while offline: queued, nothing sent
+  mark(A, 'done', NEW); // made while offline: queued, nothing sent
   window.dispatchEvent(new Event('online'));
   await idle();
-  assert.deepEqual(statuses(client), { a: 'done' });
+  assert.deepEqual(statuses(client), { [A]: 'done' });
 });
 
 test('sign-out stops syncing and forgets the pull marker', async () => {
@@ -470,7 +487,7 @@ test('sign-out stops syncing and forgets the pull marker', async () => {
 
   document.dispatchEvent(new Event('sawaalbox:signed-out'));
   assert.equal(store.has(SYNC_MARKER_KEY), false);
-  click('a', 'done', NEW);
+  click(A, 'done', NEW);
   window.dispatchEvent(new Event('online'));
   await idle();
   assert.equal(client.calls.length, calls);
@@ -480,7 +497,7 @@ test('a run that outlives sign-out leaves no marker and queues no follow-up', as
   const client = fakeClient();
   const release = slowNetwork(client);
   const run = startSync(client, USER);
-  click('a', 'done', NEW);
+  click(A, 'done', NEW);
   document.dispatchEvent(new Event('sawaalbox:signed-out'));
   release();
   await run;
@@ -493,9 +510,9 @@ test('syncing can start again after a sign-out', async () => {
   const client = fakeClient();
   await startSync(client, USER);
   document.dispatchEvent(new Event('sawaalbox:signed-out'));
-  mark('a', 'done', NEW);
+  mark(A, 'done', NEW);
   await startSync(client, USER);
-  assert.deepEqual(statuses(client), { a: 'done' });
+  assert.deepEqual(statuses(client), { [A]: 'done' });
 });
 
 // --- Revision lists. ---
@@ -666,13 +683,13 @@ test('a run with nothing to change saves nothing and fires no event', async () =
 });
 
 test('a lists save keeps the marks and the queue as they are', async () => {
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   const queued = loadState().pending;
   const client = fakeClient();
   remoteSet(client, 'R1', 'Maps', ['q']);
   await syncLists(client, USER);
   assert.deepEqual(loadState().pending, queued);
-  assert.deepEqual(loadState().entries, { a: entry('done', OLD, false) });
+  assert.deepEqual(loadState().entries, { [A]: entry('done', OLD, false) });
   assert.ok(lists().R1);
 });
 
@@ -682,12 +699,12 @@ test('a clean targeted run does not touch the list tables', async () => {
   writeMarker(MIN);
   writeListsMarker(MIN);
   seed({ lists: { L1: list('Polity', ['a', 'b'], 'R1', ['b', 'a']) } });
-  mark('x', 'done', NEW); // progress has something to ask about, so a run happens
+  mark(X, 'done', NEW); // progress has something to ask about, so a run happens
   const client = fakeClient();
   await startSync(client, USER);
   assert.equal(kinds(client, 'select').length, 1, 'the progress question was asked');
   assert.deepEqual(listCalls(client), []);
-  assert.deepEqual(statuses(client), { x: 'done' });
+  assert.deepEqual(statuses(client), { [X]: 'done' });
 });
 
 test('syncLists on its own does nothing, and says nothing, for clean lists while its marker is fresh', async () => {
@@ -764,7 +781,7 @@ test('a lists step that keeps failing is retried each run, and never makes the p
   assert.equal(store.has(LISTS_MARKER_KEY), false, 'nothing was pulled, so no lists marker');
   assert.equal(kinds(client, 'select', 'bookmark_sets').length, 1);
 
-  for (const key of ['a', 'b']) {
+  for (const key of [A, B]) {
     mark(key, 'done', NEW);
     window.dispatchEvent(new Event('online'));
     await idle();
@@ -871,7 +888,7 @@ test('after a refused delete the next run sends it, and what was added stays add
 });
 
 test('progress failing does not hold the lists back, and lists failing does not undo progress', async () => {
-  mark('a', 'done', OLD);
+  mark(A, 'done', OLD);
   seed({ ...loadState(), lists: { L1: list('Polity', ['x']) } });
   const client = fakeClient();
   client.failOn = 'select:question_progress';
@@ -884,7 +901,7 @@ test('progress failing does not hold the lists back, and lists failing does not 
   tick('L1', 'y'); // a change the lists step has to send
   await idle();
   assert.equal(takeWarnings().length, 1);
-  assert.deepEqual(statuses(client), { a: 'done' }, 'the progress step ran on its own');
+  assert.deepEqual(statuses(client), { [A]: 'done' }, 'the progress step ran on its own');
 });
 
 // --- Lists: changes made while a run is in flight. ---

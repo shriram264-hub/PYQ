@@ -49,7 +49,7 @@ test('saveState and loadState round-trip with a fake storage object', () => {
       this.data[key] = value;
     },
   };
-  const state = { entries: { a: { status: 'done', updatedAt: T1, synced: true } }, pending: [], lists: {} };
+  const state = { entries: { 'upsc-2019-7': { status: 'done', updatedAt: T1, synced: true } }, pending: [], lists: {} };
   assert.equal(saveState(state, fakeStorage), true);
   const loaded = loadState(fakeStorage);
   assert.deepEqual(loaded, state);
@@ -136,31 +136,83 @@ test('parseState converts array entries to {}', () => {
 test('parseState drops invalid entries', () => {
   const input = {
     entries: {
-      a: 'done',
-      b: { status: 'done', updatedAt: T1, synced: true },
-      c: { status: 'maybe', updatedAt: T1 },
-      d: { status: 'done', updatedAt: 'invalid-date' },
-      e: { status: 'review', updatedAt: T2, synced: false },
+      'upsc-2019-1': 'done',
+      'upsc-2019-2': { status: 'done', updatedAt: T1, synced: true },
+      'upsc-2019-3': { status: 'maybe', updatedAt: T1 },
+      'upsc-2019-4': { status: 'done', updatedAt: 'invalid-date' },
+      'upsc-2019-5': { status: 'review', updatedAt: T2, synced: false },
     },
     pending: [],
     lists: {},
   };
   const result = parseState(JSON.stringify(input));
-  assert.deepEqual(Object.keys(result.entries).sort(), ['b', 'e']);
-  assert.equal(result.entries.b.synced, true);
-  assert.equal(result.entries.e.synced, false);
+  assert.deepEqual(Object.keys(result.entries).sort(), ['upsc-2019-2', 'upsc-2019-5']);
+  assert.equal(result.entries['upsc-2019-2'].synced, true);
+  assert.equal(result.entries['upsc-2019-5'].synced, false);
 });
 
 test('parseState coerces synced to boolean', () => {
-  const input = { entries: { a: { status: 'done', updatedAt: T1, synced: 1 } }, pending: [], lists: {} };
+  const input = { entries: { 'upsc-2019-1': { status: 'done', updatedAt: T1, synced: 1 } }, pending: [], lists: {} };
   const result = parseState(JSON.stringify(input));
-  assert.equal(result.entries.a.synced, true);
+  assert.equal(result.entries['upsc-2019-1'].synced, true);
 });
 
 test('parseState drops entries with missing updatedAt', () => {
-  const input = { entries: { a: { status: 'done' }, b: { status: 'review', updatedAt: T1 } }, pending: [], lists: {} };
+  const input = {
+    entries: { 'upsc-2019-1': { status: 'done' }, 'upsc-2019-2': { status: 'review', updatedAt: T1 } },
+    pending: [],
+    lists: {},
+  };
   const result = parseState(JSON.stringify(input));
-  assert.deepEqual(Object.keys(result.entries), ['b']);
+  assert.deepEqual(Object.keys(result.entries), ['upsc-2019-2']);
+});
+
+// The queue is the user's storage too. Anything in it that is not a well-formed
+// change to a question the account would accept is dropped when it is read: a
+// [null] used to break every Mark click (enqueue reads p.key), and a key the
+// database refuses would fail every upload.
+const parsePending = (pending) => parseState(JSON.stringify({ entries: {}, pending, lists: {} })).pending;
+
+test('parseState keeps only well-formed queued changes', () => {
+  const ok = [
+    { type: 'upsert', key: 'upsc-2019-7', status: 'done', at: T1 },
+    { type: 'delete', key: 'upsc-2019-8', at: T2 },
+  ];
+  const bad = [
+    null,
+    5,
+    'upsc-2019-7',
+    [],
+    {},
+    { type: 'upsert', key: 'upsc-2019-9' },
+    { type: 'move', key: 'upsc-2019-9', at: T1 },
+    { type: 'delete', key: 7, at: T1 },
+    { type: 'delete', key: 'upsc-2019-9', at: 5 },
+  ];
+  assert.deepEqual(parsePending([bad[0], ok[0], ...bad.slice(1), ok[1]]), ok);
+});
+
+test('a stored [null] queue no longer breaks the next mark', () => {
+  const state = parseState(JSON.stringify({ entries: {}, pending: [null], lists: {} }));
+  const { state: marked, op } = setMark(state, 'upsc-2019-7', 'done', T1);
+  assert.deepEqual(enqueue(marked, op).pending, [op]);
+});
+
+test('parseState drops marks and queued changes whose key the account would refuse', () => {
+  const entry = { status: 'done', updatedAt: T1, synced: false };
+  const keys = ['upsc-2019-7', 'upsc-2019-1000', 'UPSC-2019-7', 'upsc-19-7', 'a', 'upsc-2019-7 ', '__proto__'];
+  const s = parseState(
+    JSON.stringify({
+      entries: Object.fromEntries(keys.map((k) => [k, entry])),
+      pending: keys.map((key) => ({ type: 'upsert', key, status: 'done', at: T1 })),
+      lists: {},
+    })
+  );
+  assert.deepEqual(Object.keys(s.entries), ['upsc-2019-7']);
+  assert.deepEqual(
+    s.pending.map((op) => op.key),
+    ['upsc-2019-7']
+  );
 });
 
 // Lists: storage is the user's, so a malformed list is dropped, never trusted.

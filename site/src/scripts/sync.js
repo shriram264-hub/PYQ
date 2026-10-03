@@ -1,5 +1,5 @@
-import { loadState, saveState } from '../lib/accounts/progress-store.js';
-import { isOp, mergeProgress, settleSync } from '../lib/accounts/merge.js';
+import { isOp, loadState, saveState } from '../lib/accounts/progress-store.js';
+import { mergeProgress, settleSync } from '../lib/accounts/merge.js';
 import { pullMarker, pullPages } from '../lib/accounts/pull.js';
 import { forgetListsPull, syncLists } from './sync-lists.js';
 

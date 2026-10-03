@@ -1,4 +1,4 @@
-import { markAllSynced } from './progress-store.js';
+import { isOp, markAllSynced } from './progress-store.js';
 
 /**
  * Merge this device's marks with the account's. For a question on both sides
@@ -31,16 +31,6 @@ export function mergeProgress(local, remoteRows, pending = []) {
     toUpload.push({ question_key: key, status: mine.status, updated_at: mine.updatedAt });
   }
   return { entries, toUpload, toDelete };
-}
-
-/** A well-formed queued op. Storage is the user's, so anything else is dropped rather than trusted. */
-export function isOp(op) {
-  return (
-    Boolean(op) &&
-    typeof op.key === 'string' &&
-    typeof op.at === 'string' &&
-    (op.type === 'upsert' || op.type === 'delete')
-  );
 }
 
 const opId = (op) => JSON.stringify([op.key, op.at]);

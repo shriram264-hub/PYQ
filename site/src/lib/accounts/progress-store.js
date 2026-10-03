@@ -1,5 +1,6 @@
-// lists.js imports nothing, so this cannot form a cycle.
+// lists.js and qkey.js import nothing, so this cannot form a cycle.
 import { MAX_NAME } from './lists.js';
+import { isQuestionKey } from './qkey.js';
 
 // Progress lives on the device first. Signed out, this is all there is; signed
 // in, it is a cache of the account that renders instantly and survives offline.
@@ -29,16 +30,27 @@ function parseList(l) {
   return { name: l.name, keys: [...new Set(l.keys)], remoteId: l.remoteId, syncedKeys: [...new Set(syncedKeys)] };
 }
 
+/** A well-formed queued op. Storage is the user's, so anything else is dropped rather than trusted. */
+export function isOp(op) {
+  return (
+    Boolean(op) &&
+    typeof op.key === 'string' &&
+    typeof op.at === 'string' &&
+    (op.type === 'upsert' || op.type === 'delete')
+  );
+}
+
 export function parseState(raw) {
   try {
     const s = JSON.parse(raw);
     if (!s || typeof s !== 'object') return emptyState();
 
-    // Validate and coerce entries
+    // Validate and coerce entries. A key the account would refuse is dropped
+    // with its mark: kept, it would fail every upload.
     const entries = {};
     if (s.entries && typeof s.entries === 'object' && !Array.isArray(s.entries)) {
       for (const [k, v] of Object.entries(s.entries)) {
-        if (v && typeof v === 'object' && !Array.isArray(v)) {
+        if (isQuestionKey(k) && v && typeof v === 'object' && !Array.isArray(v)) {
           const status = v.status;
           const updatedAt = v.updatedAt;
           if ((status === 'done' || status === 'review') && updatedAt && Date.parse(updatedAt)) {
@@ -48,11 +60,9 @@ export function parseState(raw) {
       }
     }
 
-    // Validate and coerce pending
-    let pending = [];
-    if (Array.isArray(s.pending)) {
-      pending = s.pending;
-    }
+    // Validate the queue the same way. One malformed op (a null) would break
+    // every Mark click, because enqueue reads each op's key.
+    const pending = Array.isArray(s.pending) ? s.pending.filter((op) => isOp(op) && isQuestionKey(op.key)) : [];
 
     // Validate lists. Storage is the user's, and a list with a bad shape would
     // make every sync throw, so such a list is dropped rather than trusted.
