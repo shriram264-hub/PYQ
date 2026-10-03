@@ -1,20 +1,25 @@
 import { authEnabled } from '../lib/accounts/config.js';
 import { STORAGE_KEY, loadState, saveState } from '../lib/accounts/progress-store.js';
 import { removeKey } from '../lib/accounts/lists.js';
-import { describe, indexPathsFor, summarise } from '../lib/accounts/summary.js';
-// auth.js fetches supabase-js only when signIn() runs, so importing it costs
-// signed-out visitors no more than its own few lines.
-import { mayHaveSession, signIn } from './auth.js';
+import { describe, indexPath, indexPathsFor, pendingPaths, summarise } from '../lib/accounts/summary.js';
 
 // The /account page. Everything it shows comes from this device's storage (a
 // sync keeps that in step with the account), plus the per-year question indexes
 // that turn stored keys back into subjects, titles and links.
+//
+// No auth code is imported here: until sign-in is switched on this page must
+// not carry any, so Sign in loads auth.js (and through it supabase-js) when it
+// is pressed, and the state of the session is read off the masthead control.
 
 const NOT_SAVED = 'Your browser would not save that. Check that it lets this site store data.';
 const SIGN_IN_FAILED = 'Could not reach the sign-in service. Your progress on this device is safe.';
+// How long one year's index may take. Past this the year counts as failed (its
+// questions show as serials) rather than leaving "Loading subjects." up for ever
+// on a connection that has stalled.
+const INDEX_TIMEOUT_MS = 15000;
 
+// The line the server writes is the dark-launch one, "Kept on this device.".
 const WHERE = {
-  device: 'Kept on this device.',
   out: 'Kept on this device. An account keeps your progress and lists on every device.',
   in: 'Signed in. Your progress and lists sync to your account.',
 };
@@ -52,12 +57,14 @@ const requests = new Map(); // index path -> 'loading' | 'loaded' | 'failed'
 async function load(path) {
   requests.set(path, 'loading');
   try {
-    const response = await fetch(path);
+    // The signal covers reading the body as well as the first byte.
+    const signal = typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(INDEX_TIMEOUT_MS) : undefined;
+    const response = await fetch(path, { signal });
     if (!response.ok) throw new Error(String(response.status));
     Object.assign(index, await response.json());
     requests.set(path, 'loaded');
   } catch {
-    // Offline, or a year that is not there. Those keys show as keys.
+    // Offline, too slow, or a year that is not there. Those keys show as keys.
     requests.set(path, 'failed');
   }
 }
@@ -93,10 +100,14 @@ function restoreFocus(before) {
 }
 
 // A question as one row: its serial, and its title as a link. Rows are not
-// links as a whole (the Remove button lives in one). A key the index does not
-// know has no title to show and no page to link to, so it is shown as the key.
-function item({ scope, key, from }) {
+// links as a whole (the Remove button lives in one). While the question's year
+// file is still on its way the row shows just the serial, which is what the
+// title will sit beside, so nothing flashes. A key the index does not know (its
+// file failed, or it is not in the file) has no title to show and no page to
+// link to, so it is shown as the key.
+function item({ scope, key, from, pending }) {
   const q = describe(key, index);
+  const waiting = !q.path && pending.has(indexPath(key));
   const li = el('li', 'acct-item');
   if (q.path) {
     const ref = text('span', 'serial acct-ref', q.serial);
@@ -105,6 +116,8 @@ function item({ scope, key, from }) {
     link.dataset.fid = `link|${scope}|${key}`;
     link.dataset.kind = 'link';
     li.append(ref, el('span', 'acct-q', link));
+  } else if (waiting) {
+    li.append(text('span', 'serial acct-ref', q.serial));
   } else {
     const ref = text('span', 'serial acct-ref', key);
     ref.dataset.unplaced = '';
@@ -120,7 +133,7 @@ function item({ scope, key, from }) {
     // The visible word is "Remove": the name starts with it and then says what
     // goes and from where, because a page of Removes is otherwise a page of
     // identical buttons.
-    const what = q.path ? `"${q.title}" (${q.serial})` : key;
+    const what = q.path ? `"${q.title}" (${q.serial})` : waiting ? q.serial : key;
     button.setAttribute('aria-label', `Remove ${what} from "${from.name}"`);
     li.append(button);
   }
@@ -189,17 +202,24 @@ function drawSummary(view, settled) {
   }
 }
 
-function drawReview(view) {
+// list-style: none removes list semantics in Safari with VoiceOver; say it.
+function itemList(...rows) {
+  const list = el('ol', 'acct-items', ...rows);
+  list.setAttribute('role', 'list');
+  return list;
+}
+
+function drawReview(view, pending) {
   if (!view.review.length) {
     reviewBox.replaceChildren(text('p', 'acct-empty', 'Nothing is marked Needs review.'));
     return;
   }
-  const list = el('ol', 'acct-items', ...view.review.map((key) => item({ scope: 'review', key })));
+  const list = itemList(...view.review.map((key) => item({ scope: 'review', key, pending })));
   list.dataset.scope = 'review';
   reviewBox.replaceChildren(list);
 }
 
-function drawLists(view) {
+function drawLists(view, pending) {
   if (!view.lists.length) {
     listsBox.replaceChildren(text('p', 'acct-empty', 'No lists yet: use Save to list on any question.'));
     return;
@@ -216,7 +236,7 @@ function drawLists(view) {
     );
     set.dataset.scope = l.id;
     if (l.keys.length) {
-      set.append(el('ol', 'acct-items', ...l.keys.map((key) => item({ scope: l.id, key, from: l }))));
+      set.append(itemList(...l.keys.map((key) => item({ scope: l.id, key, from: l, pending }))));
     } else {
       set.append(text('p', 'acct-empty', 'No questions in this list yet: use Save to list on any question.'));
     }
@@ -228,11 +248,11 @@ function drawLists(view) {
 function render(state = loadState()) {
   const before = captureFocus();
   const view = summarise(state, index);
-  // Settled: every index this state needs has either arrived or failed.
-  const settled = indexPathsFor(state).every((p) => requests.get(p) === 'loaded' || requests.get(p) === 'failed');
-  drawSummary(view, settled);
-  drawReview(view);
-  drawLists(view);
+  // Settled once no index this state needs is still on its way (summary.js).
+  const pending = new Set(pendingPaths(state, requests));
+  drawSummary(view, pending.size === 0);
+  drawReview(view, pending);
+  drawLists(view, pending);
   restoreFocus(before);
 }
 
@@ -288,16 +308,34 @@ function showWhere(mode) {
 // Dark launch: authEnabled is false, so nothing below runs and the page says
 // only what the server wrote, "Kept on this device."
 if (authEnabled) {
-  signin.addEventListener('click', () => {
+  signin.addEventListener('click', async () => {
     say(whereNote, '');
-    signIn().catch(() => say(whereNote, SIGN_IN_FAILED, { error: true }));
+    try {
+      const { signIn } = await import('./auth.js');
+      await signIn();
+    } catch {
+      say(whereNote, SIGN_IN_FAILED, { error: true });
+    }
   });
   document.addEventListener('sawaalbox:signed-in', () => showWhere('in'));
   document.addEventListener('sawaalbox:signed-out', () => showWhere('out'));
-  // No stored session and no sign-in on its way back: signed out, and we know
-  // it without loading supabase-js. With a session we wait for the event, so a
-  // signed-in student never sees an offer to sign in.
-  if (!mayHaveSession()) showWhere('out');
+
+  // The masthead control (account.js) settles the question of who is signed
+  // in, and writes the answer on itself as data-auth. Reading it covers every
+  // way the answer can come: no stored session (settled before this script
+  // runs, so an event would be missed), a session that has expired or been
+  // revoked, a return from Google that did not complete, and a chunk that would
+  // not load. All of them end as "out", and all of them are seen here. While it
+  // is unsettled (a stored session being checked) the page offers nothing, so a
+  // signed-in student never sees an offer to sign in. This reuses the client
+  // account.js already made: no second supabase-js download.
+  const control = $('[data-account]');
+  const follow = () => {
+    if (control?.dataset.auth === 'in') showWhere('in');
+    else if (control?.dataset.auth === 'out') showWhere('out');
+  };
+  if (control) new MutationObserver(follow).observe(control, { attributes: true, attributeFilter: ['data-auth'] });
+  follow();
 }
 
 // A sync that lands brings the account's marks and lists, and possibly years
@@ -308,6 +346,18 @@ window.addEventListener('storage', (event) => {
 });
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) refresh();
+});
+// A year that failed because the connection was down is asked for again when
+// it comes back.
+window.addEventListener('online', () => {
+  let retry = false;
+  for (const [path, status] of requests) {
+    if (status === 'failed') {
+      requests.delete(path);
+      retry = true;
+    }
+  }
+  if (retry) refresh();
 });
 
 refresh();

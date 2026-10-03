@@ -63,6 +63,14 @@ import { authEnabled } from '../lib/accounts/config.js';
     outline-offset: 4px;
   }
 
+  /* Without scripting every section would be an empty heading. The noscript
+     line says why, and the headings go. */
+  @media (scripting: none) {
+    .acct {
+      display: none;
+    }
+  }
+
   .acct-section h2 {
     margin-bottom: 0.8rem;
   }

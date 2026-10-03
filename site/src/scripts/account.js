@@ -23,6 +23,13 @@ function note(text) {
 function show(user) {
   root.querySelector('[data-account-signin]').hidden = Boolean(user);
   root.querySelector('[data-account-user]').hidden = !user;
+  // The settled answer, kept on the control for anything that starts after this
+  // has run or must not miss it: /account reads it once and watches it. An
+  // event alone would be lost when there is no session to look for, because
+  // that path never waits, so it can finish before a later script has listened.
+  // Every end of start() goes through here, a failed return and a failed chunk
+  // included, so "signed out" is announced whatever the reason.
+  root.dataset.auth = user ? 'in' : 'out';
   if (user) {
     const name = user.user_metadata?.full_name || user.email || '?';
     root.querySelector('[data-account-initial]').textContent = name.trim()[0].toUpperCase();
