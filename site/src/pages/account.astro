@@ -36,7 +36,9 @@ import { LEGAL } from '../lib/legal.js';
 
   <noscript><p class="acct-empty">This page needs JavaScript to show what is kept on this device.</p></noscript>
 
-  <div class="acct">
+  {/* data-sync-full: this page shows everything the account holds, so a sync
+      started here reads all of it (see startSync in scripts/sync.js). */}
+  <div class="acct" data-sync-full={authEnabled ? '' : undefined}>
     <section class="acct-section" aria-labelledby="acct-sum-h">
       <h2 id="acct-sum-h">By subject</h2>
       <div data-summary></div>

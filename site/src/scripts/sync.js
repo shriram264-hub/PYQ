@@ -32,16 +32,16 @@ async function pullKeys(client, keys) {
  * One sync: fetch the account's rows, merge them with this device's marks,
  * send what the device has newer, then save. Any request error throws and
  * leaves local state and the pending queue untouched, so the next run starts
- * from the same place.
+ * from the same place. `full` pulls every row whatever the marker says.
  */
-export async function syncProgress(client, user) {
+export async function syncProgress(client, user, { full = false } = {}) {
   const startedAt = Date.now();
   const snapshot = loadState();
   const pending = snapshot.pending.filter(isOp);
   const pendingKeys = [...new Set(pending.map((op) => op.key))];
 
   let scopeKeys = null; // null = full pull
-  if (progressPull.recent(user.id, startedAt)) {
+  if (!full && progressPull.recent(user.id, startedAt)) {
     if (!pendingKeys.length) return; // nothing changed here, nothing to ask
     if (pendingKeys.length <= MAX_TARGETED_KEYS) scopeKeys = pendingKeys;
   }
@@ -107,9 +107,16 @@ function claimDevice(user) {
 // a second set of listeners.
 let active = null;
 
-export function startSync(client, user) {
+/**
+ * Starts syncing this page with the account, or asks the sync already started
+ * for another run. `full` makes that run read the whole account, progress and
+ * lists, whatever the pull markers say: /account asks for it, because it shows
+ * everything the account holds, and a change made on another device would
+ * otherwise stay out of sight for up to FULL_PULL_EVERY_MS.
+ */
+export function startSync(client, user, { full = false } = {}) {
   active ??= openSession(client, user);
-  return active.run();
+  return active.run(full);
 }
 
 function openSession(client, user) {
@@ -117,12 +124,13 @@ function openSession(client, user) {
   const win = window;
   let running = null;
   let again = false;
+  let fullNext = false;
   let stopped = false;
 
   // Progress, then lists. Each fails alone, and each keeps its own pull marker:
   // a table that keeps refusing must neither hold the other back nor make it
   // pull everything again.
-  async function syncOnce() {
+  async function syncOnce(full) {
     try {
       claimDevice(user);
     } catch (e) {
@@ -130,21 +138,23 @@ function openSession(client, user) {
       return;
     }
     try {
-      await syncProgress(client, user);
+      await syncProgress(client, user, { full });
     } catch (e) {
       console.warn('SawaalBox: will retry syncing', e);
     }
     if (stopped) return;
     try {
-      await syncLists(client, user);
+      await syncLists(client, user, { full });
     } catch (e) {
       console.warn('SawaalBox: will retry syncing lists', e);
     }
   }
 
   // One run at a time. A request that arrives during a run (a click, coming
-  // back online) is covered by one follow-up run, which reads state afresh.
-  function run() {
+  // back online) is covered by one follow-up run, which reads state afresh,
+  // and reads everything if any request since the last run asked for that.
+  function run(full = false) {
+    if (full) fullNext = true;
     if (running) {
       again = true;
       return running;
@@ -153,7 +163,9 @@ function openSession(client, user) {
       try {
         do {
           again = false;
-          await syncOnce();
+          const thisRunFull = fullNext;
+          fullNext = false;
+          await syncOnce(thisRunFull);
         } while (again && !stopped);
         // A run that outlived sign-out may have written the markers after they were removed.
         if (stopped) forgetMarkers();
@@ -177,25 +189,28 @@ function openSession(client, user) {
     event.detail?.waitUntil?.(run());
   }
 
+  // marks.js has already queued the op; the event only says "something changed".
+  // A list change is the same: the lists are already saved, and the run finds
+  // what differs from the account by comparing them with it. (A wrapper, so
+  // the event object is never taken for run's `full`.)
+  const onChange = () => run();
+
   // The client is dead after sign-out: no more runs with it, and the next
   // person to sign in on this device must start with a full pull.
   function onSignedOut() {
     stopped = true;
-    doc.removeEventListener('sawaalbox:mark', run);
-    doc.removeEventListener('sawaalbox:list', run);
-    win.removeEventListener('online', run);
+    doc.removeEventListener('sawaalbox:mark', onChange);
+    doc.removeEventListener('sawaalbox:list', onChange);
+    win.removeEventListener('online', onChange);
     doc.removeEventListener('sawaalbox:signing-out', onSigningOut);
     doc.removeEventListener('sawaalbox:signed-out', onSignedOut);
     active = null;
     forgetMarkers();
   }
 
-  // marks.js has already queued the op; the event only says "something changed".
-  // A list change is the same: the lists are already saved, and the run finds
-  // what differs from the account by comparing them with it.
-  doc.addEventListener('sawaalbox:mark', run);
-  doc.addEventListener('sawaalbox:list', run);
-  win.addEventListener('online', run);
+  doc.addEventListener('sawaalbox:mark', onChange);
+  doc.addEventListener('sawaalbox:list', onChange);
+  win.addEventListener('online', onChange);
   doc.addEventListener('sawaalbox:signing-out', onSigningOut);
   doc.addEventListener('sawaalbox:signed-out', onSignedOut);
   return { run };

@@ -1187,6 +1187,51 @@ test('sign-out waits for the last run at most its time limit', async () => {
   assert.ok(Date.now() - started < 1000, 'gave up on the hung request');
 });
 
+// --- /account: always the whole account. ---
+
+test('a sync started with full: true pulls every row and every list, however recent the markers', async () => {
+  writeMarker(MIN);
+  writeListsMarker(MIN);
+  seed({ entries: { [C]: entry('done', OLD, true) }, lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+  const client = fakeClient([row(C, 'done', OLD), row(X, 'review', NEW)]); // X: marked on another device
+  remoteSet(client, 'R1', 'Polity', ['a', 'b']); // b: saved on another device
+  await startSync(client, USER, { full: true });
+  const [progress] = kinds(client, 'select');
+  assert.deepEqual(progress.filters, []);
+  assert.deepEqual(progress.range, [0, 999]);
+  assert.deepEqual(loadState().entries, { [C]: entry('done', OLD, true), [X]: entry('review', NEW, true) });
+  assert.deepEqual(lists().L1.keys, ['a', 'b']);
+  const renewed = JSON.parse(store.get(SYNC_MARKER_KEY));
+  assert.ok(Date.now() - Date.parse(renewed.at) < MIN / 2, 'and the markers are renewed');
+});
+
+test('only the run asked for is full: later runs on the page are targeted again', async () => {
+  const client = fakeClient();
+  await startSync(client, USER, { full: true });
+  click(A, 'done', NEW);
+  await idle();
+  const last = kinds(client, 'select').at(-1);
+  assert.deepEqual(last.filters, [['in', 'question_key', [A]]]);
+});
+
+test('a full pull asked for while a run is in flight is the follow-up run', async () => {
+  writeMarker(MIN);
+  writeListsMarker(MIN);
+  mark(A, 'done', NEW);
+  const client = fakeClient([row(X, 'done', OLD)]);
+  const release = slowNetwork(client);
+  const first = startSync(client, USER); // targeted: A is pending
+  startSync(client, USER, { full: true });
+  release();
+  await first;
+  const [targeted, ...rest] = kinds(client, 'select');
+  assert.deepEqual(targeted.filters, [['in', 'question_key', [A]]], 'the run in flight was targeted');
+  // X, and A, which the first run uploaded: one page, then the empty one.
+  assert.deepEqual(rest.map((c) => [c.filters, c.range]), [[[], [0, 999]], [[], [2, 1001]]], 'the follow-up read every page');
+  assert.ok(loadState().entries[X]);
+  assert.ok(kinds(client, 'select', 'bookmark_sets').length > 0);
+});
+
 test('with no sync running, sign-out does not wait', async () => {
   const started = Date.now();
   await finishSyncing(5000);

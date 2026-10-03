@@ -56,10 +56,10 @@ function removals(client, user, deleteBookmarks, lists) {
  * the local lists as they were. The pull marker is written only when a full
  * pull and its save both succeeded.
  */
-export async function syncLists(client, user) {
+export async function syncLists(client, user, { full: everything = false } = {}) {
   const startedAt = Date.now();
   const snapshot = loadState().lists;
-  const full = !listsPull.recent(user.id, startedAt);
+  const full = everything || !listsPull.recent(user.id, startedAt);
   if (!full && !Object.values(snapshot).some(isDirty)) return;
 
   const [sets, bookmarks] = await Promise.all([

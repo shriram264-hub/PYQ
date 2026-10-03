@@ -32,10 +32,12 @@ import { authEnabled } from '../lib/accounts/config.js';
       import '../scripts/account.js';
 
       // Sync is its own chunk, fetched only once someone is actually signed in.
+      // A page that shows the whole account (/account, marked data-sync-full)
+      // reads all of it on every visit, not only what this device changed.
       document.addEventListener('sawaalbox:signed-in', async (e) => {
         try {
           const { startSync } = await import('../scripts/sync.js');
-          startSync(e.detail.client, e.detail.user);
+          startSync(e.detail.client, e.detail.user, { full: document.querySelector('[data-sync-full]') !== null });
         } catch (err) {
           console.warn('SawaalBox: sync did not start', err);
         }
