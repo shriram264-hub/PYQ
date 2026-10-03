@@ -26,7 +26,23 @@ import { authEnabled } from '../lib/accounts/config.js';
   )
 }
 
-{authEnabled && <script>import '../scripts/account.js';</script>}
+{
+  authEnabled && (
+    <script>
+      import '../scripts/account.js';
+
+      // Sync is its own chunk, fetched only once someone is actually signed in.
+      document.addEventListener('sawaalbox:signed-in', async (e) => {
+        try {
+          const { startSync } = await import('../scripts/sync.js');
+          startSync(e.detail.client, e.detail.user);
+        } catch (err) {
+          console.warn('SawaalBox: sync did not start', err);
+        }
+      });
+    </script>
+  )
+}
 
 <style>
   .account { position: relative; }

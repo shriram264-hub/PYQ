@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeProgress } from '../src/lib/accounts/merge.js';
+import { mergeProgress, settleSync } from '../src/lib/accounts/merge.js';
 
 const OLD = '2026-10-01T10:00:00.000Z';
 const NEW = '2026-10-02T10:00:00.000Z';
@@ -80,4 +80,99 @@ test('a pending delete for a key the account does not have stays absent', () => 
   const { entries, toDelete } = mergeProgress(local, remote, pending);
   assert.equal(entries.a, undefined);
   assert.deepEqual(toDelete, []);
+});
+
+// settleSync: what a finished sync saves, given what happened while it ran.
+const NEWER = '2026-10-03T10:00:00.000Z';
+const entry = (status, updatedAt, synced) => ({ status, updatedAt, synced });
+const upsert = (key, status, at) => ({ type: 'upsert', key, status, at });
+const del = (key, at) => ({ type: 'delete', key, at });
+const state = (entries, pending, lists = {}) => ({ entries, pending, lists });
+
+test('a full settle takes the merged result, marks it synced and clears the snapshot ops', () => {
+  const op = upsert('a', 'done', NEW);
+  const snapshot = state({ a: entry('done', NEW, false) }, [op]);
+  const merged = { a: entry('done', NEW, false), b: entry('review', OLD, true) };
+  const out = settleSync(snapshot, snapshot, merged);
+  assert.deepEqual(out.entries, { a: entry('done', NEW, true), b: entry('review', OLD, true) });
+  assert.deepEqual(out.pending, []);
+});
+
+test('a mark made during the run keeps its entry unsynced and stays pending', () => {
+  const sent = upsert('a', 'done', OLD);
+  const snapshot = state({ a: entry('done', OLD, false) }, [sent]);
+  const during = upsert('b', 'review', NEW);
+  const current = state({ a: entry('done', OLD, false), b: entry('review', NEW, false) }, [sent, during]);
+  const out = settleSync(snapshot, current, { a: entry('done', OLD, false) });
+  assert.deepEqual(out.entries, { a: entry('done', OLD, true), b: entry('review', NEW, false) });
+  assert.deepEqual(out.pending, [during]);
+});
+
+test('re-marking the same question during the run replaces the op the run sent', () => {
+  const sent = upsert('a', 'done', OLD);
+  const snapshot = state({ a: entry('done', OLD, false) }, [sent]);
+  const during = upsert('a', 'review', NEW);
+  const current = state({ a: entry('review', NEW, false) }, [during]);
+  const out = settleSync(snapshot, current, { a: entry('done', OLD, false) });
+  assert.deepEqual(out.entries, { a: entry('review', NEW, false) });
+  assert.deepEqual(out.pending, [during]);
+});
+
+test('a clear made during the run removes the entry the merge brought back', () => {
+  const snapshot = state({}, []);
+  const during = del('a', NEW);
+  const out = settleSync(snapshot, state({}, [during]), { a: entry('done', OLD, true) });
+  assert.equal(out.entries.a, undefined);
+  assert.deepEqual(out.pending, [during]);
+});
+
+test('an op that lost to a newer account row is cleared, not re-sent', () => {
+  const lost = del('a', OLD);
+  const snapshot = state({}, [lost]);
+  const out = settleSync(snapshot, snapshot, { a: entry('review', NEW, false) });
+  assert.deepEqual(out.entries, { a: entry('review', NEW, true) });
+  assert.deepEqual(out.pending, []);
+});
+
+test('a targeted settle replaces only the asked-about entries', () => {
+  const sent = upsert('a', 'done', NEW);
+  const snapshot = state({ a: entry('done', NEW, false) }, [sent]);
+  const current = state(
+    { a: entry('done', NEW, false), c: entry('done', OLD, false), d: entry('review', OLD, true) },
+    [sent]
+  );
+  const out = settleSync(snapshot, current, { a: entry('done', NEW, false) }, ['a']);
+  assert.deepEqual(out.entries, {
+    a: entry('done', NEW, true),
+    c: entry('done', OLD, false),
+    d: entry('review', OLD, true),
+  });
+  assert.deepEqual(out.pending, []);
+});
+
+test('a targeted settle drops an asked-about entry the merge removed', () => {
+  const sent = del('a', NEW);
+  const snapshot = state({}, [sent]);
+  const current = state({ a: entry('done', OLD, true) }, [sent]);
+  const out = settleSync(snapshot, current, {}, ['a']);
+  assert.deepEqual(out.entries, {});
+});
+
+test('a targeted settle also keeps marks made during the run', () => {
+  const sent = upsert('a', 'done', OLD);
+  const snapshot = state({ a: entry('done', OLD, false) }, [sent]);
+  const during = upsert('a', 'review', NEWER);
+  const current = state({ a: entry('review', NEWER, false) }, [during]);
+  const out = settleSync(snapshot, current, { a: entry('done', OLD, false) }, ['a']);
+  assert.deepEqual(out.entries, { a: entry('review', NEWER, false) });
+  assert.deepEqual(out.pending, [during]);
+});
+
+test('settle keeps the lists and drops malformed queued ops', () => {
+  const snapshot = state({}, []);
+  const current = state({}, [null, { type: 'upsert' }, upsert('a', 'done', NEW)], { x: 1 });
+  current.entries.a = entry('done', NEW, false);
+  const out = settleSync(snapshot, current, {});
+  assert.deepEqual(out.lists, { x: 1 });
+  assert.deepEqual(out.pending, [upsert('a', 'done', NEW)]);
 });

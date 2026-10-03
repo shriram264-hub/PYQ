@@ -1,4 +1,4 @@
-import { STORAGE_KEY, loadState, saveState, setMark } from '../lib/accounts/progress-store.js';
+import { STORAGE_KEY, enqueue, loadState, saveState, setMark } from '../lib/accounts/progress-store.js';
 
 const CONTROLS = [
   { status: 'done', label: 'Mark done' },
@@ -60,8 +60,12 @@ document.addEventListener('click', (event) => {
   // tab or a restored page may have changed it since this page last painted.
   // Pressing the active mark clears it.
   const next = button.getAttribute('aria-pressed') === 'true' ? null : button.dataset.status;
+  // The op joins the pending queue in the same write as the mark. sync.js only
+  // listens for the event to start a run, so a mark made before sync.js loads,
+  // or while signed out, is still queued and cannot lose to an older account copy.
   const { state, op } = setMark(current(), key, next);
-  pageState = saveState(state) ? null : state;
+  const updated = enqueue(state, op);
+  pageState = saveState(updated) ? null : updated;
   paintAll(); // the same question can appear twice on one page
   document.dispatchEvent(new CustomEvent('sawaalbox:mark', { detail: op }));
 });
@@ -81,6 +85,11 @@ window.addEventListener('pageshow', (e) => {
 // A later sync repaints by dispatching this event rather than importing this
 // module: marks.js registers a click handler as a side effect, so a second
 // module instance would register it twice and every click would toggle twice.
-document.addEventListener('sawaalbox:synced', () => paintAll());
+// A sync only fires this after it wrote to storage, which proves storage works
+// again, so drop the in-page fallback rather than let it shadow what was saved.
+document.addEventListener('sawaalbox:synced', () => {
+  pageState = null;
+  paintAll();
+});
 
 paintAll();

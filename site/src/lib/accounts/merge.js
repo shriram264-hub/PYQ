@@ -1,3 +1,5 @@
+import { markAllSynced } from './progress-store.js';
+
 /**
  * Merge this device's marks with the account's. For a question on both sides
  * the later edit wins; on an exact tie the account's copy stays. A local mark
@@ -29,4 +31,52 @@ export function mergeProgress(local, remoteRows, pending = []) {
     toUpload.push({ question_key: key, status: mine.status, updated_at: mine.updatedAt });
   }
   return { entries, toUpload, toDelete };
+}
+
+/** A well-formed queued op. Storage is the user's, so anything else is dropped rather than trusted. */
+export function isOp(op) {
+  return (
+    Boolean(op) &&
+    typeof op.key === 'string' &&
+    typeof op.at === 'string' &&
+    (op.type === 'upsert' || op.type === 'delete')
+  );
+}
+
+const opId = (op) => JSON.stringify([op.key, op.at]);
+
+/**
+ * The state to save when a sync finishes. A sync works from a snapshot taken
+ * before its network calls, and the person can keep marking while they run, so
+ * `current` (storage read again at the end) can hold ops the sync never saw.
+ * Those "fresh" ops (same key and same time = same op) stay pending, and their
+ * local entries are kept exactly as `current` has them, unsynced. Everything
+ * else takes the merged result and counts as synced. The snapshot's own ops are
+ * cleared, including ones that lost to a newer account row: re-sending them
+ * would only lose again.
+ *
+ * `merged` is mergeProgress's `entries`. With `scopeKeys` null the merge covered
+ * every entry, so it replaces them all. With a list of keys (a targeted sync
+ * that pulled only those questions) it replaces just those; every other entry,
+ * synced flag included, stays as `current` has it.
+ */
+export function settleSync(snapshot, current, merged, scopeKeys = null) {
+  const sent = new Set(snapshot.pending.filter(isOp).map(opId));
+  const fresh = current.pending.filter((op) => isOp(op) && !sent.has(opId(op)));
+  let entries;
+  if (scopeKeys === null) {
+    entries = markAllSynced(merged);
+  } else {
+    entries = { ...current.entries };
+    for (const key of scopeKeys) {
+      if (merged[key]) entries[key] = { ...merged[key], synced: true };
+      else delete entries[key];
+    }
+  }
+  for (const op of fresh) {
+    const mine = current.entries[op.key];
+    if (op.type === 'delete') delete entries[op.key];
+    else if (mine) entries[op.key] = mine;
+  }
+  return { ...current, entries, pending: fresh };
 }
