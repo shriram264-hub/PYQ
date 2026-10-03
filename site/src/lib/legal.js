@@ -19,7 +19,10 @@
 //  3. Search sends the search text and the chosen filters (subject, years,
 //     difficulty) plus paging to the search API as a GET query string
 //     (pages/upsc/search.astro:7, :198-204), with no cookies or account
-//     headers, so a search is never tied to an account.
+//     headers, so a search is never tied to an account. The search also sits
+//     in the page's address (search.astro:185 replaceState; the /upsc cover's
+//     form is a GET to /upsc/search, pages/upsc/index.astro:55), so it lands
+//     in browser history and in the website host's request records.
 //  4. The API (backend/app/main.py) stores nothing and has no logging of its
 //     own, but it runs under uvicorn with its default access log on
 //     (render.yaml:16 has no --no-access-log; uvicorn 0.34 Config access_log=True),
@@ -45,8 +48,13 @@
 //     (lib/accounts/config.js:14-15; auth.js:10 persistSession with no custom
 //     storage; @supabase/auth-js GoTrueClient storage = globalThis.localStorage),
 //     plus a PKCE code verifier during sign-in (auth.js:26). Sign-out removes
-//     the session (auth.js:70-88). It is loaded only when someone presses Sign
-//     in or a session is already stored (auth.js:5-7, account.js:47).
+//     the session (auth.js:70-88) and nothing else: marks and lists stay in
+//     this browser after sign-out (sync.js:141-149 forgets only the pull
+//     markers). It is loaded only when someone presses Sign in or a session is
+//     already stored (auth.js:5-7, account.js:47).
+//  8a. Sign-in returns to the page it started on, query string included, so a
+//     search on that page is passed through Supabase's sign-in redirect
+//     (auth.js:54-60 redirectTo).
 //  9. Synced to Supabase (supabase/migrations/20261002120000_accounts.sql):
 //     question_progress (question key, status, updated_at; :4-10, written by
 //     scripts/sync.js:54-58), bookmark_sets (list name, created_at; :12-18,
@@ -59,20 +67,33 @@
 //     (migration :40-77).
 // 11. Deleting the account deletes the data: every table references auth.users
 //     `on delete cascade` (migration :5, :14, :24, :33). Deletion is done by the
-//     operator on request; the site has no self-serve delete.
+//     operator on request; the site has no self-serve delete. Supabase's
+//     sign-in audit rows (auth.audit_log_entries) have no foreign key to
+//     auth.users, so they outlive the cascade and are purged by hand as part
+//     of the same request: supabase/README.md "Deleting a student's account
+//     on request".
 // 12. `entitlements` exists (migration :32-38) but nothing reads or writes it
 //     (grep site/src, backend/app: no match). No payments exist anywhere.
-// 13. Supabase may also log sign-ins (time, IP address, browser) as part of its
-//     standard Auth service. Not visible from this repo, so the pages say "may".
+// 13. Supabase may also log each sign-in and each sync request (time, IP
+//     address, browser) as part of its standard Auth and API services, kept
+//     for its own log period. Not visible from this repo, so the pages say
+//     "may" where they describe it.
 //
 // Hosts and processors
 // 14. Render hosts the static site and the search API (render.yaml:1-54). Both
 //     hostnames resolve to gcp-us-west1-1.origin.onrender.com (DNS, 2026-10-03),
-//     i.e. the United States, through Render's CDN. Any web host sees the
-//     visitor's IP address and browser details with each request.
-// 15. Supabase holds accounts and synced data (render.yaml:47-48). Its region
-//     is not confirmed, so the pages say "may be stored on servers outside India".
+//     i.e. the United States. Any web host sees the visitor's IP address and
+//     browser details with each request.
+// 14a. Cloudflare carries the traffic: the Render hostnames are CNAMEs to
+//     gcp-us-west1-1.origin.onrender.com.cdn.cloudflare.net, and the Supabase
+//     project host resolves to Cloudflare addresses (104.18.38.10,
+//     172.64.149.246) (DNS, 2026-10-03). No location is claimed for it.
+// 15. Supabase holds accounts and synced data (render.yaml:47-48), in Mumbai,
+//     India (ap-south-1): region confirmed by the owner, 2026-10-03.
 // 16. Google runs the sign-in step itself (auth.js:59, provider 'google').
+// 16a. hello@sawaalbox.in is hosted by Zoho Mail (Zoho Corporation), so Zoho
+//     handles emails people send: confirmed by the owner, 2026-10-03, and
+//     tested for sending and receiving. No location is claimed for it.
 // 17. Connections are HTTPS: the site, the API and Supabase are all https://
 //     origins (render.yaml:21, :40, :44, :48).
 //
@@ -124,8 +145,12 @@ export const LEGAL = Object.freeze({
 export function longDate(iso) {
   const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   if (!match) throw new Error(`not an ISO date: ${iso}`);
-  const [, year, month, day] = match;
-  const name = MONTHS[Number(month) - 1];
-  if (!name || Number(day) < 1 || Number(day) > 31) throw new Error(`not an ISO date: ${iso}`);
-  return `${Number(day)} ${name} ${year}`;
+  const [year, month, day] = match.slice(1).map(Number);
+  // Date.UTC rolls an impossible day over (31 February becomes 3 March), so a
+  // date is real only if it comes back unchanged.
+  const real = new Date(Date.UTC(year, month - 1, day));
+  if (real.getUTCFullYear() !== year || real.getUTCMonth() !== month - 1 || real.getUTCDate() !== day) {
+    throw new Error(`not an ISO date: ${iso}`);
+  }
+  return `${day} ${MONTHS[month - 1]} ${match[1]}`;
 }

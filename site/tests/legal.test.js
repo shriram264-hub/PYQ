@@ -31,6 +31,16 @@ test('longDate spells a date out the way the pages print it', () => {
   assert.equal(longDate(LEGAL.updated), '3 October 2026');
 });
 
+test('longDate refuses a day the month does not have', () => {
+  for (const bad of ['2026-02-31', '2026-02-29', '2026-04-31', '2026-06-31', '2026-09-31', '2026-11-31']) {
+    assert.throws(() => longDate(bad), /not an ISO date/, bad);
+  }
+  // A leap year's 29 February, and every month's real last day, are fine.
+  assert.equal(longDate('2028-02-29'), '29 February 2028');
+  assert.equal(longDate('2026-02-28'), '28 February 2026');
+  assert.equal(longDate('2026-12-31'), '31 December 2026');
+});
+
 test('longDate refuses anything that is not an ISO date', () => {
   for (const bad of ['3 October 2026', '2026-13-01', '2026-00-10', '2026-10-00', '2026-10-3', '']) {
     assert.throws(() => longDate(bad), /not an ISO date/, bad);

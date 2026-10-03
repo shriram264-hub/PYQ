@@ -3,6 +3,7 @@
 import Legal from '../layouts/Legal.astro';
 import { LEGAL } from '../lib/legal.js';
 import { EXAMS } from '../lib/exams.js';
+import { authEnabled } from '../lib/accounts/config.js';
 
 const mail = `mailto:${LEGAL.email}`;
 // The same credit the footer prints.
@@ -34,6 +35,11 @@ const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.
 
   <section data-numbered aria-labelledby="accounts">
     <h2 id="accounts">Your account</h2>
+    {
+      !authEnabled && (
+        <p class="legal-aside">Sign-in is not open yet. This section applies once it is.</p>
+      )
+    }
     <ul>
       <li>Accounts are for people aged {LEGAL.minAge} or over. Reading and searching need no account, so they are open to everyone.</li>
       <li>You sign in with your own Google account. An account is for one person; please don't share it.</li>

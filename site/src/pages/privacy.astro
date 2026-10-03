@@ -25,7 +25,7 @@ const mail = `mailto:${LEGAL.email}`;
       </li>
       <li>
         If you sign in with Google, we keep your name, email address, profile picture link, marks and lists, so they follow
-        you to any device.
+        you to any device.{!authEnabled && ' Sign-in is not open yet.'}
       </li>
       <li>We don't sell your data or share it with anyone except the services below that run the site.</li>
       <li>Email <a href={mail}>{LEGAL.email}</a> to see, correct or delete what we hold.</li>
@@ -35,7 +35,7 @@ const mail = `mailto:${LEGAL.email}`;
   <section data-numbered aria-labelledby="who">
     <h2 id="who">Who runs SawaalBox</h2>
     <p>
-      SawaalBox is run by {LEGAL.operator}, {LEGAL.place}. He decides how the site uses your data, and he is its grievance
+      SawaalBox is run by {LEGAL.operator}, {LEGAL.place}, who decides how the site uses your data and is its grievance
       officer: the person to contact about your data, including complaints, at <a href={mail}>{LEGAL.email}</a>.
     </p>
   </section>
@@ -52,7 +52,8 @@ const mail = `mailto:${LEGAL.email}`;
         <strong>Searches.</strong> When you search, the text you typed and any filters you chose (subject, years,
         difficulty) are sent to our search service. It writes each search to its log: the search text, the filters and
         the network (IP) address the request came from. Render, our host, keeps these logs, with the time of each, for a
-        limited period. A search is never linked to an account.
+        limited period. A search is never linked to an account. Your search also appears in the page's web address, so
+        your browser keeps it in its history like any page you visit.
       </li>
       <li>
         <strong>Visiting pages.</strong> Like every website, the servers that deliver SawaalBox receive your IP address
@@ -87,8 +88,13 @@ const mail = `mailto:${LEGAL.email}`;
     </ul>
     <p>
       Your browser keeps your sign-in session, which includes your name and email address, so you stay signed in until you
-      sign out. Supabase, which runs sign-in for us, may also record technical details of each sign-in, such as the time,
-      your IP address and your browser, to keep accounts secure.
+      sign out. Signing out does not remove your marks and lists from this browser: on a shared computer, clear this site's
+      data in your browser's settings after you sign out.
+    </p>
+    <p>
+      If you sign in from a page that shows a search, that page's web address, search included, is passed through the
+      sign-in step so you come back to it. Supabase, which runs sign-in for us, may also record technical details of each
+      sign-in and each sync, such as the time, your IP address and your browser.
     </p>
   </section>
 
@@ -99,6 +105,7 @@ const mail = `mailto:${LEGAL.email}`;
       <li>Your email address and Google account ID: to know which account is yours, and to check that a request about your data comes from you.</li>
       <li>Your name: its first letter appears on the account button. We don't show your picture.</li>
       <li>Search text: to find the questions you asked for. Logs: to find and fix problems.</li>
+      <li>Emails you send us: to answer you and act on what you ask.</li>
     </ul>
     <p>
       We rely on your consent, which you give when you sign in, and you can withdraw it at any time (see <a
@@ -109,20 +116,29 @@ const mail = `mailto:${LEGAL.email}`;
   <section data-numbered aria-labelledby="where">
     <h2 id="where">Where it is kept, and who handles it</h2>
     <ul>
-      <li><strong>Render</strong> hosts the website and the search service, on servers in the United States.</li>
       <li>
-        <strong>Supabase</strong> runs sign-in and the database that holds accounts, marks and lists. Its servers may be
-        outside India.
+        <strong>Supabase</strong> runs sign-in and the database that holds accounts, marks and lists, and stores them in
+        Mumbai, India.
+      </li>
+      <li><strong>Render</strong> runs the website and the search service, on servers in the United States.</li>
+      <li>
+        <strong>Cloudflare</strong> carries the connections between your browser and the website, the search service and
+        Supabase.
       </li>
       <li>
         <strong>Google</strong> runs the sign-in step itself. What Google does with your data is covered by <a
           href="https://policies.google.com/privacy">Google's privacy policy</a>.
       </li>
+      <li>
+        <strong>Zoho Mail</strong> (Zoho Corporation) hosts our email address, {LEGAL.email}, so it handles the emails you
+        send us.
+      </li>
     </ul>
     <p>
-      So your data may be stored on servers outside India. Connections to the site, the search service and Supabase use
-      HTTPS. In the database, access rules let each signed-in account read and change only its own marks and lists. If a
-      breach affects your data, we will tell you and the authorities as the law requires.
+      So your account, marks and lists are stored in India, while search logs and records of page visits are kept by
+      Render, outside India. Connections to the site, the search service and Supabase use HTTPS. In the database, access
+      rules let each signed-in account read and change only its own marks and lists. If a breach affects your data, we will
+      tell you and the authorities as the law requires.
     </p>
   </section>
 
@@ -131,10 +147,15 @@ const mail = `mailto:${LEGAL.email}`;
     <ul>
       <li>
         Your account, marks and lists: for as long as your account exists. When you ask us to delete your account, we
-        delete it, and your marks and lists are deleted with it.
+        delete it together with your marks, your lists and Supabase's record of your sign-ins.
       </li>
       <li>What is saved in your browser: until you remove it, or clear this site's data.</li>
-      <li>Search logs: for the limited time Render keeps them.</li>
+      <li>Emails you send us: in our mailbox, until you ask us to delete them or we no longer need them.</li>
+      <li>
+        Records of requests kept by the services that run the site (by Render for page visits and searches, and by
+        Supabase for each sign-in and sync, with your IP address): for the limited time those services keep them. They
+        expire on the services' own schedule.
+      </li>
     </ul>
   </section>
 
@@ -144,7 +165,10 @@ const mail = `mailto:${LEGAL.email}`;
     <ul>
       <li>ask what personal data we hold about you, what we do with it, and who handles it for us;</li>
       <li>ask us to correct, complete or update it;</li>
-      <li>ask us to delete it, which deletes your account, marks and lists;</li>
+      <li>
+        ask us to delete it: we delete your account, marks and lists, and the sign-in records we can remove (logs kept by
+        the services that run the site expire on their own schedule);
+      </li>
       <li>withdraw your consent at any time, after which we delete your account;</li>
       <li>nominate someone to use these rights for you if you die or become unable to;</li>
       <li>complain to us about how we handle your data.</li>
