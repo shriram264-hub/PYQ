@@ -13,6 +13,14 @@ const links = exam
     ]
   : EXAMS.map((e) => ({ name: e.name, href: e.path }));
 
+// On every page, from the homepage to a single question: Google's consent
+// screen and anyone with a data question must be able to find them.
+const LEGAL_LINKS = [
+  { name: 'Privacy', href: '/privacy' },
+  { name: 'Terms', href: '/terms' },
+  { name: 'Contact', href: '/contact' },
+];
+
 const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.maxYear}`).join('; ');
 ---
 
@@ -23,6 +31,11 @@ const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.
     </p>
     <nav aria-label="Footer">
       {links.map((link) => <a href={link.href}>{link.name}</a>)}
+    </nav>
+    {/* Its own row under a hairline: the line above is where to go in the
+        question bank, this one is about the site itself. */}
+    <nav class="colophon-legal" aria-label="Site policies">
+      {LEGAL_LINKS.map((link) => <a href={link.href}>{link.name}</a>)}
     </nav>
   </div>
 </footer>
@@ -55,5 +68,16 @@ const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.
     font-family: var(--font-structure);
     font-size: 0.88rem;
     font-weight: 600;
+  }
+
+  .colophon .colophon-legal {
+    padding-top: 0.8rem;
+    border-top: var(--rule-hair) solid var(--field-rule);
+    font-size: 0.8rem;
+    color: var(--field-ink-soft);
+  }
+
+  .colophon-legal a:hover {
+    color: var(--field-ink);
   }
 </style>

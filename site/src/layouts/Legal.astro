@@ -1,0 +1,124 @@
+---
+// The privacy policy, terms of use and contact page: a listing head with the
+// date the wording last changed, then a reading column. Numbered pages count
+// their sections as an instruction sheet does, so a reader (or a reply) can
+// point at "section 6".
+import Listing from './Listing.astro';
+import { LEGAL, longDate } from '../lib/legal.js';
+
+const { title, description, heading, standfirst, numbered = false } = Astro.props;
+---
+
+<Listing title={title} description={description} heading={heading} standfirst={standfirst}>
+  <p slot="meta" class="legal-updated">
+    Last updated <time datetime={LEGAL.updated}>{longDate(LEGAL.updated)}</time>
+  </p>
+  <div class:list={['legal', { 'legal-numbered': numbered }]}>
+    <slot />
+  </div>
+</Listing>
+
+<style>
+  .legal-updated {
+    margin: 0.7rem 0 0;
+    font-family: var(--font-structure);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+
+  /* The page's own markup is slotted in, so it carries the page's scope, not
+     this layout's: every rule below reaches it through :global(). */
+  .legal {
+    display: grid;
+    gap: clamp(1.75rem, 4vw, 2.5rem);
+    max-width: var(--measure);
+  }
+
+  .legal :global(section) {
+    scroll-margin-top: 1rem;
+  }
+
+  .legal :global(section > h2) {
+    margin-bottom: 0.7rem;
+  }
+
+  .legal :global(h3) {
+    margin: 1.2rem 0 0.4rem;
+  }
+
+  .legal :global(ul) {
+    margin: 0 0 1em;
+    padding-left: 1.25rem;
+  }
+
+  .legal :global(li) {
+    margin-bottom: 0.45rem;
+  }
+
+  .legal :global(li::marker) {
+    color: var(--ink-faint);
+  }
+
+  .legal :global(section > :last-child) {
+    margin-bottom: 0;
+  }
+
+  /* Sections after the summary are numbered 01, 02 … in the serial face, the
+     way the subject index numbers its rows. */
+  .legal-numbered {
+    counter-reset: legal-section;
+  }
+
+  .legal-numbered :global(section[data-numbered] > h2::before) {
+    counter-increment: legal-section;
+    content: counter(legal-section, decimal-leading-zero);
+    display: inline-block;
+    min-width: 2.4ch;
+    margin-right: 0.7rem;
+    font-family: var(--font-serial);
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: var(--ink-faint);
+  }
+
+  /* A ruled box: the summary at the top of a numbered page, and the address
+     on the contact page. */
+  .legal :global(.legal-box) {
+    padding: 1rem 1.1rem 1.1rem;
+  }
+
+  .legal :global(.legal-box > h2) {
+    padding-bottom: 0.6rem;
+    margin-bottom: 0.9rem;
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  /* A short line that qualifies the section it sits in (for example, while
+     sign-in is not open yet). Ink on paper inside a hairline frame. */
+  .legal :global(.legal-aside) {
+    padding: 0.55rem 0.8rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
+    font-size: 0.95rem;
+  }
+
+  .legal :global(dl) {
+    margin: 0;
+  }
+
+  .legal :global(dt) {
+    font-family: var(--font-structure);
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+  }
+
+  .legal :global(dd) {
+    margin: 0.25rem 0 1.1rem;
+  }
+
+  .legal :global(dd:last-child) {
+    margin-bottom: 0;
+  }
+</style>

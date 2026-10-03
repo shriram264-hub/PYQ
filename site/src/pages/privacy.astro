@@ -1,0 +1,175 @@
+---
+// Every statement here traces to the facts inventory in lib/legal.js. Change
+// the code's handling of data and this page together.
+import Legal from '../layouts/Legal.astro';
+import { LEGAL } from '../lib/legal.js';
+import { authEnabled } from '../lib/accounts/config.js';
+
+const mail = `mailto:${LEGAL.email}`;
+---
+
+<Legal
+  title="Privacy Policy"
+  description="What SawaalBox keeps about you, where it is kept, who handles it, and how to see or delete it."
+  heading="Privacy policy"
+  standfirst="What SawaalBox keeps about you, where it is kept, and how to have it removed."
+  numbered={true}
+>
+  <section class="ruled legal-box" aria-labelledby="short">
+    <h2 id="short">In short</h2>
+    <ul>
+      <li>Reading and searching past questions needs no account. There are no ads, no analytics and no tracking cookies.</li>
+      <li>
+        Without an account, your marks, revision lists and theme stay in your browser on this device. The only thing you
+        type that leaves your device is the text of a search.
+      </li>
+      <li>
+        If you sign in with Google, we keep your name, email address, profile picture link, marks and lists, so they follow
+        you to any device.
+      </li>
+      <li>We don't sell your data or share it with anyone except the services below that run the site.</li>
+      <li>Email <a href={mail}>{LEGAL.email}</a> to see, correct or delete what we hold.</li>
+    </ul>
+  </section>
+
+  <section data-numbered aria-labelledby="who">
+    <h2 id="who">Who runs SawaalBox</h2>
+    <p>
+      SawaalBox is run by {LEGAL.operator}, {LEGAL.place}. He decides how the site uses your data, and he is its grievance
+      officer: the person to contact about your data, including complaints, at <a href={mail}>{LEGAL.email}</a>.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="signed-out">
+    <h2 id="signed-out">If you don't sign in</h2>
+    <ul>
+      <li>
+        <strong>Marks and lists.</strong> When you use Mark done, Needs review or Save to list, the question and your choice
+        are saved in your browser's storage on this device. They are not sent anywhere.
+      </li>
+      <li><strong>Theme.</strong> If you pick Light or Dark, that choice is saved the same way.</li>
+      <li>
+        <strong>Searches.</strong> When you search, the text you typed and any filters you chose (subject, years,
+        difficulty) are sent to our search service. It writes each search to its log: the search text, the filters and
+        the network (IP) address the request came from. Render, our host, keeps these logs, with the time of each, for a
+        limited period. A search is never linked to an account.
+      </li>
+      <li>
+        <strong>Visiting pages.</strong> Like every website, the servers that deliver SawaalBox receive your IP address
+        and basic details of your browser with each request.
+      </li>
+    </ul>
+    <p>
+      To remove what is saved in your browser, clear this site's data in your browser's settings. Marks and lists kept only
+      in your browser are lost if you do.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="signed-in">
+    <h2 id="signed-in">If you sign in with Google</h2>
+    {
+      !authEnabled && (
+        <p class="legal-aside">Sign-in is not open yet. This section describes what will happen once it is.</p>
+      )
+    }
+    <p>
+      Signing in is optional. When you choose Sign in, Google asks whether to share your basic profile with SawaalBox. If
+      you agree, we receive and keep the basic profile Google shares:
+    </p>
+    <ul>
+      <li>your name, email address and the link to your Google profile picture;</li>
+      <li>an ID for your Google account, so the same Google account always opens the same SawaalBox account.</li>
+    </ul>
+    <p>Your marks and revision lists are then saved to your account as well as in your browser:</p>
+    <ul>
+      <li>for each mark, the question, whether it is Done or Needs review, and when you marked it;</li>
+      <li>for each list, its name and its questions, each with the date it was saved.</li>
+    </ul>
+    <p>
+      Your browser keeps your sign-in session, which includes your name and email address, so you stay signed in until you
+      sign out. Supabase, which runs sign-in for us, may also record technical details of each sign-in, such as the time,
+      your IP address and your browser, to keep accounts secure.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="why">
+    <h2 id="why">Why we use it</h2>
+    <ul>
+      <li>Your marks and lists: to show them to you on every device where you sign in.</li>
+      <li>Your email address and Google account ID: to know which account is yours, and to check that a request about your data comes from you.</li>
+      <li>Your name: its first letter appears on the account button. We don't show your picture.</li>
+      <li>Search text: to find the questions you asked for. Logs: to find and fix problems.</li>
+    </ul>
+    <p>
+      We rely on your consent, which you give when you sign in, and you can withdraw it at any time (see <a
+        href="#rights">your rights</a>). We don't use your data for advertising, and we don't build a profile of you.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="where">
+    <h2 id="where">Where it is kept, and who handles it</h2>
+    <ul>
+      <li><strong>Render</strong> hosts the website and the search service, on servers in the United States.</li>
+      <li>
+        <strong>Supabase</strong> runs sign-in and the database that holds accounts, marks and lists. Its servers may be
+        outside India.
+      </li>
+      <li>
+        <strong>Google</strong> runs the sign-in step itself. What Google does with your data is covered by <a
+          href="https://policies.google.com/privacy">Google's privacy policy</a>.
+      </li>
+    </ul>
+    <p>
+      So your data may be stored on servers outside India. Connections to the site, the search service and Supabase use
+      HTTPS. In the database, access rules let each signed-in account read and change only its own marks and lists. If a
+      breach affects your data, we will tell you and the authorities as the law requires.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="how-long">
+    <h2 id="how-long">How long we keep it</h2>
+    <ul>
+      <li>
+        Your account, marks and lists: for as long as your account exists. When you ask us to delete your account, we
+        delete it, and your marks and lists are deleted with it.
+      </li>
+      <li>What is saved in your browser: until you remove it, or clear this site's data.</li>
+      <li>Search logs: for the limited time Render keeps them.</li>
+    </ul>
+  </section>
+
+  <section data-numbered aria-labelledby="rights">
+    <h2 id="rights">Your rights</h2>
+    <p>Under India's Digital Personal Data Protection Act, 2023, you can:</p>
+    <ul>
+      <li>ask what personal data we hold about you, what we do with it, and who handles it for us;</li>
+      <li>ask us to correct, complete or update it;</li>
+      <li>ask us to delete it, which deletes your account, marks and lists;</li>
+      <li>withdraw your consent at any time, after which we delete your account;</li>
+      <li>nominate someone to use these rights for you if you die or become unable to;</li>
+      <li>complain to us about how we handle your data.</li>
+    </ul>
+    <p>
+      To do any of these, email <a href={mail}>{LEGAL.email}</a> from the email address you sign in with, so we can tell the
+      request is yours. We reply within {LEGAL.replyDays} days. If you are not satisfied with our reply, you can complain to
+      the Data Protection Board of India.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="children">
+    <h2 id="children">Children</h2>
+    <p>
+      Accounts are for people aged {LEGAL.minAge} or over. If you are younger, you can still read and search everything
+      without an account. If we learn that an account belongs to someone under {LEGAL.minAge}, we will delete it.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="changes">
+    <h2 id="changes">Changes to this policy</h2>
+    <p>
+      When we change this policy, we update the date at the top. If a change affects how we use the data in your account,
+      we will say so on the site before it takes effect. Questions about this policy go to <a href={mail}
+        >{LEGAL.email}</a>; see also the <a href="/contact">contact page</a>.
+    </p>
+  </section>
+</Legal>

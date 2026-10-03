@@ -1,0 +1,77 @@
+---
+import Legal from '../layouts/Legal.astro';
+import { LEGAL } from '../lib/legal.js';
+
+const mail = `mailto:${LEGAL.email}`;
+---
+
+<Legal
+  title="Contact"
+  description="How to reach SawaalBox: corrections to questions, requests about your data, complaints, and anything else."
+  heading="Contact"
+  standfirst="SawaalBox answers by email."
+>
+  <section class="ruled legal-box" aria-labelledby="email-h">
+    <h2 id="email-h" class="field-label">Email</h2>
+    <p class="contact-email"><a href={mail}>{LEGAL.email}</a></p>
+    <p>We reply within {LEGAL.replyDays} days.</p>
+  </section>
+
+  <section aria-labelledby="topics">
+    <h2 id="topics">What to write about</h2>
+    <dl>
+      <dt>A mistake in a question or answer</dt>
+      <dd>
+        Tell us the question's serial, such as <span class="serial contact-serial">2019 · Q7</span>, or paste the link to its page, and say
+        what is wrong.
+      </dd>
+
+      <dt>Your data</dt>
+      <dd>
+        To see, correct or delete what we hold about you, or to withdraw your consent, write from the email address you sign
+        in with so we can tell the request is yours. The <a href="/privacy">privacy policy</a> lists your rights.
+      </dd>
+
+      <dt>A complaint</dt>
+      <dd>
+        About how we handle your data, or anything else on the site. Complaints are handled by {LEGAL.operator},
+        SawaalBox's grievance officer.
+      </dd>
+
+      <dt>Anything else</dt>
+      <dd>Questions, problems with the site, or ideas.</dd>
+    </dl>
+  </section>
+
+  <section aria-labelledby="who">
+    <h2 id="who">Who you are writing to</h2>
+    <p>SawaalBox is run by {LEGAL.operator}, {LEGAL.place}.</p>
+  </section>
+</Legal>
+
+<style>
+  /* The email box's head is the field label itself: the box holds one field,
+     the address, and the label names it as on a printed form. */
+  .legal-box > .field-label {
+    padding-bottom: 0;
+    margin-bottom: 0.4rem;
+    border-bottom: 0;
+  }
+
+  /* Set at the section-title size: the address is the one thing on the page. */
+  .contact-email {
+    margin-bottom: 0.6rem;
+    font-family: var(--font-structure);
+    font-size: clamp(1.25rem, 1rem + 1.1vw, 1.9rem);
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
+  }
+
+  /* A serial is one token: "2019 ·" on one line and "Q7" on the next reads
+     as two. */
+  .contact-serial {
+    white-space: nowrap;
+  }
+</style>

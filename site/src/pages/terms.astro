@@ -1,0 +1,122 @@
+---
+// Every statement here traces to the facts inventory in lib/legal.js.
+import Legal from '../layouts/Legal.astro';
+import { LEGAL } from '../lib/legal.js';
+import { EXAMS } from '../lib/exams.js';
+
+const mail = `mailto:${LEGAL.email}`;
+// The same credit the footer prints.
+const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.maxYear}`).join('; ');
+---
+
+<Legal
+  title="Terms of Use"
+  description="The rules for using SawaalBox: the free beta, accounts, fair use, how far to trust the answers, and the law that applies."
+  heading="Terms of use"
+  standfirst="The rules for using SawaalBox, in plain words."
+  numbered={true}
+>
+  <section data-numbered aria-labelledby="about">
+    <h2 id="about">About SawaalBox</h2>
+    <p>
+      SawaalBox is a website of past questions from Indian competitive exams, starting with the UPSC Civil Services
+      Preliminary Examination. You can read and search them without an account, and mark questions and keep revision
+      lists. It is run by {LEGAL.operator}, {LEGAL.place} ("we"). SawaalBox is not connected with UPSC or any government
+      body.
+    </p>
+    <p>By using SawaalBox you agree to these terms. If you don't agree, please don't use it.</p>
+  </section>
+
+  <section data-numbered aria-labelledby="beta">
+    <h2 id="beta">The beta</h2>
+    <p>SawaalBox is in beta. {LEGAL.betaTerms}</p>
+  </section>
+
+  <section data-numbered aria-labelledby="accounts">
+    <h2 id="accounts">Your account</h2>
+    <ul>
+      <li>Accounts are for people aged {LEGAL.minAge} or over. Reading and searching need no account, so they are open to everyone.</li>
+      <li>You sign in with your own Google account. An account is for one person; please don't share it.</li>
+      <li>Keep your Google account secure: anyone who can sign in to it can use your SawaalBox account.</li>
+      <li>
+        You can ask us to delete your account at any time by emailing <a href={mail}>{LEGAL.email}</a>. Your marks and lists
+        are deleted with it.
+      </li>
+      <li>We may suspend or delete an account that breaks these terms.</li>
+    </ul>
+    <p>How we handle your account's data is set out in the <a href="/privacy">privacy policy</a>.</p>
+  </section>
+
+  <section data-numbered aria-labelledby="fair-use">
+    <h2 id="fair-use">Using SawaalBox fairly</h2>
+    <p>Use SawaalBox for your own study. Please don't:</p>
+    <ul>
+      <li>
+        scrape the site or the search service, or send them automated or bulk requests. The search service runs on a small
+        server, and heavy use slows it down for everyone;
+      </li>
+      <li>try to get into anyone else's account or data, or get around the site's security;</li>
+      <li>try to overload, break or disrupt the site;</li>
+      <li>use SawaalBox for anything unlawful.</li>
+    </ul>
+  </section>
+
+  <section data-numbered aria-labelledby="content">
+    <h2 id="content">Questions and answers</h2>
+    <p>Questions are reproduced from past papers: {sources}.</p>
+    <p>
+      The questions, answers, subjects, topics and difficulty levels were taken from a compilation of past papers.
+      Mistakes can creep in, in the compilation or in how we copied it, and no subject expert has checked them. Questions
+      that UPSC cancelled, and answers that are disputed, are flagged where we know of it. Always check an
+      answer against official sources, such as the answer keys UPSC publishes, before you rely on it. If you find a
+      mistake, please <a href="/contact">tell us</a>.
+    </p>
+    <p>
+      Search finds questions by what they are about, so its results are a guide: it can miss a relevant question or show
+      one that is not.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="no-promise">
+    <h2 id="no-promise">No guarantees</h2>
+    <p>
+      SawaalBox is provided as it is. We don't promise that it is complete, correct, or always available. The search
+      service can take up to a minute to start after a quiet spell, and may sometimes be unavailable.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="liability">
+    <h2 id="liability">Limits on our responsibility</h2>
+    <p>
+      As far as the law allows, we are not responsible for any loss that comes from using SawaalBox or relying on it: for
+      example, a wrong answer, a question the search missed, or marks and lists that are lost. Nothing in these terms
+      limits a responsibility that Indian law does not allow to be limited.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="changes">
+    <h2 id="changes">Changes</h2>
+    <p>
+      We may change, pause or stop parts of SawaalBox. When we change these terms, we update the date at the top; if a
+      change affects what you can do with your account, we will say so on the site before it takes effect. You can stop
+      using SawaalBox at any time.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="law">
+    <h2 id="law">Law and disputes</h2>
+    <p>
+      These terms are governed by the laws of India, and the courts at {LEGAL.place} have jurisdiction over any dispute
+      about them. If something goes wrong, please write to us first at <a href={mail}>{LEGAL.email}</a>; most problems are
+      quicker to sort out that way.
+    </p>
+  </section>
+
+  <section data-numbered aria-labelledby="contact">
+    <h2 id="contact">Contact</h2>
+    <p>
+      Questions about these terms go to <a href={mail}>{LEGAL.email}</a>. The <a href="/contact">contact page</a> says what
+      to include and when to expect a reply.
+    </p>
+  </section>
+</Legal>
