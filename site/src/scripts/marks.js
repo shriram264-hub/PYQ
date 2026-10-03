@@ -66,14 +66,21 @@ function blocksIn(root) {
   return root.querySelectorAll ? root.querySelectorAll('.qblock[data-qkey]') : [];
 }
 
-export function paintAll(root = document) {
+// Storage is read and parsed once per call, and only when there are blocks to
+// paint: most of what the observer below reports holds none.
+function paint(blocks) {
+  if (!blocks.length) return;
   const { entries } = current();
-  for (const block of blocksIn(root)) {
+  for (const block of blocks) {
     const status = entries[block.dataset.qkey]?.status;
     for (const b of ensureControls(block).querySelectorAll('.qmark[data-status]')) {
       b.setAttribute('aria-pressed', String(b.dataset.status === status));
     }
   }
+}
+
+export function paintAll(root = document) {
+  paint([...blocksIn(root)]);
 }
 
 document.addEventListener('click', (event) => {
@@ -94,10 +101,21 @@ document.addEventListener('click', (event) => {
   document.dispatchEvent(new CustomEvent('sawaalbox:mark', { detail: op }));
 });
 
-// Search renders results after load; other tabs can change progress too.
+// Search renders results after load. Nodes added inside the controls
+// themselves (the buttons ensureControls puts in a slot, a Save to list panel
+// and its rows) hold no question, and are skipped: filling a page's slots
+// would otherwise read storage again for every button added. What is left in
+// one batch of records is painted together, with one read.
+const OWN = '.qmarks, .qlists';
 new MutationObserver((records) => {
-  for (const r of records) for (const n of r.addedNodes) if (n.nodeType === 1) paintAll(n);
+  const blocks = [];
+  for (const r of records) {
+    if (r.target.closest?.(OWN)) continue;
+    for (const n of r.addedNodes) if (n.nodeType === 1 && !n.matches(OWN)) blocks.push(...blocksIn(n));
+  }
+  paint(blocks);
 }).observe(document.body, { childList: true, subtree: true });
+// Other tabs can change progress too.
 window.addEventListener('storage', (e) => {
   if (e.key === STORAGE_KEY) paintAll();
 });
