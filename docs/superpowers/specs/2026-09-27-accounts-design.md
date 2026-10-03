@@ -162,6 +162,17 @@ Three new build-time environment variables, all public by design:
 The `service_role` key is never placed in the site, the repo, or any build
 environment for the static site.
 
+## Legal pages
+
+Added 2026-10-03 at the owner's request. Sign-in collects a student's name and email
+address, so a Privacy Policy, Terms of Use and a Contact page go live **before**
+sign-in is turned on, linked from every page's footer and from Google's consent
+screen. They describe only what the site verifiably does with data (checked against
+the code and the hosting setup), name the operator and a contact for data requests
+and grievances (India's Digital Personal Data Protection Act, 2023), state the
+beta terms, and set a minimum age for accounts. Drafts are not legal advice; the
+owner has them reviewed before payments launch.
+
 ## Error handling
 
 - Supabase unreachable: controls keep working against local storage and retry
@@ -198,4 +209,20 @@ can be verified end to end until they do.
 ## Open
 
 - Whether beta users keep free access when payments launch. Decide before launch
-  and state it to beta users upfront.
+  and state it to beta users upfront (now asked as part of the legal pages).
+
+## Later parts (recorded 2026-10-03, owner's direction)
+
+Not built in this part; recorded so parts 2 and 3 start from them.
+
+- **Sign-in is free and never requires a purchase.** Paid features show an
+  "Upgrade" prompt that leads to a plans page. Reading and searching past questions
+  stays free (Product principle 3); passes buy the additional features.
+- **Passes are sold per exam** (UPSC, SSC, and others as their question banks are
+  added): a student can buy any one, or several, each valid until that exam's date.
+  The `entitlements` table above allows one row per account (`user_id` is its
+  primary key), so part 3 re-keys it per account and exam before anything reads it.
+  It is empty and unread during the beta, so this costs one migration.
+- **Payment-side pages** ship with part 3, because Razorpay checks the site before
+  activating payments: Pricing (the plans page), Refund and Cancellation, and a
+  Delivery policy for digital access.

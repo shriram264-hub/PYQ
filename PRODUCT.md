@@ -41,11 +41,13 @@ Semantic search over a complete, dated corpus of past questions. Competing mater
 - The backend runs on Render's free tier with a 512MB memory ceiling. PyTorch cannot be reintroduced to the server — it exceeds the ceiling and previously prevented the service from starting at all.
 - That free instance sleeps after 15 minutes of inactivity; the first request after a sleep is slow, and the first text search afterwards re-downloads the 65MB model because the filesystem is ephemeral.
 
-**Accounts:** designed, not built (`docs/superpowers/specs/2026-09-27-accounts-design.md`): Google sign-in via Supabase, synced progress and bookmark lists, launching as a free beta. Until then nothing is stored per user.
+**Accounts:** being built (`docs/superpowers/specs/2026-09-27-accounts-design.md`): Google sign-in via Supabase, synced progress and revision lists, launching as a free beta. Privacy Policy, Terms of Use and Contact pages go live before sign-in does. Until then nothing is stored per user.
 
 **Pagination:** every listing and search result set is fully paginated; nothing in the corpus is unreachable.
 
-**Undecided:** the `sawaalbox.com` domain is not yet registered. Monetization is a one-time pass valid until an exam date, not an auto-renewing subscription; advertising is ruled out. The price is undecided. Payments will run through Razorpay, since Stripe does not take UPI or domestic INR for Indian merchants.
+**Domain:** `sawaalbox.in` (registered 2026-10-03); the site moves to it from the Render URL once DNS is live.
+
+**Monetization:** a one-time pass valid until an exam date, not an auto-renewing subscription; advertising is ruled out. Passes are sold **per exam** (UPSC, SSC, and others as their question banks arrive), and a student can hold several. Signing in is free and never requires a purchase; paid features show an "Upgrade" prompt leading to a plans page. **Undecided:** the price, and exactly which features a pass unlocks (expected: mock tests and analytics). Payments will run through Razorpay, since Stripe does not take UPI or domestic INR for Indian merchants.
 
 ## Brand Commitments
 
