@@ -27,6 +27,20 @@ export function mayHaveSession() {
   }
 }
 
+/**
+ * The letter on the account button: the first character of the name, else of
+ * the email, upper-cased. A name of spaces counts as none. The first code
+ * point, not the first UTF-16 unit, so a character outside the basic plane is
+ * shown whole; and a letter whose capital is longer (ß) keeps its own form.
+ */
+export function initialOf(user) {
+  const name = user?.user_metadata?.full_name;
+  const from = (typeof name === 'string' && name.trim()) || user?.email?.trim?.() || '?';
+  const first = String.fromCodePoint(from.codePointAt(0));
+  const upper = first.toUpperCase();
+  return [...upper].length === 1 ? upper : first;
+}
+
 // What Supabase and Google append to the address when they send the reader back.
 const RETURN_PARAMS = ['code', 'error', 'error_code', 'error_description'];
 

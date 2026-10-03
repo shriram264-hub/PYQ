@@ -1,5 +1,5 @@
 import { authEnabled } from '../lib/accounts/config.js';
-import { cleanReturnParams, getClient, mayHaveSession, signIn, signOut } from './auth.js';
+import { cleanReturnParams, getClient, initialOf, mayHaveSession, signIn, signOut } from './auth.js';
 
 const root = document.querySelector('[data-account]');
 
@@ -30,10 +30,7 @@ function show(user) {
   // Every end of start() goes through here, a failed return and a failed chunk
   // included, so "signed out" is announced whatever the reason.
   root.dataset.auth = user ? 'in' : 'out';
-  if (user) {
-    const name = user.user_metadata?.full_name || user.email || '?';
-    root.querySelector('[data-account-initial]').textContent = name.trim()[0].toUpperCase();
-  }
+  if (user) root.querySelector('[data-account-initial]').textContent = initialOf(user);
 }
 
 async function start() {
