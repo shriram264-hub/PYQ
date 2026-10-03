@@ -62,12 +62,35 @@ export async function signIn() {
   if (error) throw error;
 }
 
+// How long sign-out waits for the last sync. Long enough for a queued change
+// to reach the account on a working connection; short enough that a hung one
+// never makes Sign out feel broken.
+export const FINAL_SYNC_MS = 3000;
+
 /**
- * Signs this device out. Never leaves the device signed in: if Supabase cannot
- * confirm the sign-out (offline, server error), the stored session is removed
- * here, because on a shared computer a silent failure is a privacy problem.
+ * Gives a running sync (sync.js) one last run, so changes still queued on this
+ * device reach the account they were made under. Otherwise they would stay
+ * here unsynced, and go to whichever account signs in next on this browser.
+ * Waits at most `ms`, and never throws: sign-out must go ahead regardless.
+ * With no sync on the page nothing answers, and it returns at once.
+ */
+export async function finishSyncing(ms = FINAL_SYNC_MS) {
+  const runs = [];
+  document.dispatchEvent(new CustomEvent('sawaalbox:signing-out', { detail: { waitUntil: (p) => runs.push(p) } }));
+  if (!runs.length) return;
+  let timer;
+  await Promise.race([Promise.allSettled(runs), new Promise((resolve) => (timer = setTimeout(resolve, ms)))]);
+  clearTimeout(timer);
+}
+
+/**
+ * Signs this device out, after one last sync (finishSyncing). Never leaves the
+ * device signed in: if Supabase cannot confirm the sign-out (offline, server
+ * error), the stored session is removed here, because on a shared computer a
+ * silent failure is a privacy problem.
  */
 export async function signOut() {
+  await finishSyncing();
   let confirmed = false;
   try {
     const client = await getClient();

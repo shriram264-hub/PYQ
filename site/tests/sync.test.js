@@ -2,8 +2,10 @@ import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { STORAGE_KEY, emptyState, enqueue, loadState, saveState, setMark } from '../src/lib/accounts/progress-store.js';
 import { toggleKey } from '../src/lib/accounts/lists.js';
+import { OWNER_KEY } from '../src/lib/accounts/pull.js';
 import { SYNC_MARKER_KEY, startSync, syncProgress } from '../src/scripts/sync.js';
 import { LISTS_MARKER_KEY, syncLists } from '../src/scripts/sync-lists.js';
+import { finishSyncing } from '../src/scripts/auth.js';
 
 const USER = { id: 'user-1' };
 const OLD = '2026-10-01T10:00:00.000Z';
@@ -87,9 +89,12 @@ const takeWarnings = () => warnings.splice(0);
  *  - failOn: 'select' | 'insert' | 'upsert' | 'delete' returns an error for that
  *    call on any table; 'upsert:bookmarks' names one table
  *  - maxRows: the server's row cap per request
+ *  - user: whose account this is. Row-level security shows each account only
+ *    its own rows, so two accounts are two clients, and every write must name
+ *    this one as the owner.
  *  - bookmark_sets enforces unique(user_id, name) and a bookmark needs its set
  */
-function fakeClient(rows = [], { maxRows = 1000 } = {}) {
+function fakeClient(rows = [], { maxRows = 1000, user = USER } = {}) {
   const tables = {
     question_progress: new Map(rows.map((r) => [r.question_key, { ...r }])),
     bookmark_sets: new Map(),
@@ -133,7 +138,7 @@ function fakeClient(rows = [], { maxRows = 1000 } = {}) {
     if (call.kind === 'insert') {
       const made = [];
       for (const r of call.rows) {
-        assert.equal(r.user_id, USER.id, 'every inserted row names its owner');
+        assert.equal(r.user_id, user.id, 'every inserted row names its owner');
         const taken = [...table.values(), ...made].some((s) => s.name === r.name);
         if (taken) return refuse('duplicate key value violates unique constraint', '23505');
         made.push({ id: `S${++serial}`, ...r });
@@ -144,7 +149,7 @@ function fakeClient(rows = [], { maxRows = 1000 } = {}) {
     }
     if (call.kind === 'upsert') {
       for (const r of call.rows) {
-        assert.equal(r.user_id, USER.id, 'every uploaded row names its owner');
+        assert.equal(r.user_id, user.id, 'every uploaded row names its owner');
         if (call.table === 'bookmarks') {
           if (!tables.bookmark_sets.has(r.set_id)) return refuse('a bookmark needs one of your sets');
           if (call.options?.ignoreDuplicates && table.has(bookmarkId(r))) continue;
@@ -521,9 +526,9 @@ const list = (name, keys = [], remoteId = null, syncedKeys = []) => ({ name, key
 const lists = () => loadState().lists;
 
 // An account that already has this set (and its bookmarks), as another device left it.
-function remoteSet(client, id, name, keys = []) {
-  client.sets.set(id, { id, user_id: USER.id, name });
-  for (const k of keys) client.bookmarks.set(`${id}|${k}`, { set_id: id, question_key: k, user_id: USER.id });
+function remoteSet(client, id, name, keys = [], user = USER) {
+  client.sets.set(id, { id, user_id: user.id, name });
+  for (const k of keys) client.bookmarks.set(`${id}|${k}`, { set_id: id, question_key: k, user_id: user.id });
 }
 function dropRemoteSet(client, id) {
   client.sets.delete(id);
@@ -1022,4 +1027,174 @@ test('removing a list key on one device and re-syncing another does not bring it
   await syncLists(client, USER);
   assert.deepEqual(remoteKeys(client, 'R1'), ['a'], 'the account still lacks b');
   assert.deepEqual(lists().L1.keys, ['a'], 'and A dropped it');
+});
+
+// --- A shared browser: one account after another. ---
+
+const USER_B = { id: 'user-2' };
+const S = 'upsc-2018-1'; // a question both accounts have marked
+const S2 = 'upsc-2018-2';
+const W = 'upsc-2017-1'; // marked while nobody was signed in
+const V = 'upsc-2017-2';
+const signOutEvent = () => document.dispatchEvent(new Event('sawaalbox:signed-out'));
+const rowsOf = (client) => Object.fromEntries([...client.table.values()].map((r) => [r.question_key, [r.status, r.updated_at]]));
+
+test("the account that completes a sync is remembered as this browser's owner, and sign-out keeps it", async () => {
+  const client = fakeClient();
+  client.failOn = 'select';
+  await startSync(client, USER);
+  assert.equal(takeWarnings().length, 2, 'both steps failed');
+  assert.equal(store.has(OWNER_KEY), false, 'a run that reached nothing settles nothing');
+
+  client.failOn = null;
+  window.dispatchEvent(new Event('online'));
+  await idle();
+  assert.equal(store.get(OWNER_KEY), USER.id);
+  signOutEvent();
+  assert.equal(store.get(OWNER_KEY), USER.id, 'kept after sign-out, to recognise the next account');
+});
+
+test('either step succeeding makes the account the owner', async () => {
+  const client = fakeClient();
+  client.failOn = 'select:question_progress';
+  await startSync(client, USER);
+  assert.equal(takeWarnings().length, 1);
+  assert.equal(store.get(OWNER_KEY), USER.id, 'the lists step got through');
+});
+
+test("a shared browser: A, sign-out, B, sign-out, A. Neither account takes on the other's marks or lists, and signed-out work goes to whoever signs in next", async () => {
+  const accountA = fakeClient([row(A, 'done', OLD), row(S, 'done', NEWER), row(S2, 'done', OLD)]);
+  remoteSet(accountA, 'SA', 'Polity', [A]);
+  const accountB = fakeClient([row(B, 'review', OLD), row(S, 'review', OLD), row(S2, 'done', OLD)], { user: USER_B });
+  remoteSet(accountB, 'SB', 'Polity', [B], USER_B);
+
+  // A signs in. Then, offline, A clears S2, and signs out before that reaches A.
+  await startSync(accountA, USER);
+  assert.equal(store.get(OWNER_KEY), USER.id);
+  accountA.failOn = 'select';
+  click(S2, null, NEW);
+  await idle();
+  takeWarnings();
+  signOutEvent();
+  const aAfterSignOut = rowsOf(accountA);
+
+  // Nobody is signed in; someone marks W.
+  mark(W, 'done', NEW);
+
+  // B signs in on the same browser.
+  await startSync(accountB, USER_B);
+  assert.deepEqual(rowsOf(accountB), {
+    [B]: ['review', OLD],
+    [S]: ['review', OLD], // A's newer copy of S was A's, not B's: not uploaded
+    [S2]: ['done', OLD], // A's queued clear of S2 was A's: not sent to B
+    [W]: ['done', NEW], // signed-out work joins the account that signs in
+  });
+  assert.deepEqual(setNames(accountB), ['Polity']);
+  assert.deepEqual(remoteKeys(accountB, 'SB'), [B], "A's list did not fold into B's");
+  assert.deepEqual(Object.keys(loadState().entries).sort(), [B, S, S2, W].sort());
+  assert.equal(loadState().entries[S].status, 'review', "this browser now shows B's marks");
+  assert.deepEqual(Object.values(lists()).map((l) => [l.name, l.remoteId, l.keys]), [['Polity', 'SB', [B]]]);
+  assert.equal(store.get(OWNER_KEY), USER_B.id);
+  assert.deepEqual(rowsOf(accountA), aAfterSignOut, "and A's account was not touched");
+
+  // B signs out; V is marked; A signs back in.
+  signOutEvent();
+  const bAfterSignOut = rowsOf(accountB);
+  mark(V, 'review', NEWER);
+  accountA.failOn = null;
+  await startSync(accountA, USER);
+  assert.deepEqual(rowsOf(accountA), {
+    [A]: ['done', OLD],
+    [S]: ['done', NEWER],
+    // A cleared S2 while offline and signed out before it was sent. That clear
+    // went with A's synced copy when B signed in, so A's account keeps S2.
+    [S2]: ['done', OLD],
+    [V]: ['review', NEWER],
+  });
+  assert.deepEqual(setNames(accountA), ['Polity']);
+  assert.deepEqual(remoteKeys(accountA, 'SA'), [A]);
+  assert.deepEqual(rowsOf(accountB), bAfterSignOut, "and B's account was not touched");
+  assert.deepEqual(Object.keys(loadState().entries).sort(), [A, S, S2, V].sort());
+  assert.deepEqual(Object.values(lists()).map((l) => [l.name, l.remoteId, l.keys]), [['Polity', 'SA', [A]]]);
+  assert.equal(store.get(OWNER_KEY), USER.id);
+});
+
+test('a different account always starts with a full pull, whatever the markers say', async () => {
+  store.set(OWNER_KEY, 'someone-else');
+  writeMarker(MIN);
+  writeListsMarker(MIN);
+  seed({ entries: { [X]: entry('done', OLD, true) } });
+  const client = fakeClient([row(A, 'done', OLD)]);
+  await startSync(client, USER);
+  const [first] = kinds(client, 'select');
+  assert.deepEqual(first.filters, [], 'every row, not just pending keys');
+  assert.ok(kinds(client, 'select', 'bookmark_sets').length > 0, 'and the lists');
+  assert.deepEqual(Object.keys(loadState().entries), [A]);
+});
+
+test('no owner stored (first sign-in here, or data from before owners were kept): everything merges, as on any first sign-in', async () => {
+  seed({ entries: { [A]: entry('done', NEWER, true), [B]: entry('review', NEW, false) }, lists: { L1: list('Polity', ['k']) } });
+  const client = fakeClient([row(A, 'review', OLD)]);
+  await startSync(client, USER);
+  assert.deepEqual(statuses(client), { [A]: 'done', [B]: 'review' });
+  assert.deepEqual(setNames(client), ['Polity']);
+  assert.equal(store.get(OWNER_KEY), USER.id);
+});
+
+test("when the device cannot be cleared of the previous account's copy, the run stops before merging it", async () => {
+  store.set(OWNER_KEY, 'someone-else');
+  seed({ entries: { [A]: entry('done', NEWER, true) } });
+  const before = store.get(STORAGE_KEY);
+  const client = fakeClient([row(A, 'review', OLD)]);
+  failWrites = true;
+  await startSync(client, USER);
+  const [warning] = takeWarnings();
+  assert.equal(warning[0], 'SawaalBox: will retry syncing');
+  assert.deepEqual(client.calls, []);
+  assert.deepEqual(statuses(client), { [A]: 'review' });
+  assert.equal(store.get(STORAGE_KEY), before);
+});
+
+// --- Sign-out: one last run first. ---
+
+test('signing out first gives the sync one last run, so changes still queued reach the account they were made under', async () => {
+  const client = fakeClient();
+  await startSync(client, USER);
+  mark(A, 'done', NEW); // queued, no run yet (made offline, say)
+  await finishSyncing();
+  assert.deepEqual(statuses(client), { [A]: 'done' });
+  assert.deepEqual(loadState().pending, []);
+});
+
+test('the last run joins a run in flight: one follow-up, which sends what was queued during it', async () => {
+  const client = fakeClient();
+  const release = slowNetwork(client);
+  startSync(client, USER);
+  mark(B, 'review', NEW);
+  const done = finishSyncing();
+  release();
+  await done;
+  assert.deepEqual(statuses(client), { [B]: 'review' });
+});
+
+test('sign-out waits for the last run at most its time limit', async () => {
+  const client = fakeClient();
+  await startSync(client, USER);
+  mark(A, 'done', NEW);
+  slowNetwork(client); // a request that never answers
+  const started = Date.now();
+  await finishSyncing(50);
+  assert.ok(Date.now() - started < 1000, 'gave up on the hung request');
+});
+
+test('with no sync running, sign-out does not wait', async () => {
+  const started = Date.now();
+  await finishSyncing(5000);
+  assert.ok(Date.now() - started < 1000);
+  const client = fakeClient();
+  await startSync(client, USER);
+  signOutEvent();
+  const again = Date.now();
+  await finishSyncing(5000);
+  assert.ok(Date.now() - again < 1000, 'a stopped sync asks for no last run');
 });

@@ -33,6 +33,24 @@ export function mergeProgress(local, remoteRows, pending = []) {
   return { entries, toUpload, toDelete };
 }
 
+/**
+ * This device's state, made ready for an account other than the one it last
+ * synced with: on a shared browser A signs out and B signs in. Signing out
+ * leaves A's copy here, and merged as it stands it would be taken for B's own
+ * work: A's newer marks would overwrite B's, A's queued clears would delete
+ * B's rows. So what came from or was meant for A's account goes: marks A's
+ * account confirmed (synced), clears queued for it, and lists tied to its sets.
+ * What was done here and never synced stays, marks and their queued upserts
+ * and lists not yet uploaded, and joins the account signing in: nothing done
+ * before signing in is discarded (spec, "Progress without an account").
+ */
+export function rebaseForNewAccount(state) {
+  const entries = Object.fromEntries(Object.entries(state.entries).filter(([, e]) => !e.synced));
+  const pending = state.pending.filter((op) => op.type === 'upsert');
+  const lists = Object.fromEntries(Object.entries(state.lists).filter(([, l]) => l.remoteId === null));
+  return { ...state, entries, pending, lists };
+}
+
 const opId = (op) => JSON.stringify([op.key, op.at]);
 
 /**

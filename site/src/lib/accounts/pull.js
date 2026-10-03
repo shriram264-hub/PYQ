@@ -30,6 +30,32 @@ export async function pullPages(client, table, columns, orderBy) {
 }
 
 /**
+ * The id of the account that last completed a sync on this browser. Kept on
+ * purpose when that account signs out, unlike the pull markers: it is how the
+ * next run tells that a different account has signed in here, and that the
+ * synced copy on this device belongs to someone else (see
+ * rebaseForNewAccount in merge.js). Both syncs write it after a step succeeds.
+ */
+export const OWNER_KEY = 'sawaalbox-owner-v1';
+
+export const deviceOwner = {
+  read() {
+    try {
+      return globalThis.localStorage.getItem(OWNER_KEY);
+    } catch {
+      return null; // blocked storage holds no copy of anyone's to protect
+    }
+  },
+  remember(userId) {
+    try {
+      globalThis.localStorage.setItem(OWNER_KEY, userId);
+    } catch {
+      /* the next run looks for an owner again */
+    }
+  },
+};
+
+/**
  * A marker in localStorage, `{ user, at }`, saying "this device pulled all of
  * this table for this user at that time". It is separate per sync on purpose:
  * one sync failing must never make the other pull everything again.

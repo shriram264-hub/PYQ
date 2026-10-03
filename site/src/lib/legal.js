@@ -47,11 +47,16 @@
 //     profile, in localStorage under `sb-<project>-auth-token`
 //     (lib/accounts/config.js:14-15; auth.js:10 persistSession with no custom
 //     storage; @supabase/auth-js GoTrueClient storage = globalThis.localStorage),
-//     plus a PKCE code verifier during sign-in (auth.js:26). Sign-out removes
-//     the session (auth.js:70-88) and nothing else: marks and lists stay in
-//     this browser after sign-out (sync.js:141-149 forgets only the pull
-//     markers). It is loaded only when someone presses Sign in or a session is
-//     already stored (auth.js:5-7, account.js:47).
+//     plus a PKCE code verifier during sign-in (auth.js:26). Sign-out first
+//     gives the sync one last run of at most 3 s (auth.js finishSyncing), then
+//     removes the session and nothing else: marks and lists stay in this
+//     browser after sign-out (sync.js onSignedOut forgets only the pull
+//     markers). When a different account next signs in on this browser, the
+//     previous account's synced marks and synced lists are removed from it
+//     before anything is merged (merge.js rebaseForNewAccount, sync.js
+//     claimDevice); marks and lists never synced join the account signing in.
+//     It is loaded only when someone presses Sign in or a session is already
+//     stored (auth.js:5-7, account.js:47).
 //  8a. Sign-in returns to the page it started on, query string included, so a
 //     search on that page is passed through Supabase's sign-in redirect
 //     (auth.js:54-60 redirectTo).
@@ -61,7 +66,10 @@
 //     sync-lists.js:72-75), bookmarks (question key, added_at; :22-28,
 //     sync-lists.js:88). A copy stays in this browser (item 1), with two pull
 //     markers `sawaalbox-sync-v1` and `sawaalbox-sync-lists-v1` holding the
-//     user id and a time (scripts/sync.js:20, sync-lists.js:18, lib/accounts/pull.js:52).
+//     user id and a time (scripts/sync.js:20, sync-lists.js:18, lib/accounts/pull.js:52),
+//     removed on sign-out, and `sawaalbox-owner-v1` holding the id of the last
+//     account that synced on this browser, kept after sign-out so the next
+//     account to sign in here is recognised (lib/accounts/pull.js OWNER_KEY).
 // 10. Access rules: row-level security on every table; each signed-in user can
 //     read and change only their own rows, and nobody signed out can reach them
 //     (migration :40-77).

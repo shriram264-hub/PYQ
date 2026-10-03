@@ -1,6 +1,6 @@
 import { isOp, loadState, saveState } from '../lib/accounts/progress-store.js';
-import { mergeProgress, settleSync } from '../lib/accounts/merge.js';
-import { pullMarker, pullPages } from '../lib/accounts/pull.js';
+import { mergeProgress, rebaseForNewAccount, settleSync } from '../lib/accounts/merge.js';
+import { deviceOwner, pullMarker, pullPages } from '../lib/accounts/pull.js';
 import { forgetListsPull, syncLists } from './sync-lists.js';
 
 // No import of marks.js here, on purpose: it registers a click handler as a
@@ -72,8 +72,35 @@ export async function syncProgress(client, user) {
   if (!saveState(settleSync(snapshot, loadState(), entries, scopeKeys))) {
     throw new Error('progress could not be saved on this device');
   }
+  // The synced marks here are now this account's (see claimDevice).
+  deviceOwner.remember(user.id);
   if (!scopeKeys) progressPull.remember(user.id, startedAt);
   document.dispatchEvent(new CustomEvent('sawaalbox:synced'));
+}
+
+/**
+ * The start of every run. When a different account was the last to sync on
+ * this browser (a shared computer: A signed out, B signed in), A's copy is
+ * taken off the device first (rebaseForNewAccount), so it is neither merged
+ * into B's account nor shown as B's, and both pull markers go, so the run
+ * reads everything. No owner stored (the first sign-in on this browser, or
+ * data from before owners were kept) merges everything, as any first sign-in
+ * does. Throws when storage refuses the rebased state: merging A's copy as it
+ * stands is what must not happen, so the run stops there and retries later.
+ */
+function claimDevice(user) {
+  const owner = deviceOwner.read();
+  if (owner === null || owner === user.id) return;
+  const before = loadState();
+  const after = rebaseForNewAccount(before);
+  const size = (s) => [Object.keys(s.entries).length, s.pending.length, Object.keys(s.lists).length].join();
+  if (size(after) !== size(before)) {
+    if (!saveState(after)) throw new Error("another account's copy could not be cleared from this device");
+    // Storage changed under the page: marks and open panels redraw.
+    document.dispatchEvent(new CustomEvent('sawaalbox:synced'));
+  }
+  progressPull.forget();
+  forgetListsPull();
 }
 
 // The sync wired to this page, if any: kept so a second startSync does not add
@@ -96,6 +123,12 @@ function openSession(client, user) {
   // a table that keeps refusing must neither hold the other back nor make it
   // pull everything again.
   async function syncOnce() {
+    try {
+      claimDevice(user);
+    } catch (e) {
+      console.warn('SawaalBox: will retry syncing', e);
+      return;
+    }
     try {
       await syncProgress(client, user);
     } catch (e) {
@@ -136,6 +169,14 @@ function openSession(client, user) {
     forgetListsPull();
   }
 
+  // Sign-out asks for one last run before the session goes (auth.js
+  // finishSyncing), so changes still queued here reach the account they were
+  // made under rather than the next account to sign in on this browser. It
+  // waits for the run, up to its own time limit; a run never rejects.
+  function onSigningOut(event) {
+    event.detail?.waitUntil?.(run());
+  }
+
   // The client is dead after sign-out: no more runs with it, and the next
   // person to sign in on this device must start with a full pull.
   function onSignedOut() {
@@ -143,6 +184,7 @@ function openSession(client, user) {
     doc.removeEventListener('sawaalbox:mark', run);
     doc.removeEventListener('sawaalbox:list', run);
     win.removeEventListener('online', run);
+    doc.removeEventListener('sawaalbox:signing-out', onSigningOut);
     doc.removeEventListener('sawaalbox:signed-out', onSignedOut);
     active = null;
     forgetMarkers();
@@ -154,6 +196,7 @@ function openSession(client, user) {
   doc.addEventListener('sawaalbox:mark', run);
   doc.addEventListener('sawaalbox:list', run);
   win.addEventListener('online', run);
+  doc.addEventListener('sawaalbox:signing-out', onSigningOut);
   doc.addEventListener('sawaalbox:signed-out', onSignedOut);
   return { run };
 }

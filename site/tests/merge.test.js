@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { mergeProgress, settleSync } from '../src/lib/accounts/merge.js';
+import { mergeProgress, rebaseForNewAccount, settleSync } from '../src/lib/accounts/merge.js';
 
 const OLD = '2026-10-01T10:00:00.000Z';
 const NEW = '2026-10-02T10:00:00.000Z';
@@ -175,4 +175,42 @@ test('settle keeps the lists and drops malformed queued ops', () => {
   const out = settleSync(snapshot, current, {});
   assert.deepEqual(out.lists, { x: 1 });
   assert.deepEqual(out.pending, [upsert('a', 'done', NEW)]);
+});
+
+// rebaseForNewAccount: a shared browser, where the account signing in is not
+// the one this device last synced with.
+const list = (name, keys, remoteId = null, syncedKeys = []) => ({ name, keys, remoteId, syncedKeys });
+
+test('a new account drops the previous account\'s synced marks and keeps the work never synced', () => {
+  const before = state(
+    { a: entry('done', OLD, true), b: entry('review', NEW, false), c: entry('done', NEWER, true) },
+    [upsert('b', 'review', NEW)]
+  );
+  const out = rebaseForNewAccount(before);
+  assert.deepEqual(out.entries, { b: entry('review', NEW, false) });
+  assert.deepEqual(out.pending, [upsert('b', 'review', NEW)]);
+});
+
+test('a new account drops the clears queued for the previous account', () => {
+  const out = rebaseForNewAccount(state({ b: entry('done', NEW, false) }, [del('a', NEW), upsert('b', 'done', NEW), del('c', OLD)]));
+  assert.deepEqual(out.pending, [upsert('b', 'done', NEW)]);
+});
+
+test('a new account drops the lists tied to the previous account\'s sets, and keeps lists never uploaded', () => {
+  const lists = {
+    L1: list('Polity', ['a', 'b'], 'SET-A', ['a']),
+    L2: list('Made here', ['c']),
+    L3: list('Empty', [], 'SET-A2', []),
+  };
+  const out = rebaseForNewAccount(state({}, [], lists));
+  assert.deepEqual(out.lists, { L2: list('Made here', ['c']) });
+});
+
+test('rebasing changes nothing it was given, and leaves a device with nothing synced as it was', () => {
+  const before = state({ a: entry('done', OLD, true) }, [del('a', NEW)], { L1: list('P', ['a'], 'S') });
+  const copy = structuredClone(before);
+  rebaseForNewAccount(before);
+  assert.deepEqual(before, copy);
+  const fresh = state({ b: entry('review', NEW, false) }, [upsert('b', 'review', NEW)], { L2: list('Q', ['b']) });
+  assert.deepEqual(rebaseForNewAccount(fresh), fresh);
 });

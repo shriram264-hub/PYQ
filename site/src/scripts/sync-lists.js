@@ -1,6 +1,6 @@
 import { loadState, saveState } from '../lib/accounts/progress-store.js';
 import { isDirty, listsEqual, mergeLists, settleLists } from '../lib/accounts/lists.js';
-import { pullMarker, pullPages } from '../lib/accounts/pull.js';
+import { deviceOwner, pullMarker, pullPages } from '../lib/accounts/pull.js';
 
 // Like sync.js, no import of marks.js or save-to-list.js: they register
 // listeners as a side effect. Open panels redraw on `sawaalbox:synced`.
@@ -101,6 +101,8 @@ export async function syncLists(client, user) {
   if (changed && !saveState({ ...current, lists: settled })) {
     throw new Error('lists could not be saved on this device');
   }
+  // The lists here are now this account's (sync.js claimDevice).
+  deviceOwner.remember(user.id);
   if (full) listsPull.remember(user.id, startedAt);
   if (changed) document.dispatchEvent(new CustomEvent('sawaalbox:synced'));
 }
