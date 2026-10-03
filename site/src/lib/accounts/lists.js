@@ -46,6 +46,19 @@ export function toggleKey(state, listId, key) {
   return { state: { ...state, lists: { ...state.lists, [listId]: { ...list, keys } } }, added };
 }
 
+/**
+ * Takes a question out of a list, and nothing else: returns the same state
+ * object when the list or the key is already gone. Used where the person asked
+ * for it to be gone (the account page's Remove): toggleKey would put the key
+ * back if another tab had removed it since the page was drawn.
+ */
+export function removeKey(state, listId, key) {
+  const list = state.lists[listId];
+  if (!list || !list.keys.includes(key)) return state;
+  const keys = list.keys.filter((k) => k !== key);
+  return { ...state, lists: { ...state.lists, [listId]: { ...list, keys } } };
+}
+
 const sameSet = (a, b) => a.length === b.length && a.every((k) => b.includes(k));
 
 /** A list the account may not match yet: never uploaded, or keys changed since the last sync. */

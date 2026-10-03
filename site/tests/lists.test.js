@@ -8,6 +8,7 @@ import {
   listsEqual,
   mergeLists,
   newListId,
+  removeKey,
   settleLists,
   toggleKey,
 } from '../src/lib/accounts/lists.js';
@@ -42,6 +43,50 @@ test('toggling a list that is gone changes nothing', () => {
   const r = toggleKey(s, 'nope', 'a');
   assert.equal(r.state, s);
   assert.equal(r.added, false);
+});
+
+// --- Removing. ---
+
+test('removeKey takes the question out of that list only, and leaves the rest of it alone', () => {
+  const s = {
+    ...emptyState(),
+    lists: { L1: list('Polity', ['a', 'b', 'c'], 'R1', ['a', 'b']), L2: list('Maps', ['b']) },
+  };
+  const next = removeKey(s, 'L1', 'b');
+  assert.deepEqual(next.lists.L1, list('Polity', ['a', 'c'], 'R1', ['a', 'b']), 'name, remoteId and base are untouched');
+  assert.equal(next.lists.L2, s.lists.L2, 'another list holding the same question keeps it');
+  assert.deepEqual(s.lists.L1.keys, ['a', 'b', 'c'], 'the input is not mutated');
+});
+
+test('removeKey on a key that is already gone returns the very same state', () => {
+  const s = { ...emptyState(), lists: { L1: list('Polity', ['a']) } };
+  assert.equal(removeKey(s, 'L1', 'zzz'), s);
+});
+
+test('removeKey on a list that is already gone returns the very same state', () => {
+  const s = { ...emptyState(), lists: { L1: list('Polity', ['a']) } };
+  assert.equal(removeKey(s, 'nope', 'a'), s);
+});
+
+test('removing twice never puts the key back (a stale page cannot re-add it, as toggling would)', () => {
+  const s = { ...emptyState(), lists: { L1: list('Polity', ['a', 'b']) } };
+  const once = removeKey(s, 'L1', 'a');
+  const twice = removeKey(once, 'L1', 'a');
+  assert.equal(twice, once);
+  assert.deepEqual(twice.lists.L1.keys, ['b']);
+  assert.deepEqual(toggleKey(once, 'L1', 'a').state.lists.L1.keys, ['b', 'a'], 'which is what a toggle would have done');
+});
+
+test('removing the last question leaves the list, empty', () => {
+  const s = { ...emptyState(), lists: { L1: list('Polity', ['a']) } };
+  assert.deepEqual(removeKey(s, 'L1', 'a').lists.L1.keys, []);
+  assert.ok('L1' in removeKey(s, 'L1', 'a').lists);
+});
+
+test('a removal is a change the sync sends: the list is dirty against its base', () => {
+  const s = { ...emptyState(), lists: { L1: list('Polity', ['a', 'b'], 'R1', ['a', 'b']) } };
+  assert.equal(isDirty(s.lists.L1), false);
+  assert.equal(isDirty(removeKey(s, 'L1', 'b').lists.L1), true);
 });
 
 test('rejects empty and over-long names, in words a student can act on', () => {
