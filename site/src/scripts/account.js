@@ -33,6 +33,24 @@ function show(user) {
   if (user) root.querySelector('[data-account-initial]').textContent = initialOf(user);
 }
 
+/**
+ * Every way this tab learns its session has ended comes here: its own Sign out,
+ * or supabase-js reporting SIGNED_OUT (another tab signed out, or the session
+ * could not be refreshed). Only the first call while signed in does anything,
+ * so the tab that pressed Sign out, which hears both, announces it once.
+ */
+function endSession() {
+  if (root.dataset.auth !== 'in') return;
+  const signin = root.querySelector('[data-account-signin]');
+  // Hiding the control while focus is in it would drop focus to the page.
+  const hadFocus = root.contains(document.activeElement);
+  root.querySelector('[data-account-menu]').hidden = true;
+  root.querySelector('[data-account-toggle]').setAttribute('aria-expanded', 'false');
+  show(null);
+  if (hadFocus) signin.focus();
+  document.dispatchEvent(new CustomEvent('sawaalbox:signed-out'));
+}
+
 async function start() {
   // Coming back from Google: with a code we should end up signed in, and with
   // an error (in the query, or in the hash) the sign-in was refused. Either
@@ -43,6 +61,12 @@ async function start() {
   try {
     if (mayHaveSession()) {
       client = await getClient();
+      // supabase-js tells every tab when the session ends in any of them
+      // (it broadcasts SIGNED_OUT to the others), so a tab left open does not
+      // go on showing, and syncing, an account that has signed out.
+      client.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') endSession();
+      });
       const { data } = await client.auth.getSession();
       user = data.session?.user ?? null;
     }
@@ -85,14 +109,20 @@ if (authEnabled && root) {
   root.addEventListener('focusout', (e) => {
     if (!menu.hidden && !root.contains(e.relatedTarget)) close();
   });
+  // signOut gives the sync a last run of up to a few seconds first, so a second
+  // press in that time is the same sign-out, not another one.
+  let signingOut = false;
   root.querySelector('[data-account-signout]').addEventListener('click', async () => {
-    await signOut();
-    menu.hidden = true;
-    toggle.setAttribute('aria-expanded', 'false');
-    show(null);
-    // The focused sign-out button is now hidden; hand focus to what replaced it.
-    signin.focus();
-    document.dispatchEvent(new CustomEvent('sawaalbox:signed-out'));
+    if (signingOut) return;
+    signingOut = true;
+    try {
+      await signOut();
+    } finally {
+      signingOut = false;
+    }
+    // supabase-js has usually announced SIGNED_OUT by now; when it could not
+    // (its chunk failed to load), this ends the session here. Either way, once.
+    endSession();
   });
 
   start().catch((e) => {
