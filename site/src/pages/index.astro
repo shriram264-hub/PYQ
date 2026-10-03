@@ -29,12 +29,22 @@ const LIVE = [
     title: 'Official answers, flagged honestly',
     body: 'Every recorded answer, with questions later cancelled or disputed marked as such.',
   },
+  // Both work today without an account, in this browser only: the copy says
+  // so, and following you to other devices stays under Coming until sign-in
+  // is switched on.
+  {
+    title: 'Mark done, or needs review',
+    body: 'Mark each question as you work through it. Your marks are kept on this device.',
+  },
+  {
+    title: 'Revision lists',
+    body: 'Save questions into named lists to revise from, kept on this device.',
+  },
   { title: 'Free, with no sign-up', body: 'Nothing here sits behind an account or a payment.' },
 ];
 
 const COMING = [
-  { title: 'Sign in with Google', body: 'Your progress follows you from phone to laptop.' },
-  { title: 'Revision lists', body: 'Save questions into named lists and revise from them.' },
+  { title: 'Sign in with Google', body: 'Your marks and revision lists follow you from phone to laptop.' },
   { title: "Sit a full year's paper", body: 'Timed, scored with the exam’s real negative marking.' },
   { title: 'See where you are weak', body: 'Accuracy by subject and topic, from your own attempts.' },
 ];
