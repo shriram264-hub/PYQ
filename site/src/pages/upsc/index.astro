@@ -7,6 +7,7 @@ import { CORPUS, SUBJECTS, YEARS } from '../../lib/corpus.js';
 import { authEnabled } from '../../lib/accounts/config.js';
 
 const digits = (n) => String(n).split('');
+const API_BASE = process.env.PUBLIC_API_BASE || 'https://upsc-pyq-search-api.onrender.com';
 
 // Count, not "every": some 1995–2007 questions are not in the corpus. The
 // source compilation dropped them, most because they depend on a map or
@@ -66,6 +67,11 @@ const EXAMPLES = [
             <button type="submit">Search</button>
           </div>
         </form>
+        {/* Wake the search server while the student types: on the free plan it
+            sleeps when idle, and warms its model as it wakes. */}
+        <script is:inline define:vars={{ API_BASE }}>
+          fetch(`${API_BASE}/api/meta`).catch(() => {});
+        </script>
 
         <ul class="examples" aria-label="Example searches">
           {

@@ -12,7 +12,10 @@ services:
         - backend/**
         - data/questions.json
         - data/embeddings.npy
-    buildCommand: pip install -r requirements.txt
+    # The second step downloads the embedding model into backend/model-cache,
+    # so it ships with the deploy rather than being fetched again (65 MB) by
+    # the first search after every restart.
+    buildCommand: pip install -r requirements.txt && python -c "from app.search import warm_model; warm_model()"
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION

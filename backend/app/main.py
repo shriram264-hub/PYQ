@@ -1,11 +1,31 @@
+import logging
 import os
+import threading
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app import search as search_module
 
-app = FastAPI(title="UPSC PYQ Search API")
+
+def _warm():
+    try:
+        search_module.warm_model()
+    except Exception:  # the first search loads it instead, and reports any error
+        logging.getLogger(__name__).exception("model warm-up failed")
+
+
+@asynccontextmanager
+async def lifespan(_app):
+    # Warm the model on a side thread: the port binds at once (Render waits for
+    # it), and by the time a student has typed a query the model is usually
+    # ready. The search page pings /api/meta on load to start exactly this.
+    threading.Thread(target=_warm, daemon=True).start()
+    yield
+
+
+app = FastAPI(title="UPSC PYQ Search API", lifespan=lifespan)
 
 _default_origins = "http://localhost:5173"
 allowed_origins = [

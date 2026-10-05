@@ -1,6 +1,8 @@
 """Search + metadata logic for the UPSC PYQ API, ported from the original app.py."""
 import re
+import threading
 from collections import Counter
+from pathlib import Path
 
 import numpy as np
 
@@ -24,7 +26,14 @@ YEARS = np.array([q["year"] for q in QUESTIONS])
 SUBJECTS = np.array([q["subject"] for q in QUESTIONS])
 DIFFICULTY = np.array([q["difficulty"] for q in QUESTIONS])
 
+# Where the model's files live. fastembed's default is the system temp folder,
+# which Render empties on every restart: the first search after each wake-up
+# then re-downloaded 65 MB before answering. Inside the app folder, the copy
+# fetched by the build command (render.yaml) ships with the deploy instead.
+MODEL_CACHE = Path(__file__).resolve().parent.parent / "model-cache"
+
 _model = None
+_model_lock = threading.Lock()
 
 
 def get_model():
@@ -33,14 +42,27 @@ def get_model():
     fastembed is imported here rather than at module scope so that starting the
     server costs nothing: /api/meta and filter-only browsing never touch the
     model, and on a cold start the process binds its port immediately instead of
-    sitting through the import first.
+    sitting through the import first. The lock keeps the background warm-up
+    (main.py) and a search that arrives during it from loading it twice.
     """
     global _model
-    if _model is None:
-        from fastembed import TextEmbedding
+    with _model_lock:
+        if _model is None:
+            from fastembed import TextEmbedding
 
-        _model = TextEmbedding(model_name=MODEL_NAME)
+            _model = TextEmbedding(model_name=MODEL_NAME, cache_dir=str(MODEL_CACHE))
     return _model
+
+
+def warm_model():
+    """Load the model and run one tiny query through it.
+
+    The first embedding also builds the inference session, which on Render's
+    free instance takes seconds; doing it ahead of the first real search keeps
+    that cost off the student. The build command calls this to download the
+    model into MODEL_CACHE.
+    """
+    embed_query(QUERY_PREFIX + "warm up")
 
 
 def embed_query(text):
