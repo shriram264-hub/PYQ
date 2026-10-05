@@ -99,7 +99,10 @@ function claimDevice(user) {
   if (owner !== null && owner !== user.id) {
     const before = loadState();
     const after = rebaseForNewAccount(before);
-    const size = (s) => [Object.keys(s.entries).length, s.pending.length, Object.keys(s.lists).length].join();
+    // Tombstones count: a rebase that only clears the previous account's must
+    // still be saved, or they would act on this account's sets.
+    const size = (s) =>
+      [Object.keys(s.entries).length, s.pending.length, Object.keys(s.lists).length, s.deletedLists.length].join();
     if (size(after) !== size(before)) {
       if (!saveState(after)) throw new Error("another account's copy could not be cleared from this device");
       // Storage changed under the page: marks and open panels redraw.

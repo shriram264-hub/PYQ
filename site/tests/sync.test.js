@@ -1,7 +1,7 @@
 import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { STORAGE_KEY, emptyState, enqueue, loadState, saveState, setMark } from '../src/lib/accounts/progress-store.js';
-import { toggleKey } from '../src/lib/accounts/lists.js';
+import { deleteList, renameList, toggleKey } from '../src/lib/accounts/lists.js';
 import { OWNER_KEY } from '../src/lib/accounts/pull.js';
 import { SYNC_MARKER_KEY, startSync, syncProgress } from '../src/scripts/sync.js';
 import { LISTS_MARKER_KEY, syncLists } from '../src/scripts/sync-lists.js';
@@ -83,16 +83,21 @@ const takeWarnings = () => warnings.splice(0);
 /**
  * A fake Supabase client for the three tables a sync touches, applying the
  * calls it records to in-memory tables: `.select()`, `.in()`, `.order()` (any
- * number), `.range()`, `.upsert(rows, options)`, `.insert(rows).select(cols)`
- * and `.delete().eq().lt()`, each awaitable to `{ data, error }`.
+ * number), `.range()`, `.upsert(rows, options)`, `.insert(rows).select(cols)`,
+ * `.update(values).eq().eq()` and `.delete().eq().lt()` / `.delete().eq().in()`,
+ * each awaitable to `{ data, error }`.
  *  - hold: a promise the next select waits on after reading, i.e. a slow network
- *  - failOn: 'select' | 'insert' | 'upsert' | 'delete' returns an error for that
- *    call on any table; 'upsert:bookmarks' names one table
+ *  - failOn: 'select' | 'insert' | 'upsert' | 'update' | 'delete' returns an
+ *    error for that call on any table; 'upsert:bookmarks' names one table
  *  - maxRows: the server's row cap per request
  *  - user: whose account this is. Row-level security shows each account only
  *    its own rows, so two accounts are two clients, and every write must name
  *    this one as the owner.
- *  - bookmark_sets enforces unique(user_id, name) and a bookmark needs its set
+ *  - bookmark_sets enforces unique(user_id, name), case-sensitively, on insert
+ *    and on update (a refused rename is { error: { code: '23505' } }), and a
+ *    bookmark needs its set; deleting a set deletes its bookmarks, as the
+ *    database's cascade does
+ *  - every update and delete must name this user as the owner
  */
 function fakeClient(rows = [], { maxRows = 1000, user = USER } = {}) {
   const tables = {
@@ -112,6 +117,8 @@ function fakeClient(rows = [], { maxRows = 1000, user = USER } = {}) {
     });
   const bookmarkId = (r) => `${r.set_id}|${r.question_key}`;
   const refuse = (message, code) => ({ data: null, error: { message, code } });
+
+  const namesOwner = (call) => call.filters.some(([op, col, val]) => op === 'eq' && col === 'user_id' && val === user.id);
 
   async function execute(call) {
     const table = tables[call.table];
@@ -147,6 +154,16 @@ function fakeClient(rows = [], { maxRows = 1000, user = USER } = {}) {
       const columns = (call.returning ?? '').split(',').filter(Boolean);
       return { data: columns.length ? made.map((s) => Object.fromEntries(columns.map((c) => [c, s[c]]))) : null, error: null };
     }
+    if (call.kind === 'update') {
+      assert.ok(namesOwner(call), 'every update names its owner');
+      const targets = [...table.values()].filter((r) => matches(call, r));
+      for (const r of targets) {
+        const taken = [...table.values()].some((s) => s !== r && s.name === call.values.name);
+        if (taken) return refuse('duplicate key value violates unique constraint', '23505');
+        Object.assign(r, call.values);
+      }
+      return { data: null, error: null };
+    }
     if (call.kind === 'upsert') {
       for (const r of call.rows) {
         assert.equal(r.user_id, user.id, 'every uploaded row names its owner');
@@ -159,7 +176,14 @@ function fakeClient(rows = [], { maxRows = 1000, user = USER } = {}) {
         }
       }
     } else {
-      for (const [k, r] of table) if (matches(call, r)) table.delete(k);
+      assert.ok(namesOwner(call), 'every delete names its owner');
+      for (const [k, r] of table) {
+        if (!matches(call, r)) continue;
+        table.delete(k);
+        if (call.table === 'bookmark_sets') {
+          for (const [bk, b] of tables.bookmarks) if (b.set_id === r.id) tables.bookmarks.delete(bk);
+        }
+      }
     }
     return { data: null, error: null };
   }
@@ -185,6 +209,7 @@ function fakeClient(rows = [], { maxRows = 1000, user = USER } = {}) {
       select: (columns) => query('select', name, { columns }),
       insert: (insRows) => query('insert', name, { rows: insRows }),
       upsert: (upRows, options) => query('upsert', name, { rows: upRows, options }),
+      update: (values) => query('update', name, { values }),
       delete: () => query('delete', name),
     };
   };
@@ -731,6 +756,7 @@ for (const [name, dirty] of Object.entries({
   'a list never uploaded': list('New', ['a']),
   'a key added since the last sync': list('Polity', ['a', 'b'], 'R1', ['a']),
   'a key removed since the last sync': list('Polity', [], 'R1', ['a']),
+  'a name changed since the last sync': { ...list('Polity', ['a'], 'R1', ['a']), name: 'Polity 2' },
 })) {
   test(`${name} makes a targeted run pull the lists`, async () => {
     writeMarker(MIN);
@@ -977,6 +1003,473 @@ test('a list made while the progress step runs is created by that run, and the f
   assert.deepEqual(lists().fresh, list('Fresh', ['f'], 'S1', ['f']));
 });
 
+// --- Lists: rename and delete. ---
+
+// What the account page does on Rename and on Delete, minus the DOM: the
+// change, one save, the event.
+function renameHere(listId, name) {
+  assert.ok(saveState(renameList(loadState(), listId, name)));
+  document.dispatchEvent(new CustomEvent('sawaalbox:list', { detail: { listId } }));
+}
+function deleteHere(listId) {
+  assert.ok(saveState(deleteList(loadState(), listId)));
+  document.dispatchEvent(new CustomEvent('sawaalbox:list', { detail: { listId } }));
+}
+// A list as stored, with the name the account last held spelled out.
+const listAs = (name, syncedName, keys = [], remoteId = null, syncedKeys = []) => ({ name, keys, remoteId, syncedKeys, syncedName });
+const tombstones = () => loadState().deletedLists;
+const setNamesById = (client) => Object.fromEntries([...client.sets.values()].map((s) => [s.id, s.name]));
+// A second device has its own storage, and its own pull marker.
+function otherDevice(state) {
+  store.delete(LISTS_MARKER_KEY);
+  seed(state);
+}
+
+test('a list renamed on this device is renamed on the account, and another device takes the name', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+  renameHere('L1', 'Polity notes');
+  await syncLists(client, USER);
+
+  const [update] = kinds(client, 'update', 'bookmark_sets');
+  assert.deepEqual(update.values, { name: 'Polity notes' });
+  assert.deepEqual(update.filters, [
+    ['eq', 'id', 'R1'],
+    ['eq', 'user_id', USER.id],
+  ]);
+  assert.deepEqual(setNamesById(client), { R1: 'Polity notes' });
+  assert.deepEqual(remoteKeys(client, 'R1'), ['a'], 'its questions stay with it');
+  assert.deepEqual(lists().L1, list('Polity notes', ['a'], 'R1', ['a']), 'the account now has the name, so there is nothing left to send');
+  assert.equal(synced, 1);
+
+  // Device B last saw the old name; its next full pull shows the new one.
+  otherDevice({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+  await syncLists(client, USER);
+  assert.deepEqual(lists().L1, list('Polity notes', ['a'], 'R1', ['a']));
+  assert.equal(lists().L1.syncedName, 'Polity notes');
+  assert.equal(kinds(client, 'update', 'bookmark_sets').length, 1, 'device B had no rename of its own to send');
+});
+
+test('a change of capitals alone is a rename the account is told', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'maps', ['a']);
+  seed({ lists: { L1: list('maps', ['a'], 'R1', ['a']) } });
+  renameHere('L1', 'Maps');
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), { R1: 'Maps' });
+  assert.deepEqual(lists().L1, list('Maps', ['a'], 'R1', ['a']));
+});
+
+test('a list deleted on this device deletes its account set and bookmarks, clears the tombstone, and is not adopted back', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a', 'b']);
+  remoteSet(client, 'R2', 'Maps', ['m']);
+  seed({ lists: { L1: list('Polity', ['a', 'b'], 'R1', ['a', 'b']), L2: list('Maps', ['m'], 'R2', ['m']) } });
+  deleteHere('L1');
+  assert.deepEqual(tombstones(), ['R1']);
+  await syncLists(client, USER);
+
+  const [del] = kinds(client, 'delete', 'bookmark_sets');
+  assert.deepEqual(del.filters, [
+    ['eq', 'user_id', USER.id],
+    ['in', 'id', ['R1']],
+  ]);
+  assert.deepEqual(kinds(client, 'delete', 'bookmarks'), [], 'the bookmarks went by the database cascade, not by requests');
+  assert.deepEqual(setNamesById(client), { R2: 'Maps' });
+  assert.deepEqual(remoteKeys(client, 'R1'), []);
+  assert.deepEqual(remoteKeys(client, 'R2'), ['m']);
+  assert.deepEqual(tombstones(), [], 'cleared once the account confirmed');
+  assert.deepEqual(Object.keys(lists()), ['L2']);
+  assert.equal(synced, 1);
+
+  store.delete(LISTS_MARKER_KEY);
+  await syncLists(client, USER);
+  assert.deepEqual(Object.keys(lists()), ['L2'], 'the next full pull does not bring it back');
+});
+
+test('the deleted sets go in requests of at most 100 ids', async () => {
+  const client = fakeClient();
+  const ids = Array.from({ length: 250 }, (_, i) => `R${String(i).padStart(3, '0')}`);
+  for (const id of ids) remoteSet(client, id, `List ${id}`);
+  seed({ deletedLists: ids });
+  await syncLists(client, USER);
+  assert.deepEqual(kinds(client, 'delete', 'bookmark_sets').map((d) => d.filters[1][2].length), [100, 100, 50]);
+  assert.deepEqual(setNames(client), []);
+  assert.deepEqual(tombstones(), []);
+});
+
+test('a tombstone for a set the account no longer has is cleared without a request', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R2', 'Maps', ['m']);
+  seed({ lists: { L2: list('Maps', ['m'], 'R2', ['m']) }, deletedLists: ['R9'] });
+  await syncLists(client, USER);
+  assert.deepEqual(kinds(client, 'delete', 'bookmark_sets'), []);
+  assert.deepEqual(tombstones(), []);
+  assert.equal(synced, 1, 'the cleared tombstone is a change to save');
+});
+
+test('a tombstone makes a targeted run pull the lists, even with a fresh marker and nothing dirty', async () => {
+  writeListsMarker(MIN);
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  remoteSet(client, 'R2', 'Maps', ['m']);
+  seed({ lists: { L2: list('Maps', ['m'], 'R2', ['m']) }, deletedLists: ['R1'] });
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), { R2: 'Maps' });
+  assert.deepEqual(tombstones(), []);
+});
+
+test('a clean run with no tombstone, nothing dirty and a fresh lists marker makes no list request', async () => {
+  writeListsMarker(MIN);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) }, deletedLists: [] });
+  const client = fakeClient();
+  await syncLists(client, USER);
+  assert.deepEqual(client.calls, []);
+  assert.equal(synced, 0);
+});
+
+test('a delete made offline is not undone by a pull before it reaches the account, and the next run sends it', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+  deleteHere('L1');
+
+  client.failOn = 'select'; // offline
+  await assert.rejects(syncLists(client, USER, { full: true }), { message: 'select refused' });
+  assert.deepEqual(tombstones(), ['R1']);
+  assert.deepEqual(lists(), {});
+
+  // Back online, the read works but the delete is refused: the pull saw the set and must not adopt it.
+  client.failOn = 'delete';
+  await assert.rejects(syncLists(client, USER, { full: true }), { message: 'delete refused' });
+  assert.deepEqual(setNamesById(client), { R1: 'Polity' }, 'still on the account');
+  assert.deepEqual(lists(), {}, 'and still not a list here');
+  assert.deepEqual(tombstones(), ['R1']);
+  assert.equal(store.has(LISTS_MARKER_KEY), false);
+
+  client.failOn = null;
+  await syncLists(client, USER, { full: true });
+  assert.deepEqual(setNamesById(client), {});
+  assert.deepEqual(lists(), {});
+  assert.deepEqual(tombstones(), []);
+});
+
+test('a list deleted on another device leaves this one at its next full pull', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  remoteSet(client, 'R2', 'Maps', ['m']);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']), L2: list('Maps', ['m'], 'R2', ['m']) } }); // device A
+  deleteHere('L1');
+  await syncLists(client, USER);
+
+  // Device B still holds both, and has added a question to the deleted one while offline.
+  otherDevice({ lists: { L1: list('Polity', ['a', 'offline'], 'R1', ['a']), L2: list('Maps', ['m'], 'R2', ['m']) } });
+  await syncLists(client, USER);
+  assert.deepEqual(Object.keys(lists()), ['L2'], 'the deletion wins');
+  assert.deepEqual(setNamesById(client), { R2: 'Maps' }, 'and the set is not recreated');
+  assert.deepEqual(tombstones(), []);
+});
+
+test('a rename the account refuses because the name is taken is dropped: the list takes the account name and the next run is not blocked', async () => {
+  // Device A read the account before device B made "Maps", then A's rename hit it.
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+  renameHere('L1', 'Maps');
+  // Device B makes "Maps" after A's reads are done, just before A's rename lands.
+  const from = client.from;
+  client.from = (name) => {
+    const table = from(name);
+    if (name !== 'bookmark_sets') return table;
+    return {
+      ...table,
+      update: (values) => {
+        remoteSet(client, 'R7', 'Maps', ['theirs']);
+        return table.update(values);
+      },
+    };
+  };
+  await syncLists(client, USER); // the refusal is not a failure
+  assert.equal(kinds(client, 'update', 'bookmark_sets').length, 1, 'the rename was sent, and refused');
+  assert.deepEqual(setNamesById(client), { R1: 'Polity', R7: 'Maps' });
+  assert.deepEqual(lists().L1, list('Polity', ['a'], 'R1', ['a']), 'back to the account name, with nothing left to send');
+
+  const calls = client.calls.length;
+  await syncLists(client, USER); // a targeted run: nothing is dirty
+  assert.equal(client.calls.length, calls, 'the next run is not blocked, and has nothing to do');
+
+  store.delete(LISTS_MARKER_KEY);
+  await syncLists(client, USER, { full: true });
+  assert.deepEqual(
+    Object.values(lists())
+      .map((l) => [l.name, l.remoteId])
+      .sort(),
+    [
+      ['Maps', 'R7'],
+      ['Polity', 'R1'],
+    ],
+    "and the other device's list arrives as its own"
+  );
+  assert.equal(kinds(client, 'update', 'bookmark_sets').length, 1, 'the refused update was not sent again');
+});
+
+test('a rename onto a name the account already has is not even sent', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  remoteSet(client, 'R7', 'Maps', ['theirs']);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+  renameHere('L1', 'Maps');
+  await syncLists(client, USER);
+  assert.deepEqual(kinds(client, 'update', 'bookmark_sets'), []);
+  assert.deepEqual(lists().L1, list('Polity', ['a'], 'R1', ['a']));
+  assert.deepEqual(lists().R7, list('Maps', ['theirs'], 'R7', ['theirs']));
+});
+
+test('a rename refused for any other reason fails the run and leaves the lists as they were', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+  renameHere('L1', 'Polity notes');
+  const before = store.get(STORAGE_KEY);
+  client.failOn = 'update';
+  await assert.rejects(syncLists(client, USER), { message: 'update refused' });
+  assert.equal(store.get(STORAGE_KEY), before);
+  assert.equal(synced, 0);
+
+  client.failOn = null;
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), { R1: 'Polity notes' });
+});
+
+test('a rename and a delete made while a run awaits the network survive it, and the next run sends them', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  remoteSet(client, 'R2', 'Maps', ['m']);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']), L2: list('Maps', ['m'], 'R2', ['m']) } });
+  const release = slowNetwork(client);
+  const run = syncLists(client, USER);
+  renameHere('L1', 'Polity notes');
+  deleteHere('L2');
+  release();
+  await run;
+  assert.deepEqual(setNamesById(client), { R1: 'Polity', R2: 'Maps' }, 'the run had not seen them');
+  assert.deepEqual(lists(), { L1: listAs('Polity notes', 'Polity', ['a'], 'R1', ['a']) }, 'kept as made, and still unsynced');
+  assert.deepEqual(tombstones(), ['R2'], 'the tombstone made during the run survives it');
+
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), { R1: 'Polity notes' });
+  assert.deepEqual(lists(), { L1: list('Polity notes', ['a'], 'R1', ['a']) });
+  assert.deepEqual(tombstones(), []);
+});
+
+test('a rename made during a run overrides the account name the run took, and is sent next', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity (web)', ['a']); // renamed on another device
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']) } });
+  const release = slowNetwork(client);
+  const run = syncLists(client, USER);
+  renameHere('L1', 'Polity (mine)');
+  release();
+  await run;
+  assert.deepEqual(lists().L1, listAs('Polity (mine)', 'Polity (web)', ['a'], 'R1', ['a']));
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), { R1: 'Polity (mine)' });
+});
+
+test('writes go in this order: deleted sets, renames, new sets, bookmarks added, bookmarks deleted', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Old', ['x']);
+  remoteSet(client, 'R2', 'Maps', ['m', 'gone']);
+  seed({
+    lists: {
+      L1: list('Old', ['x'], 'R1', ['x']),
+      L2: list('Maps', ['m', 'extra'], 'R2', ['m', 'gone']),
+      L3: list('New', ['n']),
+    },
+  });
+  deleteHere('L1');
+  renameHere('L2', 'Atlas');
+  await syncLists(client, USER);
+  const calls = listCalls(client).map((c) => `${c.kind}:${c.table}`);
+  const isRead = (c) => c.startsWith('select:');
+  assert.ok(calls.findLastIndex(isRead) < calls.findIndex((c) => !isRead(c)), 'the account is read before anything is written');
+  assert.deepEqual(calls.filter((c) => !isRead(c)), [
+    'delete:bookmark_sets',
+    'update:bookmark_sets',
+    'insert:bookmark_sets',
+    'upsert:bookmarks',
+    'delete:bookmarks',
+  ]);
+  assert.deepEqual(setNamesById(client), { R2: 'Atlas', S1: 'New' });
+});
+
+test('a new list can take the name of one deleted or renamed in the same run', async () => {
+  // The account refuses two sets of one name, so the old holder must let go first.
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  remoteSet(client, 'R2', 'Maps', ['m']);
+  seed({ lists: { L1: list('Polity', ['a'], 'R1', ['a']), L2: list('Maps', ['m'], 'R2', ['m']) } });
+  deleteHere('L1');
+  renameHere('L2', 'Atlas');
+  seed({
+    ...loadState(),
+    lists: { ...lists(), L3: listAs('Polity', null, ['p']), L4: listAs('Maps', null, ['q']) },
+  });
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), { R2: 'Atlas', S1: 'Polity', S2: 'Maps' });
+  assert.deepEqual(remoteKeys(client, 'R2'), ['m']);
+  assert.deepEqual(remoteKeys(client, 'S1'), ['p']);
+  assert.deepEqual(remoteKeys(client, 'S2'), ['q']);
+  assert.deepEqual(
+    Object.values(lists()).map((l) => [l.name, l.remoteId]),
+    [
+      ['Atlas', 'R2'],
+      ['Polity', 'S1'],
+      ['Maps', 'S2'],
+    ]
+  );
+});
+
+test('renames that hand names to each other are sent in an order the account accepts', async () => {
+  // L1 takes the name L2 has, and L2 leaves it. L1 is first in storage, so
+  // sent as stored its update would collide with L2's old name.
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  remoteSet(client, 'R2', 'Polity 2', ['b']);
+  seed({ lists: { L1: listAs('Polity 2', 'Polity', ['a'], 'R1', ['a']), L2: listAs('Maps', 'Polity 2', ['b'], 'R2', ['b']) } });
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), { R1: 'Polity 2', R2: 'Maps' });
+  assert.deepEqual(
+    kinds(client, 'update', 'bookmark_sets').map((u) => u.filters[0][2]),
+    ['R2', 'R1']
+  );
+  assert.deepEqual(lists(), { L1: list('Polity 2', ['a'], 'R1', ['a']), L2: list('Maps', ['b'], 'R2', ['b']) });
+});
+
+test('a longer chain of renames is ordered too', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'A');
+  remoteSet(client, 'R2', 'B');
+  remoteSet(client, 'R3', 'C');
+  seed({
+    lists: {
+      L1: listAs('B', 'A', [], 'R1'), // takes B, which L2 is leaving
+      L2: listAs('C', 'B', [], 'R2'), // takes C, which L3 is leaving
+      L3: listAs('D', 'C', [], 'R3'),
+    },
+  });
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), { R1: 'B', R2: 'C', R3: 'D' });
+  assert.deepEqual(
+    kinds(client, 'update', 'bookmark_sets').map((u) => u.filters[0][2]),
+    ['R3', 'R2', 'R1']
+  );
+});
+
+test('two lists that swap names cannot both be written: the account refuses, and both keep its names', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity');
+  remoteSet(client, 'R2', 'Maps');
+  seed({ lists: { L1: listAs('Maps', 'Polity', [], 'R1'), L2: listAs('Polity', 'Maps', [], 'R2') } });
+  await syncLists(client, USER); // a refusal is not a failure
+  assert.deepEqual(setNamesById(client), { R1: 'Polity', R2: 'Maps' });
+  assert.deepEqual(lists(), { L1: list('Polity', [], 'R1'), L2: list('Maps', [], 'R2') });
+  const calls = client.calls.length;
+  await syncLists(client, USER);
+  assert.equal(client.calls.length, calls, 'and nothing is left to send');
+});
+
+test('a failed delete of sets leaves the lists and the tombstones as they were', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['a']);
+  seed({ lists: { L2: list('New', ['n']) }, deletedLists: ['R1'] });
+  const before = store.get(STORAGE_KEY);
+  client.failOn = 'delete:bookmark_sets';
+  await assert.rejects(syncLists(client, USER), { message: 'delete refused' });
+  assert.equal(store.get(STORAGE_KEY), before);
+  assert.equal(synced, 0);
+  assert.deepEqual(setNamesById(client), { R1: 'Polity' });
+  assert.deepEqual(kinds(client, 'insert', 'bookmark_sets'), [], 'nothing after the refused step ran');
+});
+
+test('a list created by a run and deleted while it ran is tombstoned, deleted by the next run, and not adopted back', async () => {
+  const client = fakeClient();
+  seed({ lists: { L1: list('New', ['n']) } });
+  const release = slowNetwork(client);
+  const run = syncLists(client, USER);
+  deleteHere('L1'); // never uploaded when it was deleted: no tombstone yet
+  assert.deepEqual(tombstones(), []);
+  release();
+  await run;
+  assert.deepEqual(setNamesById(client), { S1: 'New' }, 'the run created it, not having seen the delete');
+  assert.deepEqual(lists(), {});
+  assert.deepEqual(tombstones(), ['S1'], 'so its new set is owed a delete');
+
+  store.delete(LISTS_MARKER_KEY);
+  client.failOn = 'delete';
+  await assert.rejects(syncLists(client, USER, { full: true }), { message: 'delete refused' });
+  assert.deepEqual(lists(), {}, 'a pull that cannot yet delete it does not adopt it');
+
+  client.failOn = null;
+  await syncLists(client, USER, { full: true });
+  assert.deepEqual(setNamesById(client), {});
+  assert.deepEqual(remoteKeys(client, 'S1'), []);
+  assert.deepEqual(lists(), {});
+  assert.deepEqual(tombstones(), []);
+});
+
+test('a list that joined an account set by name and was deleted while the run ran is tombstoned the same way', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Polity', ['theirs']);
+  seed({ lists: { L1: list('Polity', ['mine']) } });
+  const release = slowNetwork(client);
+  const run = syncLists(client, USER);
+  deleteHere('L1');
+  release();
+  await run;
+  assert.deepEqual(lists(), {});
+  assert.deepEqual(tombstones(), ['R1']);
+
+  await syncLists(client, USER);
+  assert.deepEqual(setNamesById(client), {});
+  assert.deepEqual(lists(), {});
+  assert.deepEqual(tombstones(), []);
+});
+
+test('a list made and deleted again during a run, which the run never saw, leaves no tombstone', async () => {
+  const client = fakeClient();
+  remoteSet(client, 'R2', 'Maps', ['m']);
+  seed({ lists: { L2: list('Maps', ['m'], 'R2', ['m']) } });
+  const release = slowNetwork(client);
+  const run = syncLists(client, USER);
+  seed({ ...loadState(), lists: { ...lists(), L5: listAs('Fresh', null, ['f']) } });
+  deleteHere('L5');
+  release();
+  await run;
+  assert.deepEqual(tombstones(), []);
+  assert.deepEqual(Object.keys(lists()), ['L2']);
+});
+
+test('a key saved to a list folded into another during a run reaches the one it folded into, and the account', async () => {
+  // Two tabs made "Polity" at once, so this device holds two lists of that name.
+  const client = fakeClient();
+  seed({ lists: { L1: list('Polity', ['a']), L2: list('Polity', ['b']) } });
+  const release = slowNetwork(client);
+  const run = syncLists(client, USER);
+  tick('L2', 'c'); // saved to the list the run is folding away
+  release();
+  await run;
+  assert.deepEqual(remoteKeys(client, 'S1'), ['a', 'b'], 'the run sent what it had seen');
+  assert.deepEqual(Object.keys(lists()), ['L1'], 'one list now');
+  assert.deepEqual(lists().L1.keys, ['a', 'b', 'c'], 'and the key saved mid-run is in it');
+  assert.deepEqual(lists().L1.syncedKeys, ['a', 'b'], 'not yet on the account');
+
+  await syncLists(client, USER);
+  assert.deepEqual(remoteKeys(client, 'S1'), ['a', 'b', 'c']);
+  assert.deepEqual(lists().L1, list('Polity', ['a', 'b', 'c'], 'S1', ['a', 'b', 'c']));
+});
+
 // --- Lists: wiring. ---
 
 test('a list change starts a run, one per change, and not after sign-out', async () => {
@@ -1162,6 +1655,26 @@ test('a different account always starts with a full pull, whatever the markers s
   assert.deepEqual(first.filters, [], 'every row, not just pending keys');
   assert.ok(kinds(client, 'select', 'bookmark_sets').length > 0, 'and the lists');
   assert.deepEqual(Object.keys(loadState().entries), [A]);
+});
+
+test("a previous account's tombstones are cleared from the device even when they are all there is to clear, and never act on the next account", async () => {
+  store.set(OWNER_KEY, 'someone-else');
+  seed({ deletedLists: ['R1'] }); // no marks, no queue, no lists: only a tombstone
+  const client = fakeClient();
+  remoteSet(client, 'R1', 'Mine', ['z']);
+  client.failOn = 'select'; // the new account reaches nothing, so only the rebase can clear it
+  await startSync(client, USER);
+  assert.equal(takeWarnings().length, 2);
+  assert.deepEqual(loadState().deletedLists, [], 'saved by the rebase');
+
+  seed({ deletedLists: ['R1'] }); // and had it survived to a run that does reach the account:
+  store.set(OWNER_KEY, 'someone-else');
+  client.failOn = null;
+  await startSync(client, USER);
+  assert.deepEqual(kinds(client, 'delete', 'bookmark_sets'), []);
+  assert.deepEqual([...client.sets.keys()], ['R1'], "the other account's tombstone deleted nothing here");
+  assert.deepEqual(lists(), { R1: list('Mine', ['z'], 'R1', ['z']) });
+  assert.deepEqual(loadState().deletedLists, []);
 });
 
 test('no owner stored (first sign-in here, or data from before owners were kept): everything merges, as on any first sign-in', async () => {
