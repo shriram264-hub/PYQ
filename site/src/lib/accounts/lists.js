@@ -96,7 +96,7 @@ export function deleteList(state, listId) {
   const lists = { ...state.lists };
   delete lists[listId];
   const tombstones = state.deletedLists ?? [];
-  const owed = list.remoteId !== null && !tombstones.includes(list.remoteId);
+  const owed = typeof list.remoteId === 'string' && !tombstones.includes(list.remoteId);
   return { ...state, lists, deletedLists: owed ? [...tombstones, list.remoteId] : tombstones };
 }
 
@@ -209,7 +209,9 @@ function mergeKeys(local, remoteKeys) {
  *    the set is gone (deleted on another device, or another account's). Its
  *    name is the account's, unless it was renamed here since the last sync
  *    (name differs from syncedName): then the rename is written and wins, even
- *    over a different rename made on another device.
+ *    over a different rename made on another device, unless the account would
+ *    refuse it because another set will hold that exact name: then the list
+ *    keeps the account's name and nothing is written.
  *  - A list with no remoteId joins the account's set of the same name (ignoring
  *    capitals, the exact spelling first), else its set is created. All its
  *    keys are additions, so this is a union: nothing a student saved before
@@ -217,6 +219,9 @@ function mergeKeys(local, remoteKeys) {
  *  - A set no local list maps to is adopted, under its own id.
  *
  * syncedName comes out as the name the account will hold once the writes land.
+ * `foldedInto` says which local lists were merged into another ({ folded id:
+ * owner id }) and so are not in `lists`: settleLists needs it to carry keys
+ * saved to a folded list during the run.
  */
 export function mergeLists(localLists, remoteSets, remoteBookmarks, deletedLists = []) {
   const tombstoned = new Set(deletedLists);
@@ -261,20 +266,43 @@ export function mergeLists(localLists, remoteSets, remoteBookmarks, deletedLists
 
   // Lists that know their set go first, so a list without one that shares its
   // name folds into them rather than racing for the set.
+  const known = []; // lists that know their set, finished once their names are settled
   for (const [id, l] of entries) {
     const set = l.remoteId && remote.get(l.remoteId);
     if (!set || ownerOf.has(set.id)) continue; // set gone: the list was deleted elsewhere
-    const m = mergeKeys(l, set.keys);
     ownerOf.set(set.id, id);
-    let name = set.name;
-    if (renamedHere(l)) {
-      name = l.name;
-      if (set.name !== name) renameSets.push({ listId: id, name });
-    }
+    const name = renamedHere(l) ? l.name : set.name;
+    known.push({ id, set, name, m: mergeKeys(l, set.keys) });
     nameOf.set(set.id, name);
+  }
+
+  // A rename onto a name another set will already hold is one the account
+  // refuses (it keeps one set per name), so it is dropped here, and the list
+  // takes the account's name: left in, the refusal would send the list back to
+  // its old name, where a new list made under that name would collide with it
+  // on every run. A set's name counts as what it will be once this run's
+  // renames land, and a dropped rename puts the old name back, which can block
+  // another rename in turn, so this repeats until nothing changes.
+  for (let again = true; again; ) {
+    again = false;
+    for (const k of known) {
+      if (k.name === k.set.name) continue;
+      for (const [setId, name] of nameOf) {
+        if (setId === k.set.id || name !== k.name) continue;
+        k.name = k.set.name;
+        nameOf.set(k.set.id, k.name);
+        again = true;
+        break;
+      }
+    }
+  }
+
+  for (const { id, set, name, m } of known) {
+    if (name !== set.name) renameSets.push({ listId: id, name });
     finish(id, { name, keys: m.keys, remoteId: set.id }, m);
   }
 
+  const foldedInto = {}; // local id -> the local id it was merged into
   for (const [id, l] of entries) {
     if (l.remoteId) continue;
     const setId = setIdForName(l.name);
@@ -283,6 +311,7 @@ export function mergeLists(localLists, remoteSets, remoteBookmarks, deletedLists
       // Another list here already stands for this set (two tabs creating one
       // name at once): fold this one in, or the account would be asked for the
       // same name twice and refuse every sync.
+      foldedInto[id] = owner;
       const into = result.get(owner);
       for (const key of l.keys) {
         if (into.keys.includes(key)) continue;
@@ -325,7 +354,7 @@ export function mergeLists(localLists, remoteSets, remoteBookmarks, deletedLists
   const lists = {};
   for (const [id] of entries) if (result.has(id)) lists[id] = result.get(id);
   for (const [id, list] of result) if (!(id in lists)) lists[id] = list;
-  return { lists, createSets, addBookmarks, deleteBookmarks, renameSets, deleteSets };
+  return { lists, createSets, addBookmarks, deleteBookmarks, renameSets, deleteSets, foldedInto };
 }
 
 /**
@@ -338,8 +367,15 @@ export function mergeLists(localLists, remoteSets, remoteBookmarks, deletedLists
  * stays gone. syncedKeys and syncedName are left as merged, so the next run
  * sees the changes as unsynced and sends them. A list the merge dropped stays
  * dropped.
+ *
+ * `foldedInto` is mergeLists's: a list folded into another has no entry in
+ * `merged`, but the person may have saved a question to it during the run, so
+ * keys added to it since the snapshot are added to the list it was folded into.
+ * Its other changes (a removal, a rename) are not carried: the key may have
+ * come from the other list too, and the name is gone with the list. Optional,
+ * for callers that have nothing folded.
  */
-export function settleLists(snapshot, current, merged) {
+export function settleLists(snapshot, current, merged, foldedInto = {}) {
   const lists = {};
   for (const [id, m] of Object.entries(merged)) lists[id] = { ...m, keys: [...m.keys] };
   // Only a list the run started from can have been deleted during it: one the
@@ -349,6 +385,13 @@ export function settleLists(snapshot, current, merged) {
     const before = snapshot[id];
     if (!before) {
       if (!(id in lists)) lists[id] = now; // created during the run
+      continue;
+    }
+    if (Object.hasOwn(foldedInto, id)) {
+      const owner = lists[foldedInto[id]];
+      if (owner) {
+        for (const k of now.keys) if (!before.keys.includes(k) && !owner.keys.includes(k)) owner.keys.push(k);
+      }
       continue;
     }
     const target = lists[id];

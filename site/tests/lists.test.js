@@ -635,3 +635,117 @@ test('settleTombstones leaves nothing when nothing was added, and everything whe
   assert.deepEqual(settleTombstones([], ['R1']), ['R1']);
   assert.deepEqual(settleTombstones(['R1'], []), []);
 });
+
+// --- A rename the account is already known to refuse. ---
+
+test('a rename onto a name another account list already has is refused now, so the old name can be reused without a clash', () => {
+  // Offline here: "Polity" (R1) renamed to "Polity 2", and a new "Polity" made. Meanwhile another device made
+  // "Polity 2" (R2). The account would refuse the rename, and the create of "Polity" would then collide with R1
+  // on every run. So the rename is dropped here and the new "Polity" folds into L1.
+  const r = mergeLists(
+    { L1: L('Polity 2', ['a'], 'R1', ['a'], 'Polity'), L3: L('Polity', ['b']) },
+    [{ id: 'R1', name: 'Polity' }, { id: 'R2', name: 'Polity 2' }],
+    [{ set_id: 'R1', question_key: 'a' }]
+  );
+  assert.deepEqual(r.renameSets, []);
+  assert.deepEqual(r.createSets, []);
+  assert.deepEqual([r.lists.L1.name, r.lists.L1.syncedName, r.lists.L1.remoteId], ['Polity', 'Polity', 'R1']);
+  assert.deepEqual(r.lists.L1.keys, ['a', 'b']);
+  assert.deepEqual(r.addBookmarks, [{ listId: 'L1', key: 'b' }]);
+  assert.equal('L3' in r.lists, false);
+  assert.deepEqual(r.lists.R2, L('Polity 2', [], 'R2'), 'the other device\'s list is adopted as it is');
+});
+
+test('a refused rename takes the account\'s name even when the account list that blocks it is already a local list', () => {
+  const r = mergeLists(
+    { L1: L('Maps', [], 'R1', [], 'Polity'), L2: L('Maps', [], 'R2', [], 'Maps') },
+    [{ id: 'R1', name: 'Polity' }, { id: 'R2', name: 'Maps' }],
+    []
+  );
+  assert.deepEqual(r.renameSets, []);
+  assert.deepEqual([r.lists.L1.name, r.lists.L1.syncedName], ['Polity', 'Polity']);
+  assert.deepEqual([r.lists.L2.name, r.lists.L2.syncedName], ['Maps', 'Maps']);
+});
+
+test('a rename onto the name of a set that is itself being renamed away is not refused', () => {
+  const r = mergeLists(
+    { L1: L('Polity 2', [], 'R1', [], 'Polity'), L2: L('Maps', [], 'R2', [], 'Polity 2') },
+    [{ id: 'R1', name: 'Polity' }, { id: 'R2', name: 'Polity 2' }],
+    []
+  );
+  assert.deepEqual(r.renameSets, [{ listId: 'L1', name: 'Polity 2' }, { listId: 'L2', name: 'Maps' }]);
+  assert.deepEqual([r.lists.L1.name, r.lists.L2.name], ['Polity 2', 'Maps']);
+});
+
+test('refusing one rename can make the next one refused too', () => {
+  // L2 -> "C" is refused (R3 is "C"), so R2 stays "B", which blocks L1 -> "B".
+  const r = mergeLists(
+    { L1: L('B', [], 'R1', [], 'A'), L2: L('C', [], 'R2', [], 'B') },
+    [{ id: 'R1', name: 'A' }, { id: 'R2', name: 'B' }, { id: 'R3', name: 'C' }],
+    []
+  );
+  assert.deepEqual(r.renameSets, []);
+  assert.deepEqual([r.lists.L1.name, r.lists.L2.name], ['A', 'B']);
+  assert.deepEqual([r.lists.L1.syncedName, r.lists.L2.syncedName], ['A', 'B']);
+});
+
+test('a rename onto the name of a set being deleted is not refused, and one differing in capitals is not either', () => {
+  const freed = mergeLists({ L1: L('Maps', [], 'R1', [], 'Polity') }, [{ id: 'R1', name: 'Polity' }, { id: 'R2', name: 'Maps' }], [], ['R2']);
+  assert.deepEqual(freed.renameSets, [{ listId: 'L1', name: 'Maps' }]);
+  assert.deepEqual(freed.deleteSets, ['R2']);
+  // The account compares names exactly, so only an identical name is refused.
+  const caps = mergeLists({ L1: L('maps', [], 'R1', [], 'Polity') }, [{ id: 'R1', name: 'Polity' }, { id: 'R2', name: 'Maps' }], []);
+  assert.deepEqual(caps.renameSets, [{ listId: 'L1', name: 'maps' }]);
+});
+
+// --- A key added to a list that was folded into another, during the run. ---
+
+test('mergeLists says which lists it folded into which', () => {
+  const none = mergeLists({ L1: L('Polity', [], 'R1', []) }, [{ id: 'R1', name: 'Polity' }], []);
+  assert.deepEqual(none.foldedInto, {});
+  const creating = mergeLists({ L1: L('Polity', ['a']), L2: L('polity', ['b']) }, [], []);
+  assert.deepEqual(creating.foldedInto, { L2: 'L1' });
+  const synced = mergeLists(
+    { L1: L('Polity', [], 'R1', []), L2: L('POLITY'), L3: L('Maps'), L4: L('maps') },
+    [{ id: 'R1', name: 'Polity' }],
+    []
+  );
+  assert.deepEqual(synced.foldedInto, { L2: 'L1', L4: 'L3' });
+});
+
+test('settle: a key added during the run to a list that was folded into another lands on that list', () => {
+  const snapshot = { L1: L('Polity', ['a'], 'R1', ['a']), L2: L('polity', ['b']) };
+  const folded = mergeLists(snapshot, [{ id: 'R1', name: 'Polity' }], [{ set_id: 'R1', question_key: 'a' }]);
+  assert.deepEqual(folded.foldedInto, { L2: 'L1' });
+  const current = { L1: snapshot.L1, L2: L('polity', ['b', 'new']) }; // 'new' saved to L2 while the run was in flight
+  const out = settleLists(snapshot, current, folded.lists, folded.foldedInto);
+  assert.deepEqual(Object.keys(out), ['L1']);
+  assert.deepEqual(out.L1.keys, ['a', 'b', 'new']);
+  assert.deepEqual(out.L1.syncedKeys, ['a', 'b'], 'so the next run uploads it');
+  assert.equal(isDirty(out.L1), true);
+});
+
+test('settle: a folded list\'s other mid-run changes are not carried, and a key the owner has is not doubled', () => {
+  const snapshot = { L1: L('Polity', ['a', 'b'], 'R1', ['a', 'b']), L2: L('polity', ['b', 'c']) };
+  const merged = { L1: L('Polity', ['a', 'b', 'c'], 'R1', ['a', 'b', 'c']) };
+  const current = { L1: snapshot.L1, L2: L('POLITY!', ['c', 'a']) }; // 'b' removed, 'a' added, and renamed
+  const out = settleLists(snapshot, current, merged, { L2: 'L1' });
+  assert.deepEqual(out.L1.keys, ['a', 'b', 'c']);
+  assert.equal(out.L1.name, 'Polity');
+});
+
+test('settle: nothing is added to an owner that is gone, and the folded argument is optional', () => {
+  const snapshot = { L1: L('Polity', ['a'], 'R1', ['a']), L2: L('polity', ['b']) };
+  const merged = { L1: L('Polity', ['a', 'b'], 'R1', ['a', 'b']) };
+  const current = { L2: L('polity', ['b', 'new']) }; // L1 deleted during the run
+  assert.deepEqual(settleLists(snapshot, current, merged, { L2: 'L1' }), {});
+  assert.deepEqual(settleLists(snapshot, snapshot, merged), { L1: merged.L1 });
+});
+
+// --- Tombstones are for ids the account gave. ---
+
+test('deleteList leaves no tombstone for a list whose remoteId is not a string', () => {
+  const s = { ...emptyState(), lists: { L1: { name: 'Old shape', keys: [] }, L2: { name: 'Odd', keys: [], remoteId: 5 } } };
+  assert.deepEqual(deleteList(s, 'L1').deletedLists, []);
+  assert.deepEqual(deleteList(s, 'L2').deletedLists, []);
+});
