@@ -87,7 +87,7 @@ const NEWER = '2026-10-03T10:00:00.000Z';
 const entry = (status, updatedAt, synced) => ({ status, updatedAt, synced });
 const upsert = (key, status, at) => ({ type: 'upsert', key, status, at });
 const del = (key, at) => ({ type: 'delete', key, at });
-const state = (entries, pending, lists = {}) => ({ entries, pending, lists });
+const state = (entries, pending, lists = {}, deletedLists = []) => ({ entries, pending, lists, deletedLists });
 
 test('a full settle takes the merged result, marks it synced and clears the snapshot ops', () => {
   const op = upsert('a', 'done', NEW);
@@ -179,7 +179,13 @@ test('settle keeps the lists and drops malformed queued ops', () => {
 
 // rebaseForNewAccount: a shared browser, where the account signing in is not
 // the one this device last synced with.
-const list = (name, keys, remoteId = null, syncedKeys = []) => ({ name, keys, remoteId, syncedKeys });
+const list = (name, keys, remoteId = null, syncedKeys = []) => ({
+  name,
+  keys,
+  remoteId,
+  syncedKeys,
+  syncedName: remoteId ? name : null,
+});
 
 test('a new account drops the previous account\'s synced marks and keeps the work never synced', () => {
   const before = state(
@@ -213,4 +219,9 @@ test('rebasing changes nothing it was given, and leaves a device with nothing sy
   assert.deepEqual(before, copy);
   const fresh = state({ b: entry('review', NEW, false) }, [upsert('b', 'review', NEW)], { L2: list('Q', ['b']) });
   assert.deepEqual(rebaseForNewAccount(fresh), fresh);
+});
+
+test('rebasing for a new account clears the previous account\'s tombstones', () => {
+  const out = rebaseForNewAccount({ entries: {}, pending: [], lists: {}, deletedLists: ['R1'] });
+  assert.deepEqual(out.deletedLists, []);
 });

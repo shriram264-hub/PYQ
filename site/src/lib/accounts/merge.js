@@ -43,12 +43,15 @@ export function mergeProgress(local, remoteRows, pending = []) {
  * What was done here and never synced stays, marks and their queued upserts
  * and lists not yet uploaded, and joins the account signing in: nothing done
  * before signing in is discarded (spec, "Progress without an account").
+ * Tombstones (sets deleted here, waiting to be deleted on the account) are
+ * the same kind of thing as the queued clears: they name A's sets, and must
+ * not act on B's account.
  */
 export function rebaseForNewAccount(state) {
   const entries = Object.fromEntries(Object.entries(state.entries).filter(([, e]) => !e.synced));
   const pending = state.pending.filter((op) => op.type === 'upsert');
   const lists = Object.fromEntries(Object.entries(state.lists).filter(([, l]) => l.remoteId === null));
-  return { ...state, entries, pending, lists };
+  return { ...state, entries, pending, lists, deletedLists: [] };
 }
 
 const opId = (op) => JSON.stringify([op.key, op.at]);

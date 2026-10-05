@@ -522,7 +522,13 @@ test('syncing can start again after a sign-out', async () => {
 
 // --- Revision lists. ---
 
-const list = (name, keys = [], remoteId = null, syncedKeys = []) => ({ name, keys, remoteId, syncedKeys });
+const list = (name, keys = [], remoteId = null, syncedKeys = []) => ({
+  name,
+  keys,
+  remoteId,
+  syncedKeys,
+  syncedName: remoteId ? name : null,
+});
 const lists = () => loadState().lists;
 
 // An account that already has this set (and its bookmarks), as another device left it.

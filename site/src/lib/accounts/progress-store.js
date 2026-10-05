@@ -7,27 +7,38 @@ import { isQuestionKey } from './qkey.js';
 export const STORAGE_KEY = 'sawaalbox-progress-v1';
 
 export function emptyState() {
-  return { entries: {}, pending: [], lists: {} };
+  return { entries: {}, pending: [], lists: {}, deletedLists: [] };
 }
 
 const isStrings = (v) => Array.isArray(v) && v.every((k) => typeof k === 'string');
 
 // syncedKeys is the base of the three-way list merge (see lists.js): the keys
 // the account held at the last sync. A list saved before it existed has none.
+// syncedName is the same for the name: a list saved before it existed was never
+// renamed here, so a list with a set takes its name as the account's, and one
+// without a set has not been synced, so null.
 function parseList(l) {
   if (!l || typeof l !== 'object' || Array.isArray(l)) return null;
   const syncedKeys = l.syncedKeys === undefined ? [] : l.syncedKeys;
+  const syncedName = l.syncedName === undefined ? (typeof l.remoteId === 'string' ? l.name : null) : l.syncedName;
   if (
     typeof l.name !== 'string' ||
     l.name.length < 1 ||
     l.name.length > MAX_NAME ||
     !isStrings(l.keys) ||
     !(l.remoteId === null || typeof l.remoteId === 'string') ||
-    !isStrings(syncedKeys)
+    !isStrings(syncedKeys) ||
+    !(syncedName === null || typeof syncedName === 'string')
   ) {
     return null;
   }
-  return { name: l.name, keys: [...new Set(l.keys)], remoteId: l.remoteId, syncedKeys: [...new Set(syncedKeys)] };
+  return {
+    name: l.name,
+    keys: [...new Set(l.keys)],
+    remoteId: l.remoteId,
+    syncedKeys: [...new Set(syncedKeys)],
+    syncedName,
+  };
 }
 
 /** A well-formed queued op. Storage is the user's, so anything else is dropped rather than trusted. */
@@ -74,7 +85,13 @@ export function parseState(raw) {
       }
     }
 
-    return { entries, pending, lists };
+    // Tombstones (see lists.js): the remote ids of sets deleted here that the
+    // account may still hold. Anything that is not a string is dropped.
+    const deletedLists = Array.isArray(s.deletedLists)
+      ? [...new Set(s.deletedLists.filter((id) => typeof id === 'string'))]
+      : [];
+
+    return { entries, pending, lists, deletedLists };
   } catch {
     /* fall through to a clean state */
   }

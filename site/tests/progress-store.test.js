@@ -49,7 +49,12 @@ test('saveState and loadState round-trip with a fake storage object', () => {
       this.data[key] = value;
     },
   };
-  const state = { entries: { 'upsc-2019-7': { status: 'done', updatedAt: T1, synced: true } }, pending: [], lists: {} };
+  const state = {
+    entries: { 'upsc-2019-7': { status: 'done', updatedAt: T1, synced: true } },
+    pending: [],
+    lists: {},
+    deletedLists: [],
+  };
   assert.equal(saveState(state, fakeStorage), true);
   const loaded = loadState(fakeStorage);
   assert.deepEqual(loaded, state);
@@ -224,8 +229,8 @@ test('parseState keeps a well-formed list, and gives an older one an empty base'
     b: { name: 'Maps', keys: [], remoteId: null },
   });
   assert.deepEqual(lists, {
-    a: { name: 'Polity', keys: ['k1', 'k2'], remoteId: 'R1', syncedKeys: ['k1'] },
-    b: { name: 'Maps', keys: [], remoteId: null, syncedKeys: [] },
+    a: { name: 'Polity', keys: ['k1', 'k2'], remoteId: 'R1', syncedKeys: ['k1'], syncedName: 'Polity' },
+    b: { name: 'Maps', keys: [], remoteId: null, syncedKeys: [], syncedName: null },
   });
 });
 
@@ -265,4 +270,45 @@ test('parseState never throws on odd lists values', () => {
   for (const lists of [null, 5, 'x', [], true]) {
     assert.deepEqual(parseState(JSON.stringify({ entries: {}, pending: [], lists })).lists, {});
   }
+});
+
+// Names and deletions. A list saved before them has neither.
+test('parseState defaults syncedName and deletedLists for data saved before them', () => {
+  const s = parseState(JSON.stringify({ entries: {}, pending: [], lists: {
+    A: { name: 'Synced', keys: [], remoteId: 'R1', syncedKeys: [] },
+    B: { name: 'Local', keys: [], remoteId: null, syncedKeys: [] },
+  } }));
+  assert.equal(s.lists.A.syncedName, 'Synced');
+  assert.equal(s.lists.B.syncedName, null);
+  assert.deepEqual(s.deletedLists, []);
+});
+
+test('parseState keeps only string tombstones and drops a list with a bad syncedName', () => {
+  const s = parseState(JSON.stringify({ entries: {}, pending: [], deletedLists: ['R1', 7, null], lists: {
+    A: { name: 'X', keys: [], remoteId: 'R1', syncedKeys: [], syncedName: 5 },
+  } }));
+  assert.deepEqual(s.deletedLists, ['R1']);
+  assert.equal('A' in s.lists, false);
+});
+
+test('parseState keeps a syncedName that differs from the name, and an explicit null', () => {
+  const lists = parseLists({
+    renamed: { name: 'New', keys: [], remoteId: 'R1', syncedKeys: [], syncedName: 'Old' },
+    unknown: { name: 'X', keys: [], remoteId: 'R2', syncedKeys: [], syncedName: null },
+  });
+  assert.equal(lists.renamed.syncedName, 'Old');
+  assert.equal(lists.unknown.syncedName, null);
+});
+
+test('parseState tolerates a deletedLists that is not a list, and removes repeated tombstones', () => {
+  for (const deletedLists of [null, 5, 'R1', {}, true]) {
+    assert.deepEqual(parseState(JSON.stringify({ entries: {}, pending: [], lists: {}, deletedLists })).deletedLists, []);
+  }
+  const repeated = JSON.stringify({ entries: {}, pending: [], lists: {}, deletedLists: ['R1', 'R1', 'R2'] });
+  assert.deepEqual(parseState(repeated).deletedLists, ['R1', 'R2']);
+});
+
+test('an empty state and a garbage one both carry an empty deletedLists', () => {
+  assert.deepEqual(emptyState().deletedLists, []);
+  assert.deepEqual(parseState('not json').deletedLists, []);
 });

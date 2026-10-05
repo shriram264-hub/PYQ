@@ -4,16 +4,30 @@ import { emptyState } from '../src/lib/accounts/progress-store.js';
 import {
   cleanName,
   createList,
+  deleteList,
+  findByName,
   isDirty,
   listsEqual,
   mergeLists,
   newListId,
   removeKey,
+  renameList,
+  sameName,
   settleLists,
+  settleTombstones,
   toggleKey,
 } from '../src/lib/accounts/lists.js';
 
-const list = (name, keys = [], remoteId = null, syncedKeys = []) => ({ name, keys, remoteId, syncedKeys });
+// syncedName is the name the account had at the last sync: the list's own name
+// once it has a set, null before.
+const list = (name, keys = [], remoteId = null, syncedKeys = [], syncedName = remoteId ? name : null) => ({
+  name,
+  keys,
+  remoteId,
+  syncedKeys,
+  syncedName,
+});
+const L = list;
 const set = (id, name) => ({ id, name });
 const bm = (set_id, question_key) => ({ set_id, question_key });
 const sorted = (a) => [...a].sort();
@@ -22,7 +36,7 @@ const sorted = (a) => [...a].sort();
 
 test('create and toggle', () => {
   const s = createList(emptyState(), ' Polity ', 'L1');
-  assert.deepEqual(s.lists.L1, { name: 'Polity', keys: [], remoteId: null, syncedKeys: [] });
+  assert.deepEqual(s.lists.L1, { name: 'Polity', keys: [], remoteId: null, syncedKeys: [], syncedName: null });
   let r = toggleKey(s, 'L1', 'upsc-2019-7');
   assert.equal(r.added, true);
   assert.deepEqual(r.state.lists.L1.keys, ['upsc-2019-7']);
@@ -99,7 +113,7 @@ test('rejects empty and over-long names, in words a student can act on', () => {
 test('rejects a name another list already has, and says which', () => {
   const s = createList(emptyState(), 'Polity', 'L1');
   assert.throws(() => createList(s, ' Polity ', 'L2'), { message: 'You already have a list called "Polity".' });
-  assert.equal(Object.keys(createList(s, 'polity', 'L2').lists).length, 2, 'the account compares names exactly');
+  assert.throws(() => createList(s, 'POLITY', 'L2'), { message: 'You already have a list called "Polity".' });
 });
 
 test('a list id is unique and keeps the shape of a uuid even without randomUUID', () => {
@@ -383,4 +397,241 @@ test('settle does not mutate its inputs', () => {
   settleLists(snapshot, current, merged);
   assert.deepEqual(merged.L1.keys, ['a']);
   assert.deepEqual(current.L1.keys, ['a', 'n']);
+});
+
+// --- Names, renaming and deleting. ---
+
+test('names compare without case or surrounding space', () => {
+  assert.equal(sameName(' Test ', 'test'), true);
+  assert.equal(sameName('Polity', 'Polity 2'), false);
+});
+
+test('findByName finds a list whatever its capitals, can skip one list, and says null when there is none', () => {
+  const lists = { L1: L('Polity'), L2: L('Maps') };
+  assert.deepEqual(findByName(lists, ' polity '), { id: 'L1', list: lists.L1 });
+  assert.equal(findByName(lists, 'polity', 'L1'), null, 'a list never collides with itself');
+  assert.equal(findByName(lists, 'Ancient'), null);
+  assert.equal(findByName({}, 'Polity'), null);
+});
+
+test('createList refuses a name that differs only in capitals, quoting the existing spelling', () => {
+  const s = createList(emptyState(), 'Test', 'L1');
+  assert.throws(() => createList(s, 'test', 'L2'), { message: 'You already have a list called "Test".' });
+  assert.deepEqual(s.lists.L1, L('Test'));
+});
+
+test('renameList renames, refuses another list\'s name, and ignores no-ops', () => {
+  let s = { ...emptyState(), lists: { L1: L('Polity', [], 'R1', [], 'Polity'), L2: L('Maps') } };
+  s = renameList(s, 'L1', '  Indian Polity ');
+  assert.equal(s.lists.L1.name, 'Indian Polity');
+  assert.equal(s.lists.L1.syncedName, 'Polity'); // still the account's name until a sync
+  assert.equal(isDirty(s.lists.L1), true);
+  assert.throws(() => renameList(s, 'L1', 'maps'), { message: 'You already have a list called "Maps".' });
+  assert.equal(renameList(s, 'L1', 'Indian Polity'), s);
+  assert.equal(renameList(s, 'nope', 'X'), s);
+  assert.equal(renameList(s, 'L2', 'MAPS').lists.L2.name, 'MAPS'); // own name in new capitals is fine
+});
+
+test('renameList validates the name like createList, and changes nothing else about the list or the state', () => {
+  const s = { ...emptyState(), lists: { L1: L('Polity', ['a'], 'R1', ['a'], 'Polity') }, deletedLists: ['R9'] };
+  assert.throws(() => renameList(s, 'L1', '   '), { message: 'Give the list a name.' });
+  assert.throws(() => renameList(s, 'L1', 'x'.repeat(81)), /up to 80 characters/);
+  const next = renameList(s, 'L1', 'Indian Polity');
+  assert.deepEqual(next.lists.L1, L('Indian Polity', ['a'], 'R1', ['a'], 'Polity'));
+  assert.deepEqual(next.deletedLists, ['R9']);
+  assert.equal(s.lists.L1.name, 'Polity', 'the input is not mutated');
+});
+
+test('deleteList removes the list and keeps a tombstone only for synced lists', () => {
+  const s = { ...emptyState(), lists: { L1: L('Polity', ['upsc-2019-7'], 'R1'), L2: L('Maps') } };
+  const a = deleteList(s, 'L1');
+  assert.equal('L1' in a.lists, false);
+  assert.deepEqual(a.deletedLists, ['R1']);
+  const b = deleteList(a, 'L2');
+  assert.deepEqual(b.deletedLists, ['R1']);
+  assert.equal(deleteList(b, 'gone'), b);
+});
+
+test('deleteList never records one set twice, and does not touch the other lists', () => {
+  const s = { ...emptyState(), lists: { L1: L('Polity', [], 'R1'), L2: L('Maps', ['a']) }, deletedLists: ['R1'] };
+  const next = deleteList(s, 'L1');
+  assert.deepEqual(next.deletedLists, ['R1']);
+  assert.equal(next.lists.L2, s.lists.L2);
+  assert.deepEqual(Object.keys(s.lists), ['L1', 'L2'], 'the input is not mutated');
+  assert.deepEqual(s.deletedLists, ['R1']);
+});
+
+test('isDirty: a rename here is something the account does not have yet', () => {
+  assert.equal(isDirty(L('Polity', [], 'R1', [], 'Polity')), false);
+  assert.equal(isDirty(L('Indian Polity', [], 'R1', [], 'Polity')), true);
+  assert.equal(isDirty(L('POLITY', [], 'R1', [], 'Polity')), true, 'a change of capitals is a rename too');
+  assert.equal(isDirty(L('Polity', [], null, [], null)), true, 'never uploaded');
+});
+
+test('listsEqual compares the name the account last had', () => {
+  const a = { L1: L('A', ['a'], 'R', ['a'], 'A') };
+  assert.equal(listsEqual(a, { L1: L('A', ['a'], 'R', ['a'], 'A') }), true);
+  assert.equal(listsEqual(a, { L1: L('A', ['a'], 'R', ['a'], 'Old') }), false);
+  assert.equal(listsEqual({ L1: L('A') }, { L1: L('A', [], null, [], 'A') }), false, 'null is not a name');
+});
+
+test('a tombstoned set is deleted, not adopted, and its local copy is dropped', () => {
+  const r = mergeLists({ L9: L('Old', [], 'R1') }, [{ id: 'R1', name: 'Old' }, { id: 'R2', name: 'Kept' }], [], ['R1', 'R3']);
+  assert.deepEqual(r.deleteSets, ['R1']); // R3 is already gone from the account
+  assert.equal(Object.values(r.lists).some((l) => l.remoteId === 'R1'), false);
+  assert.equal(r.lists.R2.name, 'Kept');
+});
+
+test('a tombstoned set is not merged into a new list of the same name, and its bookmarks are ignored', () => {
+  // A list made after deleting "Polity" is a different list: it must not join the set about to be deleted.
+  const r = mergeLists({ L2: L('Polity', ['a']) }, [{ id: 'R1', name: 'Polity' }], [{ set_id: 'R1', question_key: 'old' }], ['R1']);
+  assert.deepEqual(r.deleteSets, ['R1']);
+  assert.deepEqual(r.createSets, [{ listId: 'L2', name: 'Polity' }]);
+  assert.deepEqual(r.lists.L2, L('Polity', ['a'], null, ['a'], 'Polity'));
+  assert.deepEqual(r.addBookmarks, [{ listId: 'L2', key: 'a' }]);
+});
+
+test('with no tombstones, nothing is deleted and nothing is renamed', () => {
+  const r = mergeLists({ L1: L('Polity', ['a'], 'R1', ['a']) }, [{ id: 'R1', name: 'Polity' }], [{ set_id: 'R1', question_key: 'a' }]);
+  assert.deepEqual([r.deleteSets, r.renameSets], [[], []]);
+});
+
+test('a tombstone listed twice, or a set paged in twice, deletes once', () => {
+  const r = mergeLists({}, [{ id: 'R1', name: 'A' }, { id: 'R1', name: 'A' }], [], ['R1', 'R1']);
+  assert.deepEqual(r.deleteSets, ['R1']);
+});
+
+test('a rename here is pushed; a rename elsewhere is adopted', () => {
+  const here = mergeLists({ L1: L('New', [], 'R1', [], 'Old') }, [{ id: 'R1', name: 'Old' }], []);
+  assert.deepEqual(here.renameSets, [{ listId: 'L1', name: 'New' }]);
+  assert.equal(here.lists.L1.syncedName, 'New');
+  const there = mergeLists({ L1: L('Old', [], 'R1', [], 'Old') }, [{ id: 'R1', name: 'Theirs' }], []);
+  assert.deepEqual(there.renameSets, []);
+  assert.deepEqual([there.lists.L1.name, there.lists.L1.syncedName], ['Theirs', 'Theirs']);
+});
+
+test('a rename here wins over a different rename elsewhere, and a matching one needs no write', () => {
+  const both = mergeLists({ L1: L('Mine', [], 'R1', [], 'Old') }, [{ id: 'R1', name: 'Theirs' }], []);
+  assert.deepEqual(both.renameSets, [{ listId: 'L1', name: 'Mine' }]);
+  assert.deepEqual([both.lists.L1.name, both.lists.L1.syncedName], ['Mine', 'Mine']);
+  const same = mergeLists({ L1: L('Same', [], 'R1', [], 'Old') }, [{ id: 'R1', name: 'Same' }], []);
+  assert.deepEqual(same.renameSets, []);
+  assert.deepEqual([same.lists.L1.name, same.lists.L1.syncedName], ['Same', 'Same']);
+  const caps = mergeLists({ L1: L('POLITY', [], 'R1', [], 'Polity') }, [{ id: 'R1', name: 'Polity' }], []);
+  assert.deepEqual(caps.renameSets, [{ listId: 'L1', name: 'POLITY' }], 'a change of capitals is written');
+});
+
+test('a list that does not know what the account called it takes the account\'s name', () => {
+  const r = mergeLists({ L1: L('Mine', [], 'R1', [], null) }, [{ id: 'R1', name: 'Theirs' }], []);
+  assert.deepEqual(r.renameSets, []);
+  assert.deepEqual([r.lists.L1.name, r.lists.L1.syncedName], ['Theirs', 'Theirs']);
+});
+
+test('a list made before signing in joins an account list whose name differs only in capitals', () => {
+  const r = mergeLists({ L1: L('polity', ['upsc-2019-7']) }, [{ id: 'R1', name: 'Polity' }], []);
+  assert.deepEqual(r.createSets, []);
+  assert.equal(r.lists.L1.remoteId, 'R1');
+  assert.equal(r.lists.L1.name, 'Polity');
+  assert.equal(r.lists.L1.syncedName, 'Polity');
+});
+
+test('joining prefers the exact spelling, then the first account list in order', () => {
+  const sets = [{ id: 'R1', name: 'polity' }, { id: 'R2', name: 'Polity' }, { id: 'R3', name: 'POLITY' }];
+  assert.equal(mergeLists({ L1: L('Polity') }, sets, []).lists.L1.remoteId, 'R2', 'exact case beats an earlier set');
+  assert.equal(mergeLists({ L1: L('polity') }, sets, []).lists.L1.remoteId, 'R1');
+  const r = mergeLists({ L1: L('PoLiTy') }, sets, []);
+  assert.equal(r.lists.L1.remoteId, 'R1', 'no exact match: the first in the account\'s order');
+  assert.deepEqual(Object.keys(r.lists).sort(), ['L1', 'R2', 'R3'], 'the other sets are adopted as they are');
+});
+
+test('two lists that differ only in capitals fold into one set instead of asking for it twice', () => {
+  const r = mergeLists({ L1: L('Polity', ['a']), L2: L('polity', ['b']) }, [], []);
+  assert.deepEqual(r.createSets, [{ listId: 'L1', name: 'Polity' }]);
+  assert.deepEqual(Object.keys(r.lists), ['L1']);
+  assert.deepEqual(r.lists.L1.keys, ['a', 'b']);
+  assert.equal(r.lists.L1.syncedName, 'Polity', 'a list whose set is being created');
+});
+
+test('a list without a remoteId folds into a synced list that differs only in capitals', () => {
+  const r = mergeLists({ L1: L('Polity', ['a'], 'R1', ['a']), L2: L('POLITY', ['b']) }, [{ id: 'R1', name: 'Polity' }], [{ set_id: 'R1', question_key: 'a' }]);
+  assert.deepEqual(Object.keys(r.lists), ['L1']);
+  assert.deepEqual(r.lists.L1.keys, ['a', 'b']);
+  assert.deepEqual(r.addBookmarks, [{ listId: 'L1', key: 'b' }]);
+});
+
+test('a new list called by the name a renamed list used to have is its own list, not folded into it', () => {
+  // L1 was Polity and is now "Polity 2" here; the account still says Polity until this run writes the rename.
+  const r = mergeLists(
+    { L1: L('Polity 2', ['a'], 'R1', ['a'], 'Polity'), L2: L('Polity', ['b']) },
+    [{ id: 'R1', name: 'Polity' }],
+    [{ set_id: 'R1', question_key: 'a' }]
+  );
+  assert.deepEqual(r.renameSets, [{ listId: 'L1', name: 'Polity 2' }]);
+  assert.deepEqual(r.createSets, [{ listId: 'L2', name: 'Polity' }]);
+  assert.deepEqual(r.lists.L1.keys, ['a']);
+  assert.deepEqual(r.lists.L2.keys, ['b']);
+});
+
+test('adopted sets, and lists that join a set, record the account\'s name as the base', () => {
+  const r = mergeLists({ L1: L('maps', ['x']) }, [{ id: 'R1', name: 'Maps' }, { id: 'R2', name: 'Ancient' }], []);
+  assert.equal(r.lists.L1.syncedName, 'Maps');
+  assert.deepEqual(r.lists.R2, L('Ancient', [], 'R2', [], 'Ancient'));
+});
+
+test('a list saved before names were tracked (no syncedName) is merged without a rename', () => {
+  const legacy = { name: 'Polity', keys: [], remoteId: 'R1', syncedKeys: [] };
+  const r = mergeLists({ L1: legacy }, [{ id: 'R1', name: 'Polity' }], []);
+  assert.deepEqual(r.renameSets, []);
+  assert.equal(r.lists.L1.syncedName, 'Polity');
+});
+
+test('settle keeps a rename and a deletion made while the run was in flight', () => {
+  const snapshot = { L1: L('A', [], 'R1'), L2: L('B', [], 'R2') };
+  const current = { L1: L('A2', [], 'R1', [], 'A') }; // L1 renamed, L2 deleted mid-run
+  const merged = { L1: L('A', [], 'R1'), L2: L('B', [], 'R2') };
+  const out = settleLists(snapshot, current, merged);
+  assert.equal(out.L1.name, 'A2');
+  assert.equal(out.L1.syncedName, 'A');
+  assert.equal('L2' in out, false);
+});
+
+test('settle: a rename made during the run is dirty for the next one, even after the run wrote an earlier rename', () => {
+  const snapshot = { L1: L('B', [], 'R1', [], 'A') }; // renamed A -> B before the run
+  const merged = { L1: L('B', [], 'R1', [], 'B') }; // the run wrote B
+  const current = { L1: L('C', [], 'R1', [], 'A') }; // renamed again, to C, mid-run
+  const out = settleLists(snapshot, current, merged);
+  assert.deepEqual([out.L1.name, out.L1.syncedName], ['C', 'B']);
+  assert.equal(isDirty(out.L1), true);
+});
+
+test('settle: a list nobody renamed takes the merged name, so a rename from another device arrives', () => {
+  const snapshot = { L1: L('Old', [], 'R1') };
+  const merged = { L1: L('Theirs', [], 'R1') };
+  assert.equal(settleLists(snapshot, snapshot, merged).L1.name, 'Theirs');
+});
+
+test('settle: a list deleted during the run stays deleted, and an adopted set is not mistaken for it', () => {
+  const snapshot = { L1: L('A', ['a'], 'R1', ['a']) };
+  const merged = { L1: L('A', ['a'], 'R1', ['a']), R2: L('Adopted', [], 'R2') };
+  const out = settleLists(snapshot, {}, merged);
+  assert.deepEqual(Object.keys(out), ['R2']);
+});
+
+test('settle does not mutate its inputs when it renames and drops', () => {
+  const snapshot = { L1: L('A'), L2: L('B') };
+  const current = { L1: L('A2', [], null, [], null) };
+  const merged = { L1: L('A'), L2: L('B') };
+  settleLists(snapshot, current, merged);
+  assert.equal(merged.L1.name, 'A');
+  assert.deepEqual(Object.keys(merged), ['L1', 'L2']);
+});
+
+test('settleTombstones clears what the run handled and keeps tombstones added during it', () => {
+  assert.deepEqual(settleTombstones(['R1'], ['R1', 'R2']), ['R2']);
+});
+
+test('settleTombstones leaves nothing when nothing was added, and everything when nothing was handled', () => {
+  assert.deepEqual(settleTombstones(['R1', 'R2'], ['R1', 'R2']), []);
+  assert.deepEqual(settleTombstones([], ['R1']), ['R1']);
+  assert.deepEqual(settleTombstones(['R1'], []), []);
 });
