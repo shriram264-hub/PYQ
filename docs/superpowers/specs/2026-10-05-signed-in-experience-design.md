@@ -107,8 +107,8 @@ Accounts went live on sawaalbox.in on 2026-10-05. Testing it, the owner found tw
 
 - **Push order inside the lists step:**
   1. Delete tombstoned sets.
-  2. Create new sets.
-  3. Rename sets.
+  2. Rename sets, in dependency order: a rename onto a name another set is leaving in the same run goes after that rename.
+  3. Create new sets. This comes after deletes and renames because a new list may reuse a name they free, and the account refuses duplicate names.
   4. Add bookmarks.
   5. Delete bookmarks.
 - **Unchanged invariants.**

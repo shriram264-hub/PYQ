@@ -47,7 +47,7 @@
 | `site/src/lib/accounts/lists.js` | Pure list ops: names (case-insensitive), create, rename, delete with tombstones, three-way merge with renames and deletes, settle | 1 |
 | `site/src/lib/accounts/progress-store.js` | State shape: `syncedName`, `deletedLists`; parse defaults | 1 |
 | `site/src/lib/accounts/merge.js` | `rebaseForNewAccount` clears `deletedLists` | 1 |
-| `site/src/scripts/sync-lists.js` | Push order: delete sets, create, rename, add, remove; tombstone settle; rename refusal | 2 |
+| `site/src/scripts/sync-lists.js` | Push order: delete sets, rename (dependency order), create, add, remove; tombstone settle; rename refusal | 2 |
 | `site/src/components/AccountControl.astro`, `site/src/scripts/account.js` | Labelled "My account" disclosure and its panel | 3 |
 | `site/src/components/Masthead.astro`, `site/src/pages/index.astro`, `site/src/pages/upsc/index.astro` | "My progress" nav link | 3 |
 | `site/src/lib/accounts/summary.js` | `subjectsCovered`, `reviewOldestFirst` | 4 |
@@ -229,7 +229,7 @@ test('rebasing for a new account clears the previous account\'s tombstones', () 
 - **When it runs.**
   - The lists step runs when `full`, or any list `isDirty`, or `snapshot.deletedLists.length > 0`. The snapshot is `loadState()` at start.
   - Merge with `snapshot.deletedLists`.
-- **Writes, in order. Any error throws and nothing is saved.**
+- **Writes, in order. Any error throws and nothing is saved.** (Superseded by the ledger's Task 2 rulings, as built: delete sets, then renames in dependency order, then creates, then add bookmarks, then delete bookmarks. A new list may reuse a name a delete or rename frees.)
   1. **Delete sets.** For `deleteSets` in chunks of 100, call `client.from('bookmark_sets').delete().eq('user_id', user.id).in('id', chunk)`. Bookmarks go by the database cascade.
   2. **Create sets.** Unchanged.
   3. **Rename sets.** For each `renameSets` entry, call `client.from('bookmark_sets').update({ name }).eq('id', lists[listId].remoteId).eq('user_id', user.id)`.
