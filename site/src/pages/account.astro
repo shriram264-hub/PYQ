@@ -325,8 +325,10 @@ import { LEGAL } from '../lib/legal.js';
     align-items: center;
     gap: 0.5rem 0.75rem;
   }
+  /* The field takes the whole row, so Save and Cancel sit together under it
+     at any card width. */
   .acct-edit input {
-    flex: 1 1 11rem;
+    flex: 1 1 100%;
     min-width: 0;
     padding: 0.5rem 0.7rem;
     font: 1.02rem var(--font-read);
@@ -352,15 +354,17 @@ import { LEGAL } from '../lib/legal.js';
 
   /* --- nothing moves what the reader can already see --- */
 
-  /* progress-page.js draws everything on this page, and some of it only once the
-     question indexes have arrived. Chrome does not paint what is
-     visibility: hidden, so none of it is on screen to be pushed. The
-     page shows nothing in the area until the first draw, and the colophon (the one
-     thing below the By subject table, which grows when the indexes
-     land) stays out of sight until then too. The page itself reserves no height:
-     what it will hold depends on what is in this browser's storage, which no
-     stylesheet can know. The animations are the way out if the script never
-     runs: both reveal after a few seconds on their own. */
+  /* progress-page.js draws everything in .acct, and the part that depends on the
+     question indexes (the By subject table) only once they arrive. How tall
+     that is depends on what this browser has stored, which no stylesheet can
+     know, so no height is reserved. Instead nothing is on screen to be pushed:
+     what is visibility: hidden is not painted, and moves nothing the reader
+     can see when it appears.
+       - .acct stays hidden until the first draw (data-pending).
+       - The colophon, the only thing below By subject, stays hidden until the
+         indexes have settled as well (data-settling).
+     progress-page.js clears both. The animations are the way out if it never
+     runs: each reveals its element after a few seconds on its own. */
   @keyframes acct-reveal {
     to {
       visibility: visible;

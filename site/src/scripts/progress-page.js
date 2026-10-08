@@ -320,13 +320,30 @@ function drawSummary(view, settled) {
 // one part whose height nothing can predict, and it is the last thing before
 // the colophon. Only the first load is held back. Later draws (a sync, another
 // tab) change what is on screen anyway, and must not hide the footer.
+//
+// While the masthead control is still checking a stored session, the status
+// lines above the page are about to change (they will say "Signed in", drop the
+// Sign in button, show the terms), which would push down whatever is already
+// showing. So the first reveal waits for that too, for at most META_HOLD_MS: a
+// slow check shows the page as it is rather than nothing.
+const META_HOLD_MS = 1500;
 let firstLoad = true;
+let metaHeld = false;
+let lastSettled = false;
 
 function reveal(settled) {
+  lastSettled = settled;
+  if (metaHeld) return;
   acct.removeAttribute('data-pending');
   if (!firstLoad) return;
   acct.toggleAttribute('data-settling', !settled);
   if (settled) firstLoad = false;
+}
+
+function releaseMeta() {
+  if (!metaHeld) return;
+  metaHeld = false;
+  reveal(lastSettled);
 }
 
 function render(state = loadState()) {
@@ -390,6 +407,7 @@ function stopRename(id) {
 }
 
 function saveRename(id) {
+  if (ui.edit?.id !== id) return; // a submit from a form that is already gone
   const before = loadState();
   const old = before.lists[id];
   if (!old) return gone();
@@ -510,6 +528,7 @@ function showWhere(mode) {
   where.textContent = WHERE[mode];
   if (signin) signin.hidden = mode !== 'out';
   if (terms) terms.hidden = false;
+  releaseMeta(); // the lines above the page have taken their final shape
 }
 
 // Dark launch: authEnabled is false, so nothing below runs and the page says
@@ -541,6 +560,9 @@ if (authEnabled) {
     if (control?.dataset.auth === 'in') showWhere('in');
     else if (control?.dataset.auth === 'out') showWhere('out');
   };
+  // Before the first draw, which is at the foot of this file.
+  metaHeld = Boolean(control) && !control.dataset.auth;
+  if (metaHeld) setTimeout(releaseMeta, META_HOLD_MS);
   if (control) new MutationObserver(follow).observe(control, { attributes: true, attributeFilter: ['data-auth'] });
   follow();
 }
