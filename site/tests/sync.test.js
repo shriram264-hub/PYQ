@@ -1825,6 +1825,49 @@ test('a full pull asked for while a run is in flight is the follow-up run', asyn
   assert.ok(kinds(client, 'select', 'bookmark_sets').length > 0);
 });
 
+// --- A run says when it is over, for pages that wait on the first one. ---
+
+test('every run announces that it is over, once, after anything it changed was announced', async () => {
+  const order = [];
+  document.addEventListener('sawaalbox:synced', () => order.push('synced'));
+  document.addEventListener('sawaalbox:sync-done', () => order.push('done'));
+  mark(A, 'done', OLD);
+  const client = fakeClient([row(X, 'review', NEW)]);
+  await startSync(client, USER);
+  assert.deepEqual(order.slice(-1), ['done'], 'the last word of a run is done');
+  assert.equal(order.filter((e) => e === 'done').length, 1);
+  assert.ok(order.includes('synced'), 'and a run that changed things still says synced, first');
+  assert.ok(order.indexOf('synced') < order.indexOf('done'));
+});
+
+test('a run that changed nothing, and one that failed, announce that they are over as well', async () => {
+  let done = 0;
+  document.addEventListener('sawaalbox:sync-done', () => done++);
+  const client = fakeClient();
+  await startSync(client, USER);
+  assert.equal(done, 1, 'nothing to change');
+  const before = synced;
+  client.failOn = 'select';
+  await startSync(client, USER, { full: true });
+  assert.equal(takeWarnings().length > 0, true, 'the failure is still reported');
+  assert.equal(done, 2, 'a run whose requests all failed');
+  assert.equal(synced, before, 'and sawaalbox:synced still means a change, not an end');
+});
+
+test('a run and the one follow-up it absorbed are one run: one announcement', async () => {
+  let done = 0;
+  document.addEventListener('sawaalbox:sync-done', () => done++);
+  mark(A, 'done', NEW);
+  const client = fakeClient();
+  const release = slowNetwork(client);
+  const first = startSync(client, USER);
+  startSync(client, USER, { full: true });
+  assert.equal(done, 0, 'not while it is running');
+  release();
+  await first;
+  assert.equal(done, 1);
+});
+
 test('with no sync running, sign-out does not wait', async () => {
   const started = Date.now();
   await finishSyncing(5000);

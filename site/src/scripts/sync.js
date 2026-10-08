@@ -182,6 +182,10 @@ function openSession(client, user) {
         if (stopped) forgetMarkers();
       } finally {
         running = null;
+        // However it ended: a page waiting on the first run (/account holds its
+        // first draw for it) must not wait for a success that may never come.
+        // sawaalbox:synced says something changed; this says the run is over.
+        doc.dispatchEvent(new CustomEvent('sawaalbox:sync-done'));
       }
     })();
     return running;

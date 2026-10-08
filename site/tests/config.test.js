@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createRequire } from 'node:module';
-import { sessionHint, storageKeyFor } from '../src/lib/accounts/config.js';
+import { firstSyncHere, sessionHint, storageKeyFor, storedUserId } from '../src/lib/accounts/config.js';
 
 test('derives supabase-js session storage key from the project URL', () => {
   assert.equal(storageKeyFor('https://fcmwzpokqufvkojcqaxo.supabase.co'), 'sb-fcmwzpokqufvkojcqaxo-auth-token');
@@ -58,4 +58,23 @@ test('without a code, or without a verifier, it is not a return from sign-in', a
   for (const index of ['[]', '{nope', '"a"', 'null']) {
     assert.equal(sessionHint(memory({ [INDEX]: index }), '?code=abc', KEY), false, `index ${index}`);
   }
+});
+
+// --- Who is signed in, before supabase-js is loaded to say so. ---
+
+test('the user id of a stored session is read without supabase-js, and only when it is text', () => {
+  assert.equal(storedUserId(memory({ [KEY]: JSON.stringify({ access_token: 'x', user: { id: 'u-1' } }) }), KEY), 'u-1');
+  for (const stored of [undefined, '', '{nope', 'null', '"a"', '[]', '{}', '{"user":null}', '{"user":{"id":7}}', '{"user":{"id":""}}']) {
+    assert.equal(storedUserId(memory(stored === undefined ? {} : { [KEY]: stored }), KEY), null, String(stored));
+  }
+  const refuses = { getItem: () => { throw new Error('SecurityError'); } };
+  assert.equal(storedUserId(refuses, KEY), null, 'blocked storage');
+});
+
+test("a device is new to an account when it has never held anyone's data, or held someone else's", () => {
+  assert.equal(firstSyncHere(null, 'u-1'), true, 'no owner: the first sign-in on this browser');
+  assert.equal(firstSyncHere(null, null), true, 'no owner, and no way to tell who is signing in');
+  assert.equal(firstSyncHere('u-2', 'u-1'), true, 'another account was here last');
+  assert.equal(firstSyncHere('u-1', 'u-1'), false, 'this account is back on its device');
+  assert.equal(firstSyncHere('u-1', null), false, 'cannot tell who is signing in: assume the owner, and do not make a returning visitor wait');
 });

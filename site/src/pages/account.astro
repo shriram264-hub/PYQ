@@ -115,6 +115,15 @@ import { LEGAL } from '../lib/legal.js';
     font-size: 0.92rem;
     color: var(--ink-soft);
   }
+  /* Served hidden, shown once the script has said who is signed in. Where
+     scripts run it keeps its place meanwhile, unseen, so showing it moves
+     nothing. */
+  @media (scripting: enabled) {
+    .acct-terms[hidden] {
+      display: block;
+      visibility: hidden;
+    }
+  }
 
   /* One live region per place something can happen. It is always in the page
      (a region that is created together with its text may not be announced).
@@ -291,7 +300,7 @@ import { LEGAL } from '../lib/legal.js';
      not drawn in red; red is stamp ink, never an action. */
   .acct-text-btn {
     min-height: 2.25rem;
-    padding: 0.3rem 0.15rem;
+    padding: 0.3rem 0;
     font: 600 0.85rem var(--font-structure);
     letter-spacing: 0.02em;
     color: var(--ink);
@@ -326,16 +335,32 @@ import { LEGAL } from '../lib/legal.js';
     gap: 0.5rem 0.75rem;
   }
   /* The field takes the whole row, so Save and Cancel sit together under it
-     at any card width. */
+     at any card width. DESIGN.md's field: heavy frame, Literata, recessed to
+     the ground colour inside a paper box. */
   .acct-edit input {
     flex: 1 1 100%;
     min-width: 0;
-    padding: 0.5rem 0.7rem;
-    font: 1.02rem var(--font-read);
+    padding: 0.85rem 0.9rem;
+    font: 1.05rem var(--font-read);
     color: var(--ink);
     background: var(--ground);
     border: var(--rule-heavy) solid var(--rule-strong);
     border-radius: 0;
+  }
+  /* What is wrong with the name, under the field. A heavy rule marks it as
+     the note it is (red is stamp ink, never a state). */
+  .acct-edit-error {
+    flex-basis: 100%;
+    margin: 0;
+    padding-left: 0.6rem;
+    font-size: 0.92rem;
+    color: var(--ink);
+    border-left: var(--rule-heavy) solid var(--rule-strong);
+    overflow-wrap: anywhere;
+  }
+  /* The count sits at the end of the buttons' row. */
+  .acct-edit .acct-count {
+    margin-left: auto;
   }
   .acct .visually-hidden {
     position: absolute;
@@ -385,9 +410,6 @@ import { LEGAL } from '../lib/legal.js';
     .acct-btn,
     .acct-text-btn {
       min-height: 2.75rem;
-    }
-    .acct-text-btn {
-      padding-inline: 0.5rem;
     }
   }
 </style>

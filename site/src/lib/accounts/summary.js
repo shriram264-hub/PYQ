@@ -39,8 +39,8 @@ export function indexPathsFor(state) {
  * The index files the state needs that have not settled: not asked for yet, or
  * still loading. `status` maps an index path to 'loading' | 'loaded' | 'failed'
  * (a path the page has not asked for is simply absent). Until this is empty the
- * page holds back the subject counts, and shows a question by its serial rather
- * than by its key, because the title that replaces it is on its way.
+ * page holds back the By subject counts, because counting before the subjects
+ * have arrived would put every question in a made-up bucket.
  */
 export function pendingPaths(state, status) {
   return unsettled(indexPathsFor(state), status);
@@ -86,9 +86,10 @@ function lookup(index, key) {
 }
 
 /**
- * One question as the page lists it. `path`, `subject` and `title` are null
- * when the index does not know the key (its year file did not load, or the
- * question is gone): the page then shows the key, and never invents a subject.
+ * One question as a page lists it (the revise page does; /account now shows
+ * only counts and subjects). `path`, `subject` and `title` are null when the
+ * index does not know the key (its year file did not load, or the question is
+ * gone): the caller then shows the key, and never invents a subject.
  */
 export function describe(key, index) {
   return { key, serial: serialOf(key), ...(lookup(index, key) ?? { path: null, subject: null, title: null }) };

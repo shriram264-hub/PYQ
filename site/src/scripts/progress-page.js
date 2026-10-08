@@ -1,4 +1,12 @@
-import { authEnabled } from '../lib/accounts/config.js';
+import {
+  SUPABASE_URL,
+  authEnabled,
+  firstSyncHere,
+  sessionHint,
+  storageKeyFor,
+  storedUserId,
+} from '../lib/accounts/config.js';
+import { deviceOwner } from '../lib/accounts/pull.js';
 import { STORAGE_KEY, loadState, saveState } from '../lib/accounts/progress-store.js';
 import { deleteList, renameList } from '../lib/accounts/lists.js';
 import {
@@ -81,13 +89,16 @@ async function load(path) {
 // sync or a year arriving redraws them), so it is kept here and not on the
 // nodes: the name being typed, and the list waiting on a Delete confirmation.
 const ui = {
-  edit: null, // { id, value }: the list being renamed, and the name as typed so far
+  // { id, value, error }: the list being renamed, the name as typed so far, and
+  // what is wrong with it ('' for nothing). The error stays until the next edit.
+  edit: null,
   confirm: null, // the id of the list whose Delete is waiting for a yes
 };
 
 // The Needs review card's id for focus: not a list's, whatever a list is called.
 const REVIEW_ID = '__review__';
 const EDIT_INPUT = 'acct-edit-input';
+const EDIT_ERROR = 'acct-edit-error';
 const CONFIRM_TEXT = 'acct-confirm-text';
 const LISTS_HEADING = 'acct-lists-h';
 
@@ -140,7 +151,30 @@ function control(tag, className, label, { act, id, fid, aria }) {
   return node;
 }
 
-function renameForm(id) {
+// What is wrong with the name being typed, next to the field: a line under it,
+// tied to it for a screen reader, and the field marked invalid. '' clears it.
+function showEditError(input, message) {
+  let line = input.form?.querySelector('.acct-edit-error');
+  input.setCustomValidity(message);
+  if (!message) {
+    line?.remove();
+    input.removeAttribute('aria-invalid');
+    input.removeAttribute('aria-describedby');
+    return;
+  }
+  if (!line) {
+    line = text('p', 'acct-edit-error', '');
+    line.id = EDIT_ERROR;
+    input.after(line);
+  }
+  line.textContent = message;
+  input.setAttribute('aria-invalid', 'true');
+  input.setAttribute('aria-describedby', EDIT_ERROR);
+}
+
+// The card's count goes inside the form, after Cancel: the form takes the
+// heading's place, and the count stays beside the controls, not below them.
+function renameForm(id, count) {
   const input = el('input');
   input.id = EDIT_INPUT;
   input.type = 'text';
@@ -156,9 +190,10 @@ function renameForm(id) {
   save.dataset.fid = `save|${id}`;
   save.dataset.kind = 'save';
   const cancel = control('button', 'acct-text-btn', 'Cancel', { act: 'cancel-edit', id, fid: 'cancel-edit' });
-  const form = el('form', 'acct-edit', label, input, save, cancel);
-  form.noValidate = true; // the message is ours (setCustomValidity), not the browser's
+  const form = el('form', 'acct-edit', label, input, save, cancel, count);
+  form.noValidate = true; // the message is ours, not the browser's
   form.dataset.list = id;
+  if (ui.edit.error) showEditError(input, ui.edit.error);
   return form;
 }
 
@@ -175,6 +210,7 @@ function confirmBox({ id, name, keys }) {
   for (const b of [yes, no]) b.setAttribute('aria-describedby', CONFIRM_TEXT);
   const box = el('div', 'acct-confirm', message, yes, no);
   box.setAttribute('role', 'group');
+  box.setAttribute('aria-labelledby', CONFIRM_TEXT);
   return box;
 }
 
@@ -200,16 +236,16 @@ function drawCard({ id, name, keys }, { list, revise }) {
   const confirming = list && !editing && ui.confirm === id;
 
   const head = el('div', 'acct-card-head');
+  const count = text('p', 'acct-count', plural(n, 'question', 'questions'));
   if (editing) {
-    head.append(renameForm(id));
+    head.append(renameForm(id, count));
   } else {
     const heading = text('h3', '', name);
     heading.tabIndex = -1;
     heading.dataset.fid = `head|${id}`;
     heading.dataset.kind = 'head';
-    head.append(heading);
+    head.append(heading, count);
   }
-  head.append(text('p', 'acct-count', plural(n, 'question', 'questions')));
 
   const card = el('article', 'acct-card', head);
   card.dataset.scope = id;
@@ -250,7 +286,25 @@ function drawLists(view) {
     ...view.lists.map((l) => drawCard(l, { list: true, revise: `/revise?list=${encodeURIComponent(l.id)}` })),
   ];
   if (!view.lists.length) cards.push(text('p', 'acct-empty', 'No lists yet: use Save to list on any question.'));
-  listsBox.replaceChildren(el('div', 'acct-cards', ...cards));
+
+  // The card being renamed, while the person is in its form: a redraw (a sync,
+  // a year arriving) must leave it in the page, or the field loses the focus and
+  // a phone's keyboard closes mid-word. Everything around it is replaced; its
+  // count and subjects are refreshed in place.
+  const form = ui.edit && document.querySelector('.acct-edit');
+  const keep = form?.contains(document.activeElement) ? form.closest('.acct-card') : null;
+  const grid = listsBox.querySelector('.acct-cards');
+  const at = keep ? cards.findIndex((c) => c.dataset.scope === keep.dataset.scope) : -1;
+  if (!keep || !grid || at < 0) {
+    listsBox.replaceChildren(el('div', 'acct-cards', ...cards));
+    return;
+  }
+  const fresh = cards[at];
+  keep.querySelector('.acct-count').textContent = fresh.querySelector('.acct-count').textContent;
+  keep.querySelector('.acct-subjects, .acct-empty').replaceWith(fresh.querySelector('.acct-subjects, .acct-empty'));
+  for (const child of [...grid.children]) if (child !== keep) child.remove();
+  keep.before(...cards.slice(0, at));
+  keep.after(...cards.slice(at + 1));
 }
 
 function drawSummary(view, settled) {
@@ -321,36 +375,46 @@ function drawSummary(view, settled) {
 // the colophon. Only the first load is held back. Later draws (a sync, another
 // tab) change what is on screen anyway, and must not hide the footer.
 //
-// While the masthead control is still checking a stored session, the status
-// lines above the page are about to change (they will say "Signed in", drop the
-// Sign in button, show the terms), which would push down whatever is already
-// showing. So the first reveal waits for that too, for at most META_HOLD_MS: a
-// slow check shows the page as it is rather than nothing.
-const META_HOLD_MS = 1500;
+// A signed-in visitor on a device that has never held their account's data (see
+// firstSyncHere) is about to have lists and marks arrive from the first sync,
+// which would push down whatever is already showing. So the first reveal waits
+// for that sync to end (sawaalbox:sync-done, whatever the outcome), for at most
+// FIRST_SYNC_HOLD_MS: a slow sync shows the page as it is rather than nothing.
+// A returning device has its data already, and is not held.
+const FIRST_SYNC_HOLD_MS = 2500;
 let firstLoad = true;
-let metaHeld = false;
+let held = false;
 let lastSettled = false;
 
 function reveal(settled) {
   lastSettled = settled;
-  if (metaHeld) return;
+  if (held) return;
   acct.removeAttribute('data-pending');
   if (!firstLoad) return;
   acct.toggleAttribute('data-settling', !settled);
   if (settled) firstLoad = false;
 }
 
-function releaseMeta() {
-  if (!metaHeld) return;
-  metaHeld = false;
+function releaseHold() {
+  if (!held) return;
+  held = false;
   reveal(lastSettled);
 }
 
-function render(state = loadState()) {
-  const before = captureFocus();
-  // A list another tab or a sync removed cannot still be open here.
-  if (ui.edit && !state.lists[ui.edit.id]) ui.edit = null;
-  if (ui.confirm && !state.lists[ui.confirm]) ui.confirm = null;
+const GONE_ELSEWHERE = 'That list was deleted on another device.';
+
+// `restore: false` for a change the person just made (opening Rename, closing
+// Delete): focus is put where those rules say straight after, and restoring
+// the old control first would fall back to the Revision heading and scroll.
+function render({ state = loadState(), restore = true } = {}) {
+  const before = restore ? captureFocus() : null;
+  // A list another tab or a sync removed cannot still be open here. Say so: the
+  // editor or the question the person was in has gone from under them.
+  if ((ui.edit && !state.lists[ui.edit.id]) || (ui.confirm && !state.lists[ui.confirm])) {
+    ui.edit = ui.edit && state.lists[ui.edit.id] ? ui.edit : null;
+    ui.confirm = ui.confirm && state.lists[ui.confirm] ? ui.confirm : null;
+    say(listsNote, GONE_ELSEWHERE);
+  }
   const view = summarise(state, index);
   // Settled once no index this state needs is still on its way (summary.js).
   const settled = pendingPaths(state, requests).length === 0;
@@ -365,7 +429,7 @@ function render(state = loadState()) {
 async function refresh() {
   const state = loadState();
   const fresh = indexPathsFor(state).filter((p) => !requests.has(p));
-  render(state);
+  render({ state });
   if (!fresh.length) return;
   await Promise.all(fresh.map(load));
   render();
@@ -383,17 +447,17 @@ function gone() {
   ui.edit = null;
   ui.confirm = null;
   say(listsNote, GONE);
-  render();
+  render({ restore: false });
   document.getElementById(LISTS_HEADING)?.focus();
 }
 
 function startRename(id) {
   const list = loadState().lists[id];
   if (!list) return gone();
-  ui.edit = { id, value: list.name };
+  ui.edit = { id, value: list.name, error: '' };
   ui.confirm = null;
   say(listsNote, '');
-  render();
+  render({ restore: false });
   const input = document.getElementById(EDIT_INPUT);
   input?.focus();
   input?.select();
@@ -402,7 +466,7 @@ function startRename(id) {
 function stopRename(id) {
   ui.edit = null;
   say(listsNote, '');
-  render();
+  render({ restore: false });
   focusFid(`rename|${id}`);
 }
 
@@ -412,28 +476,29 @@ function saveRename(id) {
   const old = before.lists[id];
   if (!old) return gone();
   const input = document.getElementById(EDIT_INPUT);
+  // What is wrong, next to the field, kept until the next keystroke; the note
+  // announces it too. The field stays open with what was typed.
+  const refuse = (message) => {
+    ui.edit.error = message;
+    if (input) {
+      showEditError(input, message);
+      input.focus();
+    }
+    say(listsNote, message);
+  };
   let next;
   try {
     next = renameList(before, id, ui.edit.value);
   } catch (error) {
-    // A name that is empty, too long, or already another list's. The browser's
-    // own bubble points at the field; the note says it to a screen reader and
-    // keeps it on the page.
-    const message = error instanceof Error ? error.message : String(error);
-    input?.setCustomValidity(message);
-    input?.reportValidity();
-    say(listsNote, message, { error: true });
-    return;
+    // A name that is empty, too long, or already another list's.
+    return refuse(error instanceof Error ? error.message : String(error));
   }
   if (next === before) return stopRename(id); // the name it already had
-  if (!saveState(next)) {
-    say(listsNote, NOT_SAVED, { error: true });
-    return;
-  }
+  if (!saveState(next)) return refuse(NOT_SAVED);
   ui.edit = null;
   announce(id);
   say(listsNote, `Renamed "${old.name}" to "${next.lists[id].name}".`);
-  render(next);
+  render({ state: next, restore: false });
   focusFid(`rename|${id}`);
 }
 
@@ -442,13 +507,13 @@ function startDelete(id) {
   ui.confirm = id;
   ui.edit = null;
   say(listsNote, '');
-  render();
+  render({ restore: false });
   focusFid(`delete-no|${id}`);
 }
 
 function stopDelete(id) {
   ui.confirm = null;
-  render();
+  render({ restore: false });
   focusFid(`delete|${id}`);
 }
 
@@ -465,7 +530,7 @@ function confirmDelete(id) {
   ui.confirm = null;
   announce(id);
   say(listsNote, `Deleted "${old.name}".`);
-  render(next);
+  render({ state: next, restore: false });
   document.getElementById(LISTS_HEADING)?.focus();
 }
 
@@ -501,8 +566,11 @@ document.addEventListener('input', (event) => {
   const input = event.target;
   if (!(input instanceof HTMLInputElement) || input.id !== EDIT_INPUT || !ui.edit) return;
   ui.edit.value = input.value;
-  input.setCustomValidity('');
-  if (listsNote.hasAttribute('data-error')) say(listsNote, '');
+  if (ui.edit.error) {
+    ui.edit.error = '';
+    showEditError(input, '');
+    say(listsNote, '');
+  }
 });
 
 // Escape closes whatever is open on the card the focus is in, and returns to
@@ -528,7 +596,6 @@ function showWhere(mode) {
   where.textContent = WHERE[mode];
   if (signin) signin.hidden = mode !== 'out';
   if (terms) terms.hidden = false;
-  releaseMeta(); // the lines above the page have taken their final shape
 }
 
 // Dark launch: authEnabled is false, so nothing below runs and the page says
@@ -544,27 +611,52 @@ if (authEnabled) {
     }
   });
   document.addEventListener('sawaalbox:signed-in', () => showWhere('in'));
-  document.addEventListener('sawaalbox:signed-out', () => showWhere('out'));
+  document.addEventListener('sawaalbox:signed-out', () => {
+    showWhere('out');
+    releaseHold(); // no account, so no first sync to wait for
+  });
 
   // The masthead control (account.js) settles the question of who is signed
   // in, and writes the answer on itself as data-auth. Reading it covers every
   // way the answer can come: no stored session (settled before this script
   // runs, so an event would be missed), a session that has expired or been
   // revoked, a return from Google that did not complete, and a chunk that would
-  // not load. All of them end as "out", and all of them are seen here. While it
-  // is unsettled (a stored session being checked) the page offers nothing, so a
-  // signed-in student never sees an offer to sign in. This reuses the client
-  // account.js already made: no second supabase-js download.
+  // not load. All of them end as "out", and all of them are seen here. This
+  // reuses the client account.js already made: no second supabase-js download.
   const control = $('[data-account]');
   const follow = () => {
     if (control?.dataset.auth === 'in') showWhere('in');
-    else if (control?.dataset.auth === 'out') showWhere('out');
+    else if (control?.dataset.auth === 'out') {
+      showWhere('out');
+      releaseHold();
+    }
   };
-  // Before the first draw, which is at the foot of this file.
-  metaHeld = Boolean(control) && !control.dataset.auth;
-  if (metaHeld) setTimeout(releaseMeta, META_HOLD_MS);
+
+  // The control settles only once supabase-js has looked at a stored session,
+  // which is after this page has drawn. Waiting for it would hold the page, and
+  // not waiting would let "Kept on this device." turn into "Signed in." under the
+  // reader. So the status lines are decided now, from the same hint that decides
+  // whether supabase-js is loaded at all: a stored session means signed in. Only a
+  // session that turns out to be stale (expired, revoked) changes them again.
+  const storageKey = storageKeyFor(SUPABASE_URL);
+  let hinted = false;
+  let userId = null;
+  try {
+    hinted = sessionHint(localStorage, location.search, storageKey);
+    userId = storedUserId(localStorage, storageKey);
+  } catch {
+    /* blocked storage: signed out, as far as this page can tell */
+  }
+  if (control?.dataset.auth) follow();
+  else showWhere(hinted ? 'in' : 'out');
+
+  // The first sync here is on its way: hold the first draw until it ends.
+  held = hinted && control?.dataset.auth !== 'out' && firstSyncHere(deviceOwner.read(), userId);
+  if (held) {
+    document.addEventListener('sawaalbox:sync-done', releaseHold);
+    setTimeout(releaseHold, FIRST_SYNC_HOLD_MS);
+  }
   if (control) new MutationObserver(follow).observe(control, { attributes: true, attributeFilter: ['data-auth'] });
-  follow();
 }
 
 // A sync that lands brings the account's marks and lists, and possibly years

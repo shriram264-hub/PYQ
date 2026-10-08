@@ -112,8 +112,8 @@ export function toggleKey(state, listId, key) {
 /**
  * Takes a question out of a list, and nothing else: returns the same state
  * object when the list or the key is already gone. Used where the person asked
- * for it to be gone (the account page's Remove): toggleKey would put the key
- * back if another tab had removed it since the page was drawn.
+ * for it to be gone (Remove from this list on the revise page): toggleKey would
+ * put the key back if another tab had removed it since the page was drawn.
  */
 export function removeKey(state, listId, key) {
   const list = state.lists[listId];
