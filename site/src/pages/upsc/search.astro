@@ -22,7 +22,7 @@ const crumbs = [{ name: 'Search', href: '/upsc/search' }];
       </p>
     </div>
 
-    <form id="sform" class="sform" role="search">
+    <form id="sform" class="sform" role="search" data-api-base={API_BASE}>
       <div class="sform-row">
         <label class="field-label" for="q">Topic or concept</label>
         <div class="sform-input">
@@ -71,77 +71,32 @@ const crumbs = [{ name: 'Search', href: '/upsc/search' }];
   <Colophon />
 </Document>
 
-<script>
-  import '../../scripts/marks.js';
+{/*
+  Wake the search server as the page opens, while the student is still typing:
+  on the free plan it sleeps when idle, and warms its model on wake. This is the
+  one inline script left, and it stays inline on purpose: a bundled module only
+  runs once everything it imports has downloaded, and the ping should not wait
+  behind that. Everything else is in the bundled script below, which reads the
+  same address from the form's data-api-base.
+*/}
+<script define:vars={{ API_BASE }}>
+  fetch(`${API_BASE}/api/meta`).catch(() => {});
 </script>
 
-<script define:vars={{ API_BASE }}>
+<script>
+  // marks.js and the renderer are imported here, in the one bundled script, so
+  // there is a single instance of marks.js: its MutationObserver then fills the
+  // empty .qmarks slot of every block run() renders.
+  import '../../scripts/marks.js';
+  import { esc, questionHTML } from '../../lib/question-html.js';
+
   const PAGE_SIZE = 25;
   const $ = (id) => document.getElementById(id);
   const form = $('sform');
+  const API_BASE = form.dataset.apiBase;
   const statusEl = $('status');
   const resultsEl = $('results');
   const pagerEl = $('pager');
-
-  const esc = (s) =>
-    String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
-
-  const slugify = (v) =>
-    String(v).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
-
-  // The extraction emitted several labels for one subject; the static pages are
-  // built from the canonical names, so links must use the same mapping.
-  const ALIASES = {
-    Polity: 'Indian Polity',
-    Economy: 'Indian Economy',
-    Environment: 'Environment & Ecology',
-    'Science and Technology': 'Science & Technology',
-    Science: 'Science & Technology',
-  };
-  const canonical = (s) => ALIASES[s] || s;
-
-  function questionHTML(q) {
-    // Year and number go into attributes and the address unescaped, so they
-    // are made numbers first: whatever the API sends, only digits reach the page.
-    const year = Number(q.year);
-    const qNo = Number(q.q_no);
-    const subject = canonical(q.subject);
-    const sSlug = slugify(subject);
-    const tSlug = slugify(q.subtopic);
-    const qSlug = `${year}-q${qNo}-${slugify(String(q.question).slice(0, 60))}`;
-    const opts = ['a', 'b', 'c', 'd']
-      .map(
-        (k) =>
-          `<li class="${q.answer === k ? 'is-answer' : ''}"><span class="serial qopt-key">(${k})</span><span class="qopt-text">${esc(q[k])}</span></li>`
-      )
-      .join('');
-
-    const flags = [
-      q.status === 'cancelled' ? '<span class="qflag">Cancelled by UPSC</span>' : '',
-      q.status === 'disputed' ? '<span class="qflag qflag-warn">Answer disputed</span>' : '',
-    ].join('');
-
-    const answer = q.answer
-      ? `<details class="qanswer"><summary><span class="lbl-show">Show answer</span><span class="lbl-hide">Hide answer</span></summary>
-         <div class="qanswer-body"><p><span class="field-label">Official answer</span><strong class="serial">(${q.answer})</strong> ${esc(q[q.answer])}</p>
-         ${q.answer_note ? `<p class="qnote">${esc(q.answer_note)}</p>` : ''}</div></details>`
-      : `<p class="qanswer-none">No answer is recorded for this question.</p>`;
-
-    return `<article class="qblock" data-qkey="upsc-${year}-${qNo}">
-      <div class="qhead">
-        <a class="serial qref" href="/upsc/question/${qSlug}" tabindex="-1">${year} · Q${qNo}</a>
-        <a href="/upsc/subject/${sSlug}">${esc(subject)}</a>
-        <span class="qsep" aria-hidden="true">›</span>
-        <a href="/upsc/topic/${sSlug}/${tSlug}">${esc(q.subtopic)}</a>
-        <span class="qdiff qdiff-${esc(q.difficulty)}">${esc(q.difficulty)}</span>
-        ${flags}
-      </div>
-      <h2 class="qtext"><a href="/upsc/question/${qSlug}">${esc(q.question)}</a></h2>
-      <ol class="qopts">${opts}</ol>
-      <div class="qmarks"></div>
-      ${answer}
-    </article>`;
-  }
 
   function pagerHTML(offset, total) {
     const current = Math.floor(offset / PAGE_SIZE) + 1;
@@ -240,10 +195,6 @@ const crumbs = [{ name: 'Search', href: '/upsc/search' }];
       clearTimeout(slow);
     }
   }
-
-  // Wake the search server as the page opens, while the student is still
-  // typing: on the free plan it sleeps when idle, and warms its model on wake.
-  fetch(`${API_BASE}/api/meta`).catch(() => {});
 
   form.addEventListener('submit', (e) => {
     e.preventDefault();
