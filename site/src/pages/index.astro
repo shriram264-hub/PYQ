@@ -80,12 +80,13 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
         <a href="#exams">Exams</a>
         <a href="#contents">What's inside</a>
         <a href="/account" class="nav-progress">My progress</a>
-        {/* One group, so the two controls wrap together on a narrow phone. */}
-        <div class="mast-tools">
-          <AccountControl />
-          <ThemeToggle />
-        </div>
       </nav>
+      {/* Beside the nav, not in it: controls, not sections. On a phone they sit
+          on the wordmark's row and the links take the row below. */}
+      <div class="mast-tools">
+        <AccountControl />
+        <ThemeToggle />
+      </div>
       <h1 class="mast-line">Past exam questions, searchable by what they're about.</h1>
     </div>
   </header>
@@ -231,9 +232,10 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
 
   .mast-inner {
     display: grid;
-    grid-template-columns: 1fr auto;
+    /* Wordmark, the links, then the controls. */
+    grid-template-columns: 1fr auto auto;
     align-items: baseline;
-    gap: 1.25rem 1.5rem;
+    gap: 1.25rem 1.1rem;
     padding-block: clamp(1.25rem, 3vw, 2rem) clamp(1.75rem, 5vw, 3rem);
   }
 
@@ -270,14 +272,14 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
     white-space: nowrap;
   }
 
+  .mast-nav a:hover {
+    text-decoration-color: currentColor;
+  }
+
   .mast-tools {
     display: flex;
     align-items: center;
     gap: 1.1rem;
-  }
-
-  .mast-nav a:hover {
-    text-decoration-color: currentColor;
   }
 
   .mast-line {
@@ -664,15 +666,29 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
     }
   }
 
-  @media (max-width: 40rem) {
+  /* Wordmark, three links and both controls need about 740px to share a row.
+     Narrower than that the controls move up beside the wordmark and the links
+     take a row of their own below it: two rows, not a third for the controls. */
+  @media (max-width: 48rem) {
     .mast-inner {
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr auto;
+      gap: 1.25rem 0.75rem;
+    }
+
+    .mast-tools {
+      grid-column: 2;
+      grid-row: 1;
+      gap: 0.75rem;
     }
 
     .mast-nav {
+      grid-column: 1 / -1;
+      grid-row: 2;
       flex-wrap: wrap;
     }
+  }
 
+  @media (max-width: 40rem) {
     .cover-fields {
       grid-template-columns: 1fr;
     }

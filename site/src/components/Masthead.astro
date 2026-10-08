@@ -12,7 +12,7 @@ const onProgress = Astro.url.pathname === '/account';
 ---
 
 <header class="masthead">
-  <div class="sheet masthead-inner">
+  <div class:list={['sheet', 'masthead-inner', { 'has-exam': exam }]}>
     <a class="wordmark" href="/">
       <span class="wordmark-latin">SawaalBox</span>
       <span class="wordmark-deva" lang="hi">सवाल बॉक्स</span>
@@ -28,13 +28,13 @@ const onProgress = Astro.url.pathname === '/account';
         )
       }
       <a href="/account" class="nav-progress" aria-current={onProgress ? 'page' : undefined}>My progress</a>
-      {/* One group, so the two controls wrap together on a narrow phone rather
-          than leaving the theme toggle alone on a row. */}
-      <div class="masthead-tools">
-        <AccountControl />
-        <ThemeToggle />
-      </div>
     </nav>
+    {/* Beside the nav, not in it: they are controls, not sections, and on a
+        phone they sit on the wordmark's row while the links take the row below. */}
+    <div class="masthead-tools">
+      <AccountControl />
+      <ThemeToggle />
+    </div>
   </div>
   {
     crumbs.length > 0 && (
@@ -65,8 +65,7 @@ const onProgress = Astro.url.pathname === '/account';
   .masthead-inner {
     display: flex;
     align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem 1.5rem;
+    gap: 1rem 1.2rem;
     flex-wrap: wrap;
     padding-block: 0.9rem;
   }
@@ -91,9 +90,11 @@ const onProgress = Astro.url.pathname === '/account';
   }
 
   .masthead-nav {
+    /* Pushes the nav and the controls after it to the right, as the space
+       between did when the nav held them. */
+    margin-left: auto;
     display: flex;
-    /* Wraps on a narrow phone, where Subjects, Years, Search, Sign in and the
-       theme toggle together are wider than the sheet. */
+    /* Wraps if the links alone are wider than the sheet. */
     flex-wrap: wrap;
     gap: 0.6rem 1.2rem;
     font-family: var(--font-structure);
@@ -114,7 +115,51 @@ const onProgress = Astro.url.pathname === '/account';
   .masthead-tools {
     display: flex;
     align-items: center;
-    gap: 0.6rem 1.2rem;
+    gap: 1.2rem;
+  }
+
+  /* Wordmark, four links and both controls need about 780px to share one row.
+     Narrower than that, inside an exam, the controls move up beside the
+     wordmark and the links take a row of their own below: two rows, as before
+     My progress joined, where one flowing row would leave the controls alone on
+     a third. Outside an exam the nav is only My progress, which flows on
+     beside the wordmark until a phone's width (below). 50rem is 800px, the same
+     line at which the account control drops its words. */
+  @media (max-width: 50rem) {
+    .masthead-inner {
+      gap: 0.6rem 0.75rem;
+    }
+
+    .masthead-tools {
+      gap: 0.75rem;
+    }
+
+    .has-exam .masthead-tools {
+      order: 2;
+      margin-left: auto;
+    }
+
+    .has-exam .masthead-nav {
+      order: 3;
+      flex-basis: 100%;
+      margin-left: 0;
+    }
+  }
+
+  /* Wordmark, My progress and both controls need about 440px. On a narrower
+     phone every page takes the same two rows: the controls beside the
+     wordmark, the links below. */
+  @media (max-width: 27.5rem) {
+    .masthead-tools {
+      order: 2;
+      margin-left: auto;
+    }
+
+    .masthead-nav {
+      order: 3;
+      flex-basis: 100%;
+      margin-left: 0;
+    }
   }
 
   .crumbs {

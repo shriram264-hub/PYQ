@@ -4,7 +4,6 @@ import Colophon from '../../components/Colophon.astro';
 import ThemeToggle from '../../components/ThemeToggle.astro';
 import AccountControl from '../../components/AccountControl.astro';
 import { CORPUS, SUBJECTS, YEARS } from '../../lib/corpus.js';
-import { authEnabled } from '../../lib/accounts/config.js';
 
 const digits = (n) => String(n).split('');
 const API_BASE = process.env.PUBLIC_API_BASE || 'https://upsc-pyq-search-api.onrender.com';
@@ -25,7 +24,7 @@ const EXAMPLES = [
 
 <Document title="UPSC Prelims Previous Year Questions" description={description}>
   <header class="masthead">
-    <div class:list={['sheet', 'masthead-inner', { 'with-account': authEnabled }]}>
+    <div class="sheet masthead-inner">
       <a class="wordmark" href="/">
         <span class="wordmark-latin">SawaalBox</span>
         <span class="wordmark-deva" lang="hi">सवाल बॉक्स</span>
@@ -485,11 +484,11 @@ const EXAMPLES = [
       justify-items: start;
     }
 
-    /* The theme toggle alone fits beside the wordmark on a phone; Sign in as
-       well does not, and the Devanagari name would drop to a second line. With
-       sign-in on, the controls take their own row under the wordmark, left
-       aligned, as the nav does on the inner pages. The rows after it follow. */
-    .with-account .mast-actions {
+    /* My progress and the theme toggle, let alone Sign in as well, do not fit
+       beside the wordmark on a phone: the Devanagari name would drop to a
+       second line. The actions take their own row under the wordmark, left
+       aligned, whether or not sign-in is on. The rows after it follow. */
+    .mast-actions {
       grid-column: 1;
       grid-row: 2;
       justify-self: start;
