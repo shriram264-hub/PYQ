@@ -28,14 +28,25 @@ export function mayHaveSession() {
 }
 
 /**
+ * The name shown for a signed-in student: the Google full name, else the email,
+ * else nothing. A name of spaces counts as none, and a name or email that is
+ * not text is ignored: it comes from the identity provider's metadata, which
+ * is not ours to trust to be a string.
+ */
+export function displayNameOf(user) {
+  const name = user?.user_metadata?.full_name;
+  const email = user?.email;
+  return (typeof name === 'string' && name.trim()) || (typeof email === 'string' && email.trim()) || '';
+}
+
+/**
  * The letter on the account button: the first character of the name, else of
  * the email, upper-cased. A name of spaces counts as none. The first code
  * point, not the first UTF-16 unit, so a character outside the basic plane is
  * shown whole; and a letter whose capital is longer (ß) keeps its own form.
  */
 export function initialOf(user) {
-  const name = user?.user_metadata?.full_name;
-  const from = (typeof name === 'string' && name.trim()) || user?.email?.trim?.() || '?';
+  const from = displayNameOf(user) || '?';
   const first = String.fromCodePoint(from.codePointAt(0));
   const upper = first.toUpperCase();
   return [...upper].length === 1 ? upper : first;

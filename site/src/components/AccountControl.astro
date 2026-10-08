@@ -12,15 +12,20 @@ import { authEnabled } from '../lib/accounts/config.js';
           would do nothing, and a signed-in reader would see it flash. */}
       <button type="button" class="account-btn" data-account-signin hidden>Sign in</button>
       <div class="account-user" data-account-user hidden>
-        {/* A disclosure, not an ARIA menu: it shows a link and a button, reached
-            with Tab like any others, so it is announced as a button that
-            expands what it controls, with no menu roles to promise arrow keys. */}
-        <button type="button" class="account-btn account-initial" data-account-toggle aria-controls="account-menu" aria-expanded="false">
-          <span data-account-initial></span>
-          <span class="visually-hidden">Your account</span>
+        {/* A disclosure, not an ARIA menu: it shows text, links and a button,
+            reached with Tab like any others, so it is announced as a button that
+            expands what it controls, with no menu roles to promise arrow keys.
+            The visible words "My account" are its name; on a phone they are cut
+            down to the initial and the caret, and stay for a screen reader. */}
+        <button type="button" class="account-btn account-toggle" data-account-toggle aria-controls="account-menu" aria-expanded="false">
+          <span class="account-initial" data-account-initial></span>
+          <span class="account-label">My account</span>
+          <span class="account-caret" aria-hidden="true"></span>
         </button>
         <div class="account-menu" id="account-menu" data-account-menu hidden>
-          <a href="/account">My progress and lists</a>
+          <p class="account-who">Signed in as <span data-account-name></span></p>
+          <a href="/account">My progress</a>
+          <a href="/account#lists">My lists</a>
           <button type="button" data-account-signout>Sign out</button>
         </div>
       </div>
@@ -56,13 +61,15 @@ import { authEnabled } from '../lib/accounts/config.js';
   @media (scripting: none) {
     .account { display: none; }
   }
-  /* Sign in is served hidden and shown once account.js has looked for a
-     session. Where scripts run, its box stays in the layout while it waits,
-     invisible (and so neither focusable nor announced), so the nav takes its
-     final width at first paint and nothing shifts, or wraps on a narrow
-     phone, when it appears. The signed-in control shares the same cell, at its
-     end beside the theme toggle, so a signed-in load does not shift either.
-     Measured from the button itself, so it holds for either font. */
+  /* Sign in and the signed-in control are both served hidden and shown once
+     account.js has looked for a session. Where scripts run, each one's box
+     stays in the layout while it is not the one showing, invisible (and so
+     neither focusable nor announced), and the two share one grid cell. The cell
+     is therefore as wide as the wider of the two from first paint, so the nav
+     takes its final width at once and nothing shifts, or wraps on a narrow
+     phone, when Sign in or My account appears. Measured from the buttons
+     themselves, so it holds for either font and any initial. The cell sits at
+     its end, beside the theme toggle. */
   @media (scripting: enabled) {
     .account {
       display: grid;
@@ -79,8 +86,11 @@ import { authEnabled } from '../lib/accounts/config.js';
     }
     /* Sized by its button, as Sign in is, not by a line box a few pixels
        taller, so the row keeps its height when it takes Sign in's place. */
-    .account > [data-account-user]:not([hidden]) {
+    .account > [data-account-user] {
       display: flex;
+    }
+    .account > [data-account-user][hidden] {
+      visibility: hidden;
     }
   }
   .account-btn {
@@ -104,7 +114,45 @@ import { authEnabled } from '../lib/accounts/config.js';
   /* The buttons always sit on the green masthead, where the sitewide green
      focus ring would vanish into the field. */
   .account-btn:focus-visible { outline-color: var(--field-ink); }
-  .account-initial { min-width: 2rem; font-family: var(--font-serial); font-weight: 700; }
+  .account-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+  }
+  /* The serial face, as for every letter that stands for something. A fixed
+     minimum so a wide letter does not change the control's width. */
+  .account-initial {
+    min-width: 1.1rem;
+    text-align: center;
+    font-family: var(--font-serial);
+    font-weight: 700;
+  }
+  /* The disclosure caret, drawn: two borders of a square turned a quarter. A
+     character would be a glyph icon, and DESIGN.md draws its icons. It turns
+     over while the panel is open. */
+  .account-caret {
+    flex: none;
+    width: 0.4rem;
+    height: 0.4rem;
+    border-right: var(--rule-heavy) solid currentColor;
+    border-bottom: var(--rule-heavy) solid currentColor;
+    transform: translateY(-0.15rem) rotate(45deg);
+  }
+  .account-toggle[aria-expanded='true'] .account-caret {
+    transform: translateY(0.1rem) rotate(-135deg);
+  }
+  /* Where the row is short, the words give way to the initial and the caret.
+     Visually hidden, not display: none, so the button keeps its name. The
+     breakpoint is measured: the exam masthead (wordmark, Subjects, Years,
+     Search, My progress, this control, the theme toggle) is the widest header
+     and needs 782px to stay on one row with the words showing. 50rem is 800px,
+     which leaves room for a desktop scrollbar (a media query counts it, the
+     layout does not), so the words show only where that row fits. */
+  @media (max-width: 50rem) {
+    .account-label {
+      position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap;
+    }
+  }
   .account-menu {
     position: absolute;
     right: 0;
@@ -112,6 +160,7 @@ import { authEnabled } from '../lib/accounts/config.js';
     z-index: 10;
     display: grid;
     min-width: 13rem;
+    max-width: min(20rem, calc(100vw - 1rem));
     background: var(--paper);
     color: var(--ink);
     border: var(--rule-heavy) solid var(--rule-strong);
@@ -130,6 +179,18 @@ import { authEnabled } from '../lib/accounts/config.js';
     cursor: pointer;
   }
   .account-menu > * + * { border-top: var(--rule-hair) solid var(--rule); }
+  /* Who is signed in: plain text, not a control, so it is set in soft ink with
+     the name picked out. A long name or an address wraps rather than widening
+     the panel. */
+  .account-who {
+    margin: 0;
+    max-width: none;
+    padding: 0.6rem 0.8rem;
+    font: 400 0.8rem/1.4 var(--font-structure);
+    color: var(--ink-soft);
+    overflow-wrap: anywhere;
+  }
+  .account-who [data-account-name] { color: var(--ink); font-weight: 700; }
   .account-menu a:hover,
   .account-menu button:hover { background: var(--ground); }
   /* Sign out while the last sync runs (account.js): it says "Signing out…"

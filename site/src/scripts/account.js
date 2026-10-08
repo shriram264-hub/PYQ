@@ -1,5 +1,5 @@
 import { authEnabled } from '../lib/accounts/config.js';
-import { cleanReturnParams, getClient, hasReturnParams, initialOf, mayHaveSession, signIn, signOut } from './auth.js';
+import { cleanReturnParams, displayNameOf, getClient, hasReturnParams, initialOf, mayHaveSession, signIn, signOut } from './auth.js';
 
 const root = document.querySelector('[data-account]');
 
@@ -30,7 +30,11 @@ function show(user) {
   // Every end of start() goes through here, a failed return and a failed chunk
   // included, so "signed out" is announced whatever the reason.
   root.dataset.auth = user ? 'in' : 'out';
-  if (user) root.querySelector('[data-account-initial]').textContent = initialOf(user);
+  if (user) {
+    root.querySelector('[data-account-initial]').textContent = initialOf(user);
+    // textContent, never markup: the name is whatever the identity provider holds.
+    root.querySelector('[data-account-name]').textContent = displayNameOf(user);
+  }
 }
 
 /**
@@ -99,10 +103,23 @@ if (authEnabled && root) {
   signin.addEventListener('click', () =>
     signIn().catch(() => note('Could not reach the sign-in service. Your progress on this device is safe.'))
   );
+  // The panel hangs from the control's right edge. On a phone the control can
+  // sit well in from that edge (the nav wraps its controls onto a row of their
+  // own, from the left), so the panel could run off the left of the screen:
+  // slide it back until it clears the edge. Measured, not guessed, because
+  // where the row wraps depends on the page and the font.
+  const keepOnScreen = () => {
+    menu.style.right = '';
+    const over = 8 - menu.getBoundingClientRect().left;
+    if (over > 0) menu.style.right = `${-over}px`;
+  };
+
   toggle.addEventListener('click', () => {
     menu.hidden = !menu.hidden;
     toggle.setAttribute('aria-expanded', String(!menu.hidden));
+    if (!menu.hidden) keepOnScreen();
   });
+  window.addEventListener('resize', () => !menu.hidden && keepOnScreen());
   document.addEventListener('keydown', (e) => e.key === 'Escape' && close());
   document.addEventListener('click', (e) => !root.contains(e.target) && close());
   // Tabbing past the last item leaves the menu; it should not stay open behind.

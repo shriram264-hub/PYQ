@@ -79,8 +79,12 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
       <nav class="mast-nav" aria-label="Sections">
         <a href="#exams">Exams</a>
         <a href="#contents">What's inside</a>
-        <AccountControl />
-        <ThemeToggle />
+        <a href="/account" class="nav-progress">My progress</a>
+        {/* One group, so the two controls wrap together on a narrow phone. */}
+        <div class="mast-tools">
+          <AccountControl />
+          <ThemeToggle />
+        </div>
       </nav>
       <h1 class="mast-line">Past exam questions, searchable by what they're about.</h1>
     </div>
@@ -263,6 +267,13 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
 
   .mast-nav a {
     text-decoration-color: transparent;
+    white-space: nowrap;
+  }
+
+  .mast-tools {
+    display: flex;
+    align-items: center;
+    gap: 1.1rem;
   }
 
   .mast-nav a:hover {

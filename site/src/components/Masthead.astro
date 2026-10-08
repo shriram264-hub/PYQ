@@ -6,6 +6,9 @@ import { examForPath, withExamCrumb } from '../lib/exams.js';
 const crumbs = withExamCrumb(Astro.url.pathname, Astro.props.crumbs ?? []);
 // The masthead sits inside an exam's booklet, so its sections are that exam's.
 const exam = examForPath(Astro.url.pathname);
+// The progress page is not an exam page, so no exam link ever marks it; this
+// link does when you are on it.
+const onProgress = Astro.url.pathname === '/account';
 ---
 
 <header class="masthead">
@@ -24,8 +27,13 @@ const exam = examForPath(Astro.url.pathname);
           </>
         )
       }
-      <AccountControl />
-      <ThemeToggle />
+      <a href="/account" class="nav-progress" aria-current={onProgress ? 'page' : undefined}>My progress</a>
+      {/* One group, so the two controls wrap together on a narrow phone rather
+          than leaving the theme toggle alone on a row. */}
+      <div class="masthead-tools">
+        <AccountControl />
+        <ThemeToggle />
+      </div>
     </nav>
   </div>
   {
@@ -95,10 +103,18 @@ const exam = examForPath(Astro.url.pathname);
 
   .masthead-nav a {
     text-decoration-color: transparent;
+    white-space: nowrap;
   }
 
-  .masthead-nav a:hover {
+  .masthead-nav a:hover,
+  .masthead-nav a[aria-current='page'] {
     text-decoration-color: currentColor;
+  }
+
+  .masthead-tools {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem 1.2rem;
   }
 
   .crumbs {

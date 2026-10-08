@@ -1,6 +1,23 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { hasReturnParams, initialOf, withoutReturnParams } from '../src/scripts/auth.js';
+import { displayNameOf, hasReturnParams, initialOf, withoutReturnParams } from '../src/scripts/auth.js';
+
+// --- The name in the account menu. ---
+
+test('the name shown is the Google full name, else the email, else nothing', () => {
+  assert.equal(displayNameOf({ email: 'p@example.com', user_metadata: { full_name: ' Priya Sharma ' } }), 'Priya Sharma');
+  assert.equal(displayNameOf({ email: ' p@example.com ', user_metadata: { full_name: '   ' } }), 'p@example.com');
+  assert.equal(displayNameOf({ email: 'p@example.com', user_metadata: {} }), 'p@example.com');
+  assert.equal(displayNameOf({ email: 'p@example.com' }), 'p@example.com');
+  assert.equal(displayNameOf({ email: '', user_metadata: { full_name: '\n' } }), '');
+  assert.equal(displayNameOf({}), '');
+  assert.equal(displayNameOf(null), '');
+});
+
+test('a name or email that is not text is ignored, never thrown on', () => {
+  assert.equal(displayNameOf({ email: 'p@example.com', user_metadata: { full_name: 7 } }), 'p@example.com');
+  assert.equal(displayNameOf({ email: 7, user_metadata: { full_name: { first: 'P' } } }), '');
+});
 
 // --- The initial on the account button. ---
 
