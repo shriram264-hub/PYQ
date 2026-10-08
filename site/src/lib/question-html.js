@@ -26,7 +26,19 @@ const ALIASES = {
   'Science and Technology': 'Science & Technology',
   Science: 'Science & Technology',
 };
-const canonical = (s) => ALIASES[s] || s;
+// Exported for the drift test, which holds it to canonicalSubject in corpus.js.
+// Own keys only: a subject called "constructor" is not an alias of anything.
+export const canonical = (s) => (Object.hasOwn(ALIASES, s) ? ALIASES[s] : s);
+
+// The question's own page. Year and number are made numbers first: whatever
+// the source sends, only digits reach the address.
+export const questionPath = (q) =>
+  `/upsc/question/${Number(q.year)}-q${Number(q.q_no)}-${slugify(String(q.question).slice(0, 60))}`;
+
+// Only the four keys are an answer. Anything else (the corpus has '' for a
+// question with none) takes the no-answer branch, so whatever a source sends in
+// this field is never written into the page.
+const answerKey = (q) => (typeof q.answer === 'string' && /^[abcd]$/.test(q.answer) ? q.answer : null);
 
 export function questionHTML(q) {
   // Year and number go into attributes and the address unescaped, so they
@@ -36,11 +48,12 @@ export function questionHTML(q) {
   const subject = canonical(q.subject);
   const sSlug = slugify(subject);
   const tSlug = slugify(q.subtopic);
-  const qSlug = `${year}-q${qNo}-${slugify(String(q.question).slice(0, 60))}`;
+  const path = questionPath(q);
+  const key = answerKey(q);
   const opts = ['a', 'b', 'c', 'd']
     .map(
       (k) =>
-        `<li class="${q.answer === k ? 'is-answer' : ''}"><span class="serial qopt-key">(${k})</span><span class="qopt-text">${esc(q[k])}</span></li>`
+        `<li class="${key === k ? 'is-answer' : ''}"><span class="serial qopt-key">(${k})</span><span class="qopt-text">${esc(q[k])}</span></li>`
     )
     .join('');
 
@@ -49,22 +62,22 @@ export function questionHTML(q) {
     q.status === 'disputed' ? '<span class="qflag qflag-warn">Answer disputed</span>' : '',
   ].join('');
 
-  const answer = q.answer
+  const answer = key
     ? `<details class="qanswer"><summary><span class="lbl-show">Show answer</span><span class="lbl-hide">Hide answer</span></summary>
-         <div class="qanswer-body"><p><span class="field-label">Official answer</span><strong class="serial">(${q.answer})</strong> ${esc(q[q.answer])}</p>
+         <div class="qanswer-body"><p><span class="field-label">Official answer</span><strong class="serial">(${esc(key)})</strong> ${esc(q[key])}</p>
          ${q.answer_note ? `<p class="qnote">${esc(q.answer_note)}</p>` : ''}</div></details>`
     : `<p class="qanswer-none">No answer is recorded for this question.</p>`;
 
   return `<article class="qblock" data-qkey="upsc-${year}-${qNo}">
       <div class="qhead">
-        <a class="serial qref" href="/upsc/question/${qSlug}" tabindex="-1">${year} · Q${qNo}</a>
+        <a class="serial qref" href="${path}" tabindex="-1">${year} · Q${qNo}</a>
         <a href="/upsc/subject/${sSlug}">${esc(subject)}</a>
         <span class="qsep" aria-hidden="true">›</span>
         <a href="/upsc/topic/${sSlug}/${tSlug}">${esc(q.subtopic)}</a>
         <span class="qdiff qdiff-${esc(q.difficulty)}">${esc(q.difficulty)}</span>
         ${flags}
       </div>
-      <h2 class="qtext"><a href="/upsc/question/${qSlug}">${esc(q.question)}</a></h2>
+      <h2 class="qtext"><a href="${path}">${esc(q.question)}</a></h2>
       <ol class="qopts">${opts}</ol>
       <div class="qmarks"></div>
       ${answer}

@@ -1,7 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { esc, questionHTML } from '../src/lib/question-html.js';
-import { ALL_QUESTIONS } from '../src/lib/corpus.js';
+import { readFileSync } from 'node:fs';
+import { canonical, esc, questionHTML } from '../src/lib/question-html.js';
+import { ALL_QUESTIONS, canonicalSubject } from '../src/lib/corpus.js';
+
+// The question file as the extraction wrote it, which is what the search API
+// serves: subjects under every label the extraction emitted ("Polity",
+// "Environment", "Science and Technology"...), not the corpus's canonical names.
+// ALL_QUESTIONS has already been through canonicalSubject, so a renderer whose
+// aliases had drifted would still pass every check made with it alone.
+const RAW = JSON.parse(readFileSync(new URL('../../data/questions.json', import.meta.url), 'utf-8'));
 
 // These strings were captured from the renderer while it still lived inline in
 // pages/upsc/search.astro, before it moved to lib/question-html.js. They pin the
@@ -157,8 +165,32 @@ test('every text field is escaped', () => {
     c: evil,
     d: evil,
     answer_note: evil,
+    answer: evil,
   });
   assert.doesNotMatch(html, /<img/);
+});
+
+// The answer key goes into the markup twice, as "(d)" and as the option it
+// picks out. Only the four keys are an answer; anything else is treated as no
+// answer recorded, so it is never written into the page at all.
+test('an answer that is not a, b, c or d is no answer, and is never written into the page', () => {
+  const hostile = ['<img src=x onerror=alert(1)>', 'a"><script>x</script>', 'e', 'A', 'ab', ' a', 'a ', 'constructor', '__proto__'];
+  const odd = [null, undefined, 1, ['a'], { toString: () => 'a' }, true];
+  for (const answer of [...hostile, ...odd]) {
+    const html = questionHTML({ ...FIXTURES.normal.input, answer });
+    const label = JSON.stringify(String(answer));
+    assert.doesNotMatch(html, /<img|<script/, label);
+    assert.match(html, /<p class="qanswer-none">No answer is recorded for this question\.<\/p>/, label);
+    assert.doesNotMatch(html, /is-answer|qanswer-body|undefined/, label);
+  }
+});
+
+test('each of the four keys is still an answer', () => {
+  for (const answer of ['a', 'b', 'c', 'd']) {
+    const html = questionHTML({ ...FIXTURES.normal.input, answer });
+    assert.equal(html.match(/class="is-answer"/g).length, 1, answer);
+    assert.match(html, new RegExp(`<strong class="serial">\\(${answer}\\)</strong> `), answer);
+  }
 });
 
 test('esc handles the four characters that matter and coerces non-strings', () => {
@@ -171,6 +203,31 @@ test('esc handles the four characters that matter and coerces non-strings', () =
 // browser, where it cannot import the corpus), so this is the check that the
 // copies have not drifted: for every real question, the links it renders are the
 // ones the corpus builds the static pages from.
+test('the renderer names every subject label the extraction emitted as the corpus does', () => {
+  const labels = new Set(RAW.map((q) => q.subject));
+  assert.ok(labels.has('Polity') && labels.has('Environment'), 'the raw file still carries aliased labels');
+  for (const label of labels) {
+    assert.equal(canonical(label), canonicalSubject(label), label);
+    // The per-year files carry canonical names already: mapping one again keeps it.
+    assert.equal(canonical(canonicalSubject(label)), canonicalSubject(label), label);
+  }
+});
+
+test('links match the static pages, for every question as the search API sends it', () => {
+  assert.equal(RAW.length, ALL_QUESTIONS.length);
+  RAW.forEach((raw, i) => {
+    const q = ALL_QUESTIONS[i];
+    const label = `${q.qkey} (${raw.subject})`;
+    assert.equal(`upsc-${raw.year}-${raw.q_no}`, q.qkey, 'RAW and ALL_QUESTIONS are in the same order');
+    const html = questionHTML(raw);
+    assert.ok(html.includes(`data-qkey="${q.qkey}"`), label);
+    assert.ok(html.includes(`href="/upsc/question/${q.slug}"`), label);
+    assert.ok(html.includes(`href="/upsc/subject/${q.subjectSlug}"`), label);
+    assert.ok(html.includes(`href="/upsc/topic/${q.subjectSlug}/${q.subtopicSlug}"`), label);
+    assert.ok(html.includes(`>${esc(q.subject)}</a>`), label);
+  });
+});
+
 test('links match the static pages the corpus generates, for every question', () => {
   for (const q of ALL_QUESTIONS) {
     const html = questionHTML(q);
