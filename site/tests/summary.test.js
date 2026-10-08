@@ -5,8 +5,11 @@ import {
   indexPath,
   indexPathsFor,
   parseKey,
+  pendingForKeys,
   pendingPaths,
+  reviewOldestFirst,
   serialOf,
+  subjectsCovered,
   summarise,
 } from '../src/lib/accounts/summary.js';
 
@@ -273,4 +276,85 @@ test('summarise does not change its input', () => {
   const before = JSON.stringify(s);
   summarise(s, INDEX);
   assert.equal(JSON.stringify(s), before);
+});
+
+// --- What a list card shows: subjects covered, oldest review first, loaded years. ---
+
+test('subjectsCovered names the two most frequent subjects and counts the rest', () => {
+  const index = {
+    'upsc-2019-1': ['/upsc/question/a', 'Polity', 't'], 'upsc-2019-2': ['/upsc/question/b', 'Polity', 't'],
+    'upsc-2019-3': ['/upsc/question/c', 'Economy', 't'], 'upsc-2019-4': ['/upsc/question/d', 'Geography', 't'],
+    'upsc-2019-5': ['/upsc/question/e', 'Art & Culture', 't'],
+  };
+  assert.deepEqual(subjectsCovered(['upsc-2019-1', 'upsc-2019-2', 'upsc-2019-3', 'upsc-2019-4', 'upsc-2019-5', 'upsc-2019-9'], index),
+    { top: ['Polity', 'Art & Culture'], more: 2 });
+  assert.deepEqual(subjectsCovered([], index), { top: [], more: 0 });
+});
+
+test('subjectsCovered: fewer than three subjects leave nothing to count, and a lone subject is alone', () => {
+  assert.deepEqual(subjectsCovered(['upsc-2019-7', 'upsc-2019-8', 'upsc-2018-3'], INDEX), {
+    top: ['Indian Polity', 'Ancient History'],
+    more: 0,
+  });
+  assert.deepEqual(subjectsCovered(['upsc-2019-7', 'upsc-2019-8'], INDEX), { top: ['Indian Polity'], more: 0 });
+});
+
+test('subjectsCovered ignores keys the index does not know, and ones it only inherits', () => {
+  assert.deepEqual(subjectsCovered(['upsc-1900-1', 'constructor', '__proto__'], INDEX), { top: [], more: 0 });
+  assert.deepEqual(subjectsCovered(['upsc-1900-1', 'upsc-2018-4'], INDEX), { top: ['Geography'], more: 0 });
+  assert.deepEqual(subjectsCovered(['upsc-2019-7'], {}), { top: [], more: 0 });
+});
+
+test('subjectsCovered breaks a tie A to Z, whatever order the keys came in', () => {
+  const keys = ['upsc-2018-4', 'upsc-2018-3', 'upsc-2019-7']; // Geography, Ancient History, Indian Polity: one each
+  assert.deepEqual(subjectsCovered(keys, INDEX), { top: ['Ancient History', 'Geography'], more: 1 });
+  assert.deepEqual(subjectsCovered([...keys].reverse(), INDEX), { top: ['Ancient History', 'Geography'], more: 1 });
+});
+
+test('reviewOldestFirst orders needs-review marks oldest first', () => {
+  const state = { entries: {
+    'upsc-2019-1': { status: 'review', updatedAt: '2026-10-03T00:00:00Z' },
+    'upsc-2019-2': { status: 'done', updatedAt: '2026-10-01T00:00:00Z' },
+    'upsc-2019-3': { status: 'review', updatedAt: '2026-10-01T00:00:00Z' },
+  }, lists: {} };
+  assert.deepEqual(reviewOldestFirst(state), ['upsc-2019-3', 'upsc-2019-1']);
+});
+
+test('reviewOldestFirst breaks a tie by key, compares real dates, and has nothing to say for no marks', () => {
+  const at = '2026-03-01T10:00:00.000Z';
+  const tied = state({ 'upsc-2019-8': entry('review', at), 'upsc-2019-7': entry('review', at), 'upsc-2018-3': entry('review', at) });
+  assert.deepEqual(reviewOldestFirst(tied), ['upsc-2018-3', 'upsc-2019-7', 'upsc-2019-8']);
+  const zones = state({
+    'upsc-2019-7': entry('review', '2026-03-01T10:00:00.000Z'),
+    'upsc-2019-8': entry('review', '2026-03-01T15:00:00+05:30'), // 09:30 UTC: earlier
+  });
+  assert.deepEqual(reviewOldestFirst(zones), ['upsc-2019-8', 'upsc-2019-7']);
+  assert.deepEqual(reviewOldestFirst(state({ 'upsc-2019-7': entry('done') })), []);
+  assert.deepEqual(reviewOldestFirst(state()), []);
+});
+
+test('reviewOldestFirst is the reverse of the order the page lists review marks in, and changes nothing', () => {
+  const s = state({
+    'upsc-2019-7': entry('review', '2026-03-01T10:00:00.000Z'),
+    'upsc-2018-3': entry('review', '2026-03-03T10:00:00.000Z'),
+    'upsc-2018-4': entry('review', '2026-02-01T10:00:00.000Z'),
+  });
+  const before = JSON.stringify(s);
+  assert.deepEqual(reviewOldestFirst(s), [...summarise(s, INDEX).review].reverse());
+  assert.equal(JSON.stringify(s), before);
+});
+
+test('pendingForKeys: a card waits only for the years its own questions are in', () => {
+  const status = new Map([['/upsc/index/2019.json', 'loaded']]);
+  assert.deepEqual(pendingForKeys(['upsc-2019-7', 'upsc-2018-3'], status), ['/upsc/index/2018.json']);
+  assert.deepEqual(pendingForKeys(['upsc-2019-7', 'upsc-2019-8'], status), []);
+  assert.deepEqual(pendingForKeys([], status), []);
+});
+
+test('pendingForKeys counts a failed year as settled, a loading one as pending, and skips keys with no year', () => {
+  const status = new Map([['/upsc/index/2019.json', 'failed'], ['/upsc/index/2018.json', 'loading']]);
+  assert.deepEqual(pendingForKeys(['upsc-2019-7', 'upsc-2018-3', 'not-a-key', 'upsc-2017-1'], status), [
+    '/upsc/index/2017.json',
+    '/upsc/index/2018.json',
+  ]);
 });

@@ -37,22 +37,24 @@ import { LEGAL } from '../lib/legal.js';
   <noscript><p class="acct-empty">This page needs JavaScript to show what is kept on this device.</p></noscript>
 
   {/* data-sync-full: this page shows everything the account holds, so a sync
-      started here reads all of it (see startSync in scripts/sync.js). */}
-  <div class="acct" data-sync-full={authEnabled ? '' : undefined}>
+      started here reads all of it (see startSync in scripts/sync.js).
+      data-pending: nothing in here is on screen until progress-page.js has drawn
+      it (see the gate in the styles), so what it draws never pushes anything
+      the reader can already see.
+      Revision comes first: its cards are the part that can be drawn from this
+      device alone. By subject needs the question indexes, so it grows after
+      they arrive, and it goes last so that growth moves nothing but the
+      colophon, which is held back until then. */}
+  <div class="acct" data-pending data-sync-full={authEnabled ? '' : undefined}>
+    <section class="acct-section" id="lists" aria-labelledby="acct-lists-h">
+      <h2 id="acct-lists-h" tabindex="-1">Revision</h2>
+      <p class="acct-note" role="status" data-lists-note></p>
+      <div data-lists></div>
+    </section>
+
     <section class="acct-section" aria-labelledby="acct-sum-h">
       <h2 id="acct-sum-h">By subject</h2>
       <div data-summary></div>
-    </section>
-
-    <section class="acct-section" aria-labelledby="acct-rev-h">
-      <h2 id="acct-rev-h" tabindex="-1">Needs review</h2>
-      <div data-review></div>
-    </section>
-
-    <section class="acct-section" aria-labelledby="acct-lists-h">
-      <h2 id="acct-lists-h" tabindex="-1">Revision lists</h2>
-      <p class="acct-note" role="status" data-lists-note></p>
-      <div data-lists></div>
     </section>
   </div>
 </Listing>
@@ -204,96 +206,33 @@ import { LEGAL } from '../lib/legal.js';
     font-size: 0.92rem;
   }
 
-  /* --- question rows: needs review, and inside each list --- */
+  /* --- revision: a card for Needs review, then one per list --- */
 
-  .acct-items {
-    list-style: none;
-    margin: 0;
-    padding: 0;
+  .acct-cards {
     display: grid;
-    max-width: 52rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
+    gap: 1.25rem;
+    align-items: stretch;
   }
-  .acct-item {
-    display: grid;
-    grid-template-columns: 6.5rem minmax(0, 1fr) auto;
-    align-items: baseline;
-    gap: 0.25rem 0.9rem;
-    padding: 0.6rem 0;
-    border-bottom: var(--rule-hair) solid var(--rule);
-  }
-  .acct-item:last-child {
-    border-bottom: 0;
-  }
-  .acct-ref {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--ink);
-    overflow-wrap: anywhere;
-  }
-  /* A row with no title (its year file still loading, or a key the index
-     does not know) gives the serial the title's column too, so Remove stays
-     a small button at the right instead of stretching across the gap. */
-  .acct-ref[data-waiting],
-  .acct-ref[data-unplaced] {
-    grid-column: 1 / 3;
-  }
-  /* A key the index does not know is shown as the key, quietly. */
-  .acct-ref[data-unplaced] {
-    font-weight: 400;
-    color: var(--ink-soft);
-  }
-  .acct-q {
+  .acct-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
     min-width: 0;
-    line-height: 1.45;
-    overflow-wrap: anywhere;
-  }
-  .acct-q a {
-    text-decoration-color: var(--rule);
-  }
-  .acct-q a:hover {
-    text-decoration-color: currentColor;
-  }
-
-  .acct-remove {
-    align-self: center;
-    min-height: 2rem;
-    padding: 0.25rem 0.75rem;
-    font: 600 0.78rem var(--font-structure);
-    letter-spacing: 0.04em;
-    color: var(--ink);
-    background: transparent;
-    border: var(--rule-hair) solid var(--rule-strong);
-    border-radius: 0;
-    cursor: pointer;
-  }
-  .acct-remove:hover {
-    background: var(--ground);
-  }
-
-  /* --- lists --- */
-
-  /* The same width as the review list, so a list's count and its Remove
-     buttons sit at the box's edge instead of a screen's width away. */
-  .acct-lists {
-    display: grid;
-    gap: 1rem;
-    max-width: 52rem;
-  }
-  .acct-set {
+    padding: 0.9rem 1.1rem 1rem;
     background: var(--paper);
     border: var(--rule-hair) solid var(--rule);
-    padding: 0.9rem 1.1rem 0.4rem;
   }
-  .acct-set-head {
+  .acct-card-head {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
     gap: 0.2rem 1rem;
-    padding-bottom: 0.4rem;
+    padding-bottom: 0.45rem;
     border-bottom: var(--rule-heavy) solid var(--rule-strong);
   }
-  .acct-set-head h3 {
+  .acct-card-head h3 {
     min-width: 0;
     overflow-wrap: anywhere;
   }
@@ -302,33 +241,149 @@ import { LEGAL } from '../lib/legal.js';
     font-size: 0.85rem;
     color: var(--ink-soft);
   }
-  .acct-set .acct-empty {
-    padding: 0.7rem 0;
+
+  /* The subjects arrive once the years the card's questions are in have
+     loaded, so the line is always one line tall and always there for a card
+     that has questions: it fills in without the card growing. It never wraps
+     (a second line could not be told of in advance); the first part gives way
+     with an ellipsis and the "+k more" stays, since that is the part that
+     says there is more. */
+  .acct-subjects {
+    display: flex;
+    margin: 0;
+    min-height: 1.45em;
+    font-size: 0.9rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  .acct-subjects-top {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .acct-subjects-more {
+    flex: none;
+    white-space: pre;
+  }
+  .acct-card .acct-empty {
+    font-size: 0.92rem;
   }
 
-  @media (max-width: 36rem) {
-    /* The serial moves above the question, so the title keeps the width. */
-    .acct-item {
-      grid-template-columns: minmax(0, 1fr) auto;
+  /* Revise, Rename and Delete, at the foot of the card so the cards in a row
+     line up whatever their names do. */
+  .acct-actions,
+  .acct-confirm {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.9rem;
+    margin-top: auto;
+    padding-top: 0.35rem;
+  }
+  .acct-card .acct-btn {
+    display: inline-block;
+    padding: 0.5rem 1.1rem;
+    font-size: 0.9rem;
+    text-decoration: none;
+  }
+  /* A text button: quiet, underlined so it still reads as pressable. Delete is
+     not drawn in red; red is stamp ink, never an action. */
+  .acct-text-btn {
+    min-height: 2.25rem;
+    padding: 0.3rem 0.15rem;
+    font: 600 0.85rem var(--font-structure);
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    text-decoration: underline;
+    text-decoration-color: var(--rule-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+  .acct-text-btn:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  .acct-confirm {
+    border-top: var(--rule-hair) dashed var(--rule-strong);
+  }
+  .acct-confirm-text {
+    flex-basis: 100%;
+    margin: 0;
+    font-size: 0.95rem;
+    overflow-wrap: anywhere;
+  }
+
+  .acct-edit {
+    display: flex;
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+  }
+  .acct-edit input {
+    flex: 1 1 11rem;
+    min-width: 0;
+    padding: 0.5rem 0.7rem;
+    font: 1.02rem var(--font-read);
+    color: var(--ink);
+    background: var(--ground);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+  }
+  .acct .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* The full-width line under the cards when there are no lists yet. */
+  .acct-cards > .acct-empty {
+    grid-column: 1 / -1;
+  }
+
+  /* --- nothing moves what the reader can already see --- */
+
+  /* progress-page.js draws everything on this page, and some of it only once the
+     question indexes have arrived. Chrome does not paint what is
+     visibility: hidden, so none of it is on screen to be pushed. The
+     page shows nothing in the area until the first draw, and the colophon (the one
+     thing below the By subject table, which grows when the indexes
+     land) stays out of sight until then too. The page itself reserves no height:
+     what it will hold depends on what is in this browser's storage, which no
+     stylesheet can know. The animations are the way out if the script never
+     runs: both reveal after a few seconds on their own. */
+  @keyframes acct-reveal {
+    to {
+      visibility: visible;
     }
-    .acct-ref {
-      grid-column: 1 / -1;
+  }
+  @media (scripting: enabled) {
+    .acct[data-pending] {
+      visibility: hidden;
+      animation: acct-reveal 0s 4s forwards;
     }
-    /* A row with no title has nothing to put under the serial: the serial
-       keeps the first column and Remove the second, on one line. */
-    .acct-ref[data-waiting],
-    .acct-ref[data-unplaced] {
-      grid-column: 1;
+    body:has(.acct[data-pending], .acct[data-settling]) .colophon {
+      visibility: hidden;
+      animation: acct-reveal 0s 6s forwards;
     }
   }
 
   @media (pointer: coarse) {
-    .acct-remove {
+    .acct-btn,
+    .acct-text-btn {
       min-height: 2.75rem;
-      padding-inline: 1rem;
     }
-    .acct-btn {
-      min-height: 2.75rem;
+    .acct-text-btn {
+      padding-inline: 0.5rem;
     }
   }
 </style>

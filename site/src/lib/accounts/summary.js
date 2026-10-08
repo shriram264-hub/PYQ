@@ -43,7 +43,20 @@ export function indexPathsFor(state) {
  * than by its key, because the title that replaces it is on its way.
  */
 export function pendingPaths(state, status) {
-  return indexPathsFor(state).filter((path) => {
+  return unsettled(indexPathsFor(state), status);
+}
+
+/**
+ * The same for these keys alone: what a list card waits for before it can name
+ * the subjects its questions are in. A card does not wait for years that only
+ * other lists need.
+ */
+export function pendingForKeys(keys, status) {
+  return unsettled([...new Set(keys.map(indexPath).filter(Boolean))].sort(), status);
+}
+
+function unsettled(paths, status) {
+  return paths.filter((path) => {
     const s = status.get(path);
     return s !== 'loaded' && s !== 'failed';
   });
@@ -82,6 +95,35 @@ export function describe(key, index) {
 }
 
 const byText = (a, b) => a.localeCompare(b, 'en');
+
+/**
+ * The subjects a set of questions falls under, for the line on a list card:
+ * the two with the most questions (a tie goes A to Z, so the line does not
+ * depend on the order the questions were saved in) and how many other subjects
+ * there are. A key the index does not know is in no subject, and is ignored.
+ */
+export function subjectsCovered(keys, index) {
+  const counts = new Map();
+  for (const key of keys) {
+    const found = lookup(index, key);
+    if (found) counts.set(found.subject, (counts.get(found.subject) ?? 0) + 1);
+  }
+  const ranked = [...counts].sort((a, b) => b[1] - a[1] || byText(a[0], b[0])).map(([subject]) => subject);
+  return { top: ranked.slice(0, 2), more: Math.max(0, ranked.length - 2) };
+}
+
+/**
+ * The keys marked Needs review, the mark that has waited longest first. This is
+ * the order to revise them in (summarise lists them newest first, to show what
+ * was just marked). Dates are compared as dates; the key breaks a tie.
+ */
+export function reviewOldestFirst(state) {
+  return Object.entries(state.entries)
+    .filter(([, entry]) => entry.status === 'review')
+    .map(([key, entry]) => ({ key, at: Date.parse(entry.updatedAt) }))
+    .sort((a, b) => a.at - b.at || byText(a.key, b.key))
+    .map((r) => r.key);
+}
 
 /**
  * @param state  { entries, lists } as stored

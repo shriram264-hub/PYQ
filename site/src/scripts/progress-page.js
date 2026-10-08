@@ -1,11 +1,17 @@
 import { authEnabled } from '../lib/accounts/config.js';
 import { STORAGE_KEY, loadState, saveState } from '../lib/accounts/progress-store.js';
-import { removeKey } from '../lib/accounts/lists.js';
-import { describe, indexPath, indexPathsFor, pendingPaths, summarise } from '../lib/accounts/summary.js';
+import { deleteList, renameList } from '../lib/accounts/lists.js';
+import {
+  indexPathsFor,
+  pendingForKeys,
+  pendingPaths,
+  subjectsCovered,
+  summarise,
+} from '../lib/accounts/summary.js';
 
 // The /account page. Everything it shows comes from this device's storage (a
 // sync keeps that in step with the account), plus the per-year question indexes
-// that turn stored keys back into subjects, titles and links.
+// that turn stored keys back into subjects.
 //
 // No auth code is imported here: until sign-in is switched on this page must
 // not carry any, so Sign in loads auth.js (and through it supabase-js) when it
@@ -14,8 +20,8 @@ import { describe, indexPath, indexPathsFor, pendingPaths, summarise } from '../
 const NOT_SAVED = 'Your browser would not save that. Check that it lets this site store data.';
 const SIGN_IN_FAILED = 'Could not reach the sign-in service. Your progress on this device is safe.';
 // How long one year's index may take. Past this the year counts as failed (its
-// questions show as serials) rather than leaving "Loading subjects." up for ever
-// on a connection that has stalled.
+// subjects are left out) rather than leaving "Loading subjects." up for ever on
+// a connection that has stalled.
 const INDEX_TIMEOUT_MS = 15000;
 
 // The line the server writes is the dark-launch one, "Kept on this device.".
@@ -25,8 +31,8 @@ const WHERE = {
 };
 
 const $ = (selector) => document.querySelector(selector);
+const acct = $('.acct');
 const summaryBox = $('[data-summary]');
-const reviewBox = $('[data-review]');
 const listsBox = $('[data-lists]');
 const listsNote = $('[data-lists-note]');
 const whereNote = $('[data-where-note]');
@@ -64,82 +70,187 @@ async function load(path) {
     Object.assign(index, await response.json());
     requests.set(path, 'loaded');
   } catch {
-    // Offline, too slow, or a year that is not there. Those keys show as keys.
+    // Offline, too slow, or a year that is not there. Those keys get no subject.
     requests.set(path, 'failed');
   }
 }
 
 // --- Drawing. ---
 
-// Drawing replaces the page's lists wholesale, so a focused link or button
+// What the person has open on a card. Drawing replaces the cards wholesale (a
+// sync or a year arriving redraws them), so it is kept here and not on the
+// nodes: the name being typed, and the list waiting on a Delete confirmation.
+const ui = {
+  edit: null, // { id, value }: the list being renamed, and the name as typed so far
+  confirm: null, // the id of the list whose Delete is waiting for a yes
+};
+
+// The Needs review card's id for focus: not a list's, whatever a list is called.
+const REVIEW_ID = '__review__';
+const EDIT_INPUT = 'acct-edit-input';
+const CONFIRM_TEXT = 'acct-confirm-text';
+const LISTS_HEADING = 'acct-lists-h';
+
+// Drawing replaces the page's cards wholesale, so a focused link or button
 // would be lost to <body> and a keyboard user sent back to the top. Remember
-// the control, then focus the same one again, else its neighbour (Remove takes
-// the question out from under the cursor), else the heading of its group.
+// the control, then focus the same one again, else its card's heading, else the
+// heading of the area. A caret in the name being typed is put back as well.
 function captureFocus() {
   const active = document.activeElement;
   if (!(active instanceof HTMLElement) || !active.dataset.fid) return null;
-  const group = active.closest('[data-scope]');
-  if (!group) return null;
-  const same = [...group.querySelectorAll(`[data-kind="${active.dataset.kind}"]`)];
-  return { fid: active.dataset.fid, scope: group.dataset.scope, kind: active.dataset.kind, at: same.indexOf(active) };
+  return {
+    fid: active.dataset.fid,
+    scope: active.closest('[data-scope]')?.dataset.scope ?? null,
+    caret: active instanceof HTMLInputElement ? [active.selectionStart, active.selectionEnd] : null,
+  };
 }
+
+const byFid = (fid) => [...document.querySelectorAll('[data-fid]')].find((n) => n.dataset.fid === fid);
 
 function restoreFocus(before) {
   if (!before) return;
-  const exact = [...document.querySelectorAll('[data-fid]')].find((n) => n.dataset.fid === before.fid);
-  if (exact) return exact.focus();
-  const group = [...document.querySelectorAll('[data-scope]')].find((n) => n.dataset.scope === before.scope);
-  if (!group) {
-    // The whole group went (its list was dropped, or the last review mark was
-    // cleared): the section's heading is the nearest place left.
-    document.getElementById(before.scope === 'review' ? 'acct-rev-h' : 'acct-lists-h')?.focus();
+  const exact = byFid(before.fid);
+  if (exact) {
+    exact.focus();
+    if (before.caret && exact instanceof HTMLInputElement) exact.setSelectionRange(...before.caret);
     return;
   }
-  const same = [...group.querySelectorAll(`[data-kind="${before.kind}"]`)];
-  (same[Math.min(before.at, same.length - 1)] ?? group.querySelector('[data-kind="head"]'))?.focus();
+  // The card or the control is gone (a list was deleted, or its Delete was
+  // answered): the card's heading if there is one, else the area's.
+  const card = [...document.querySelectorAll('[data-scope]')].find((n) => n.dataset.scope === before.scope);
+  (card?.querySelector('[data-kind="head"]') ?? document.getElementById(LISTS_HEADING))?.focus();
 }
 
-// A question as one row: its serial, and its title as a link. Rows are not
-// links as a whole (the Remove button lives in one). While the question's year
-// file is still on its way the row shows just the serial, which is what the
-// title will sit beside, so nothing flashes. A key the index does not know (its
-// file failed, or it is not in the file) has no title to show and no page to
-// link to, so it is shown as the key.
-function item({ scope, key, from, pending }) {
-  const q = describe(key, index);
-  const waiting = !q.path && pending.has(indexPath(key));
-  const li = el('li', 'acct-item');
-  if (q.path) {
-    const ref = text('span', 'serial acct-ref', q.serial);
-    const link = text('a', '', q.title);
-    link.href = q.path;
-    link.dataset.fid = `link|${scope}|${key}`;
-    link.dataset.kind = 'link';
-    li.append(ref, el('span', 'acct-q', link));
-  } else if (waiting) {
-    const ref = text('span', 'serial acct-ref', q.serial);
-    ref.dataset.waiting = '';
-    li.append(ref);
+// After something the person did, focus goes where the rules below say, not
+// wherever the control they used happened to be.
+const focusFid = (fid) => byFid(fid)?.focus();
+
+// A control on a card. data-act says what it does; data-fid is how focus finds
+// it again after a redraw. The accessible name starts with the visible word and
+// then says which list, because a page of identical "Rename" buttons is not
+// something a screen reader user can tell apart.
+function control(tag, className, label, { act, id, fid, aria }) {
+  const node = text(tag, className, label);
+  if (tag === 'button') node.type = 'button';
+  if (act) node.dataset.act = act;
+  node.dataset.list = id;
+  node.dataset.fid = `${fid}|${id}`;
+  node.dataset.kind = fid;
+  if (aria) node.setAttribute('aria-label', aria);
+  return node;
+}
+
+function renameForm(id) {
+  const input = el('input');
+  input.id = EDIT_INPUT;
+  input.type = 'text';
+  input.maxLength = 80; // MAX_NAME (lists.js), which cleanName enforces whatever this says
+  input.autocomplete = 'off';
+  input.value = ui.edit.value;
+  input.dataset.fid = `input|${id}`;
+  input.dataset.kind = 'input';
+  const label = text('label', 'visually-hidden', 'List name');
+  label.htmlFor = EDIT_INPUT;
+  const save = text('button', 'acct-btn', 'Save');
+  save.type = 'submit';
+  save.dataset.fid = `save|${id}`;
+  save.dataset.kind = 'save';
+  const cancel = control('button', 'acct-text-btn', 'Cancel', { act: 'cancel-edit', id, fid: 'cancel-edit' });
+  const form = el('form', 'acct-edit', label, input, save, cancel);
+  form.noValidate = true; // the message is ours (setCustomValidity), not the browser's
+  form.dataset.list = id;
+  return form;
+}
+
+function confirmBox({ id, name, keys }) {
+  const n = keys.length;
+  const ask = n
+    ? `Delete "${name}" and its ${plural(n, 'saved question', 'saved questions')}? This removes it on all your devices.`
+    : `Delete "${name}"? This removes it on all your devices.`;
+  const message = text('p', 'acct-confirm-text', ask);
+  message.id = CONFIRM_TEXT;
+  const yes = control('button', 'acct-btn', 'Delete list', { act: 'delete-yes', id, fid: 'delete-yes' });
+  const no = control('button', 'acct-text-btn', 'Cancel', { act: 'delete-no', id, fid: 'delete-no' });
+  // Focus lands on Cancel, so the question is what a screen reader says next.
+  for (const b of [yes, no]) b.setAttribute('aria-describedby', CONFIRM_TEXT);
+  const box = el('div', 'acct-confirm', message, yes, no);
+  box.setAttribute('role', 'group');
+  return box;
+}
+
+// "Polity · Economy · +2 more". Empty while the years this card's questions are
+// in are still on their way (the line is there, so the card does not grow when
+// it fills), and for questions the index does not know.
+function subjectsLine(keys) {
+  const line = el('p', 'acct-subjects');
+  if (pendingForKeys(keys, requests).length) return line;
+  const { top, more } = subjectsCovered(keys, index);
+  if (!top.length) return line;
+  // Two parts so a long subject gives way with an ellipsis and "+k more" stays.
+  line.append(text('span', 'acct-subjects-top', top.join(' · ')));
+  if (more) line.append(text('span', 'acct-subjects-more', ` · +${more} more`));
+  line.title = line.textContent;
+  return line;
+}
+
+// One card. `list` is false for Needs review, which has no Rename or Delete.
+function drawCard({ id, name, keys }, { list, revise }) {
+  const n = keys.length;
+  const editing = list && ui.edit?.id === id;
+  const confirming = list && !editing && ui.confirm === id;
+
+  const head = el('div', 'acct-card-head');
+  if (editing) {
+    head.append(renameForm(id));
   } else {
-    const ref = text('span', 'serial acct-ref', key);
-    ref.dataset.unplaced = '';
-    li.append(ref);
+    const heading = text('h3', '', name);
+    heading.tabIndex = -1;
+    heading.dataset.fid = `head|${id}`;
+    heading.dataset.kind = 'head';
+    head.append(heading);
   }
-  if (from) {
-    const button = text('button', 'acct-remove', 'Remove');
-    button.type = 'button';
-    button.dataset.list = from.id;
-    button.dataset.key = key;
-    button.dataset.fid = `remove|${scope}|${key}`;
-    button.dataset.kind = 'remove';
-    // The visible word is "Remove": the name starts with it and then says what
-    // goes and from where, because a page of Removes is otherwise a page of
-    // identical buttons.
-    const what = q.path ? `"${q.title}" (${q.serial})` : waiting ? q.serial : key;
-    button.setAttribute('aria-label', `Remove ${what} from "${from.name}"`);
-    li.append(button);
+  head.append(text('p', 'acct-count', plural(n, 'question', 'questions')));
+
+  const card = el('article', 'acct-card', head);
+  card.dataset.scope = id;
+  if (n) {
+    card.append(subjectsLine(keys));
+  } else {
+    card.append(
+      text('p', 'acct-empty', list ? 'No questions yet: use Save to list on any question.' : 'Nothing marked for review.')
+    );
   }
-  return li;
+
+  if (editing) return card;
+  if (confirming) {
+    card.append(confirmBox({ id, name, keys }));
+    return card;
+  }
+  const actions = el('div', 'acct-actions');
+  if (n) {
+    const link = control('a', 'acct-btn', 'Revise', { id, fid: 'revise', aria: `Revise "${name}"` });
+    link.href = revise;
+    actions.append(link);
+  }
+  if (list) {
+    actions.append(
+      control('button', 'acct-text-btn', 'Rename', { act: 'rename', id, fid: 'rename', aria: `Rename "${name}"` }),
+      control('button', 'acct-text-btn', 'Delete', { act: 'delete', id, fid: 'delete', aria: `Delete "${name}"` })
+    );
+  }
+  if (actions.childElementCount) card.append(actions);
+  return card;
+}
+
+// The Needs review card, then the lists A to Z. The Revise links are built
+// here and nowhere in the server's HTML, so the build never sees them.
+function drawLists(view) {
+  const cards = [
+    drawCard({ id: REVIEW_ID, name: 'Needs review', keys: view.review }, { list: false, revise: '/revise?review' }),
+    ...view.lists.map((l) => drawCard(l, { list: true, revise: `/revise?list=${encodeURIComponent(l.id)}` })),
+  ];
+  if (!view.lists.length) cards.push(text('p', 'acct-empty', 'No lists yet: use Save to list on any question.'));
+  listsBox.replaceChildren(el('div', 'acct-cards', ...cards));
 }
 
 function drawSummary(view, settled) {
@@ -204,58 +315,32 @@ function drawSummary(view, settled) {
   }
 }
 
-// list-style: none removes list semantics in Safari with VoiceOver; say it.
-function itemList(...rows) {
-  const list = el('ol', 'acct-items', ...rows);
-  list.setAttribute('role', 'list');
-  return list;
-}
+// The page's body is hidden (account.astro) until its first draw, and the
+// colophon until the question indexes have settled as well: By subject is the
+// one part whose height nothing can predict, and it is the last thing before
+// the colophon. Only the first load is held back. Later draws (a sync, another
+// tab) change what is on screen anyway, and must not hide the footer.
+let firstLoad = true;
 
-function drawReview(view, pending) {
-  if (!view.review.length) {
-    reviewBox.replaceChildren(text('p', 'acct-empty', 'Nothing is marked Needs review.'));
-    return;
-  }
-  const list = itemList(...view.review.map((key) => item({ scope: 'review', key, pending })));
-  list.dataset.scope = 'review';
-  reviewBox.replaceChildren(list);
-}
-
-function drawLists(view, pending) {
-  if (!view.lists.length) {
-    listsBox.replaceChildren(text('p', 'acct-empty', 'No lists yet: use Save to list on any question.'));
-    return;
-  }
-  const sets = view.lists.map((l) => {
-    const heading = text('h3', '', l.name);
-    heading.tabIndex = -1;
-    heading.dataset.fid = `head|${l.id}`;
-    heading.dataset.kind = 'head';
-    const set = el(
-      'section',
-      'acct-set',
-      el('div', 'acct-set-head', heading, text('p', 'acct-count', plural(l.keys.length, 'question', 'questions')))
-    );
-    set.dataset.scope = l.id;
-    if (l.keys.length) {
-      set.append(itemList(...l.keys.map((key) => item({ scope: l.id, key, from: l, pending }))));
-    } else {
-      set.append(text('p', 'acct-empty', 'No questions in this list yet: use Save to list on any question.'));
-    }
-    return set;
-  });
-  listsBox.replaceChildren(el('div', 'acct-lists', ...sets));
+function reveal(settled) {
+  acct.removeAttribute('data-pending');
+  if (!firstLoad) return;
+  acct.toggleAttribute('data-settling', !settled);
+  if (settled) firstLoad = false;
 }
 
 function render(state = loadState()) {
   const before = captureFocus();
+  // A list another tab or a sync removed cannot still be open here.
+  if (ui.edit && !state.lists[ui.edit.id]) ui.edit = null;
+  if (ui.confirm && !state.lists[ui.confirm]) ui.confirm = null;
   const view = summarise(state, index);
   // Settled once no index this state needs is still on its way (summary.js).
-  const pending = new Set(pendingPaths(state, requests));
-  drawSummary(view, pending.size === 0);
-  drawReview(view, pending);
-  drawLists(view, pending);
+  const settled = pendingPaths(state, requests).length === 0;
+  drawLists(view);
+  drawSummary(view, settled);
   restoreFocus(before);
+  reveal(settled);
 }
 
 // Draw now with what is known, fetch the years not yet asked for, draw again.
@@ -269,32 +354,148 @@ async function refresh() {
   render();
 }
 
-// --- Remove. ---
+// --- Rename and Delete. ---
 
-document.addEventListener('click', (event) => {
-  const button = event.target.closest?.('.acct-remove');
-  if (!button) return;
-  const { list: listId, key } = button.dataset;
+// Both work with no account: a list is on this device first, and the sync (when
+// there is one) hears of the change through the same event Save to list sends.
+const announce = (id) => document.dispatchEvent(new CustomEvent('sawaalbox:list', { detail: { listId: id } }));
+const GONE = 'That list is already gone.';
+
+// Another tab, or a sync, got there first. Show the truth.
+function gone() {
+  ui.edit = null;
+  ui.confirm = null;
+  say(listsNote, GONE);
+  render();
+  document.getElementById(LISTS_HEADING)?.focus();
+}
+
+function startRename(id) {
+  const list = loadState().lists[id];
+  if (!list) return gone();
+  ui.edit = { id, value: list.name };
+  ui.confirm = null;
+  say(listsNote, '');
+  render();
+  const input = document.getElementById(EDIT_INPUT);
+  input?.focus();
+  input?.select();
+}
+
+function stopRename(id) {
+  ui.edit = null;
+  say(listsNote, '');
+  render();
+  focusFid(`rename|${id}`);
+}
+
+function saveRename(id) {
   const before = loadState();
-  const name = before.lists[listId]?.name;
-  const what = describe(key, index).serial;
-  // removeKey, not a toggle: this page may be stale, and a toggle would put
-  // back a question another tab has already removed.
-  const next = removeKey(before, listId, key);
-  if (next === before) {
-    // Already gone (another tab, or a sync): nothing to write or announce to
-    // the sync, just show the truth.
-    say(listsNote, name ? `${what} was already removed from "${name}".` : 'That list is already gone.');
-    render(before);
+  const old = before.lists[id];
+  if (!old) return gone();
+  const input = document.getElementById(EDIT_INPUT);
+  let next;
+  try {
+    next = renameList(before, id, ui.edit.value);
+  } catch (error) {
+    // A name that is empty, too long, or already another list's. The browser's
+    // own bubble points at the field; the note says it to a screen reader and
+    // keeps it on the page.
+    const message = error instanceof Error ? error.message : String(error);
+    input?.setCustomValidity(message);
+    input?.reportValidity();
+    say(listsNote, message, { error: true });
     return;
   }
+  if (next === before) return stopRename(id); // the name it already had
   if (!saveState(next)) {
     say(listsNote, NOT_SAVED, { error: true });
     return;
   }
-  say(listsNote, `Removed ${what} from "${name}".`);
-  document.dispatchEvent(new CustomEvent('sawaalbox:list', { detail: { listId, key, added: false } }));
+  ui.edit = null;
+  announce(id);
+  say(listsNote, `Renamed "${old.name}" to "${next.lists[id].name}".`);
   render(next);
+  focusFid(`rename|${id}`);
+}
+
+function startDelete(id) {
+  if (!loadState().lists[id]) return gone();
+  ui.confirm = id;
+  ui.edit = null;
+  say(listsNote, '');
+  render();
+  focusFid(`delete-no|${id}`);
+}
+
+function stopDelete(id) {
+  ui.confirm = null;
+  render();
+  focusFid(`delete|${id}`);
+}
+
+function confirmDelete(id) {
+  const before = loadState();
+  const old = before.lists[id];
+  if (!old) return gone();
+  // deleteList leaves the tombstone the sync needs to remove the account's copy.
+  const next = deleteList(before, id);
+  if (!saveState(next)) {
+    say(listsNote, NOT_SAVED, { error: true });
+    return;
+  }
+  ui.confirm = null;
+  announce(id);
+  say(listsNote, `Deleted "${old.name}".`);
+  render(next);
+  document.getElementById(LISTS_HEADING)?.focus();
+}
+
+document.addEventListener('click', (event) => {
+  const button = event.target.closest?.('[data-act]');
+  if (!button) return;
+  const id = button.dataset.list;
+  switch (button.dataset.act) {
+    case 'rename':
+      return startRename(id);
+    case 'cancel-edit':
+      return stopRename(id);
+    case 'delete':
+      return startDelete(id);
+    case 'delete-no':
+      return stopDelete(id);
+    case 'delete-yes':
+      return confirmDelete(id);
+  }
+});
+
+// Enter in the field, or Save.
+document.addEventListener('submit', (event) => {
+  const form = event.target.closest?.('.acct-edit');
+  if (!form) return;
+  event.preventDefault();
+  saveRename(form.dataset.list);
+});
+
+// Keep what is typed where a redraw will find it, and let the next keystroke
+// clear a message about the last one.
+document.addEventListener('input', (event) => {
+  const input = event.target;
+  if (!(input instanceof HTMLInputElement) || input.id !== EDIT_INPUT || !ui.edit) return;
+  ui.edit.value = input.value;
+  input.setCustomValidity('');
+  if (listsNote.hasAttribute('data-error')) say(listsNote, '');
+});
+
+// Escape closes whatever is open on the card the focus is in, and returns to
+// the control that opened it.
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || event.defaultPrevented) return;
+  const inside = event.target.closest?.('.acct-edit, .acct-confirm');
+  if (!inside) return;
+  event.preventDefault();
+  if (inside.classList.contains('acct-edit')) stopRename(inside.dataset.list);
+  else if (ui.confirm) stopDelete(ui.confirm);
 });
 
 // --- Where it is kept. ---
