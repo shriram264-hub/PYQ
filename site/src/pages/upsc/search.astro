@@ -84,11 +84,19 @@ const crumbs = [{ name: 'Search', href: '/upsc/search' }];
 </script>
 
 <script>
-  // marks.js and the renderer are imported here, in the one bundled script, so
-  // there is a single instance of marks.js: its MutationObserver then fills the
-  // empty .qmarks slot of every block run() renders.
-  import '../../scripts/marks.js';
   import { esc, questionHTML } from '../../lib/question-html.js';
+
+  // marks.js is imported from here, in the one bundled script, and nowhere else
+  // on this page (the blocks are drawn by run() below, not by QuestionBlock), so
+  // there is a single instance of it: its MutationObserver then fills the empty
+  // .qmarks slot of every block run() renders, and paintAll() at its start
+  // catches any drawn before it arrived. It is a dynamic import, not a static
+  // one, because the marks are an extra: a static import that failed to load
+  // (its chunk blocked, a flaky connection) would stop this whole script, and
+  // with it the search. Search runs without marks rather than not at all.
+  import('../../scripts/marks.js').catch((err) => {
+    console.warn('SawaalBox: marks did not load', err);
+  });
 
   const PAGE_SIZE = 25;
   const $ = (id) => document.getElementById(id);
