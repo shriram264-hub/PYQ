@@ -1,6 +1,6 @@
 import { test, beforeEach, afterEach, mock } from 'node:test';
 import assert from 'node:assert/strict';
-import { USER, fakeClient } from './support/fake-supabase.js';
+import { RLS_REFUSAL, USER, fakeClient } from './support/fake-supabase.js';
 import { MINUTE, abandonAttempt, chooseAnswer, newAttempt, submitAttempt } from '../src/lib/tests/attempt.js';
 import { MAX_ATTEMPTS, TESTS_KEY, loadTests, putAttempt, saveTests, emptyTests } from '../src/lib/tests/store.js';
 import { isDirty, toRow } from '../src/lib/tests/merge.js';
@@ -419,8 +419,46 @@ test('an attempt another account holds leaves this device even when it was answe
   assert.ok(saveTests(putAttempt(loadTests(), chooseAnswer(stored(ID1), KEYS[0], 'a', T(40)))));
   release();
   await run;
+  assert.deepEqual(uploadedIds(client), [[ID1]], 'a batch of one is judged as refused, not sent again');
   assert.equal(stored(ID1), undefined);
   assert.deepEqual(loadTests().attempts, {});
+});
+
+test('an upload refused because the session is gone is not taken for another account: the run fails, and every attempt stays to send', async () => {
+  seedTests(make(ID1, 1), make(ID2, 2));
+  const before = store.get(TESTS_KEY);
+  const client = account(); // an empty account: the full pull is one request
+  const release = slowNetwork(client);
+  const run = syncTests(client, USER);
+  await idle(); // the pull has been answered and is held
+  client.anon = true; // signed out (here or in another tab) before the upload
+  release();
+  await assert.rejects(run, { code: '42501', message: 'permission denied for table test_attempts' });
+  assert.deepEqual(uploadedIds(client), [[ID1, ID2]], 'not sent again one at a time');
+  assert.equal(store.get(TESTS_KEY), before);
+  assert.ok(isDirty(stored(ID1)) && isDirty(stored(ID2)));
+  assert.equal(store.has(TESTS_MARKER_KEY), false);
+});
+
+test("a sign-out while the tests step uploads: the run warns and retries later, and no attempt leaves the device", async () => {
+  // The path sign-out takes: its last run is still going when the session goes.
+  writeMarker(SYNC_MARKER_KEY, 1000);
+  writeMarker(LISTS_MARKER_KEY, 1000);
+  seedTests(make(ID1));
+  const before = store.get(TESTS_KEY);
+  const client = account();
+  const release = slowNetwork(client);
+  const run = startSync(client, USER);
+  await idle(); // the tests pull is in flight
+  document.dispatchEvent(new Event('sawaalbox:signed-out'));
+  client.anon = true;
+  release();
+  await run;
+  assert.deepEqual(takeWarnings().map((w) => w[0]), ['SawaalBox: will retry syncing tests']);
+  assert.deepEqual(uploadedIds(client), [[ID1]]);
+  assert.equal(store.get(TESTS_KEY), before);
+  assert.equal(isDirty(stored(ID1)), true);
+  assert.equal(store.has(TESTS_MARKER_KEY), false);
 });
 
 // Refusals from a patched account, to reach what the fake never does by itself.
@@ -432,7 +470,7 @@ function refuseUpserts(client, errors) {
     return { ...table, upsert: (rows, options) => (errors.length ? Promise.resolve({ data: null, error: errors.shift() }) : table.upsert(rows, options)) };
   };
 }
-const RLS = { code: '42501', message: 'new row violates row-level security policy' };
+const RLS = { code: '42501', message: RLS_REFUSAL };
 
 test('only a refused attempt this account could not see is taken for another account\'s; any other refusal fails the run as before', async () => {
   // The account shows the row, so it is this account's: a refusal is something else.
@@ -440,15 +478,18 @@ test('only a refused attempt this account could not see is taken for another acc
   const answered = chooseAnswer(base, KEYS[0], 'a', T(5));
   seedTests(answered);
   const own = account([], { attempts: [toRow(base, USER.id)] });
-  refuseUpserts(own, [RLS, RLS]);
+  refuseUpserts(own, [RLS]);
   await assert.rejects(syncTests(own, USER), { code: '42501' });
   assert.deepEqual(stored(ID1), answered, 'kept, and still to send');
 
   // Refused as a batch, then for another reason one at a time.
+  const second = make(ID2, 6);
+  seedTests(answered, second);
   const other = account();
   refuseUpserts(other, [RLS, { code: 'XX000', message: 'internal error' }]);
   await assert.rejects(syncTests(other, USER), { code: 'XX000' });
   assert.deepEqual(stored(ID1), answered);
+  assert.deepEqual(stored(ID2), second);
   assert.equal(store.has(TESTS_MARKER_KEY), false);
 });
 

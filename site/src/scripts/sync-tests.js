@@ -17,9 +17,19 @@ const MAX_TARGETED_IDS = 50;
 // a first sign-in with a full device (200 attempts) to modest requests.
 const UPLOAD_ROWS_PER_REQUEST = 50;
 
-// The database's code for "insufficient privilege". On an upsert here it is
-// row-level security refusing a row (see upload).
-const REFUSED = '42501';
+/**
+ * True when the database refused a row because row-level security hides it:
+ * the id is another account's attempt (see upload). The code alone does not
+ * say so. 42501 ("insufficient privilege") is also the answer when the
+ * request has no session: the anon role is granted nothing on this table
+ * ("permission denied for table test_attempts"), and a sign-out, here or in
+ * another tab, can take the session while a run is still uploading. Taken for
+ * another account's, every attempt never sent would then leave this device. So
+ * the message decides: Postgres says "new row violates row-level security
+ * policy for table ..." (or "... policy (USING expression) for table ..." on
+ * the ON CONFLICT update an upsert makes).
+ */
+const refusedByPolicy = (error) => error.code === '42501' && /row-level security/.test(error.message ?? '');
 
 export const TESTS_MARKER_KEY = 'sawaalbox-sync-tests-v1';
 const testsPull = pullMarker(TESTS_MARKER_KEY);
@@ -40,9 +50,10 @@ async function pullIds(client, ids) {
  * and the rebase kept it for B (sync.js claimDevice). B cannot see A's row, and
  * row-level security refuses B's upsert onto it, the whole batch with it. Ids
  * are random, so that is the only way an id is taken: a batch refused so is
- * sent again one row at a time, and a row still refused that the pull did not
- * show (`seen`) is another account's. Any other error throws, as does a
- * refusal of a row this account can see, which cannot be another account's.
+ * sent again one row at a time (a batch of one is judged as it was refused),
+ * and a row refused so that the pull did not show (`seen`) is another
+ * account's. Any other error throws, as does a refusal of a row this account
+ * can see, which cannot be another account's.
  */
 async function upload(client, user, attempts, seen) {
   const send = (batch) => client.from(TABLE).upsert(batch.map((a) => toRow(a, user.id)), { onConflict: 'id' });
@@ -51,11 +62,11 @@ async function upload(client, user, attempts, seen) {
     const batch = attempts.slice(i, i + UPLOAD_ROWS_PER_REQUEST);
     const { error } = await send(batch);
     if (!error) continue;
-    if (error.code !== REFUSED) throw error;
+    if (!refusedByPolicy(error)) throw error;
     for (const a of batch) {
-      const { error: refused } = await send([a]);
+      const refused = batch.length === 1 ? error : (await send([a])).error;
       if (!refused) continue;
-      if (refused.code !== REFUSED || seen.has(a.id)) throw refused;
+      if (!refusedByPolicy(refused) || seen.has(a.id)) throw refused;
       foreign.push(a.id);
     }
   }

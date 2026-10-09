@@ -2,6 +2,10 @@ import assert from 'node:assert/strict';
 
 export const USER = { id: 'user-1' };
 
+// What Postgres says when an upsert's ON CONFLICT update meets a row the
+// update policy hides: another account's attempt.
+export const RLS_REFUSAL = 'new row violates row-level security policy (USING expression) for table "test_attempts"';
+
 /**
  * A fake Supabase client for the four tables a sync touches, applying the
  * calls it records to in-memory tables: `.select()`, `.in()`, `.order()` (any
@@ -11,6 +15,10 @@ export const USER = { id: 'user-1' };
  *  - hold: a promise the next select waits on after reading, i.e. a slow network
  *  - failOn: 'select' | 'insert' | 'upsert' | 'update' | 'delete' returns an
  *    error for that call on any table; 'upsert:bookmarks' names one table
+ *  - anon: set it to true when the session is gone (signed out, here or in
+ *    another tab). supabase-js then sends only the anon key, and the anon role
+ *    is granted nothing on any of these tables, so every later request is
+ *    refused with { code: '42501', message: 'permission denied for table <name>' }
  *  - maxRows: the server's row cap per request
  *  - user: whose account this is. Row-level security shows each account only
  *    its own rows, so two accounts are two clients, and every write must name
@@ -28,8 +36,8 @@ export const USER = { id: 'user-1' };
  *    on a device, so one table holds every account's attempts, and row-level
  *    security keeps them apart: these rows are in `client.attempts` but no
  *    select here returns them, and an upsert naming one of their ids is
- *    refused, the whole request, with { code: '42501', message: 'new row
- *    violates row-level security policy' }, as the database refuses it
+ *    refused, the whole request, with code '42501' and the message Postgres
+ *    gives when an ON CONFLICT update meets a row the policy hides (RLS_REFUSAL)
  */
 export function fakeClient(rows = [], { maxRows = 1000, user = USER, attempts = [], foreignAttempts = [] } = {}) {
   for (const r of foreignAttempts) assert.notEqual(r.user_id, user.id, 'a foreign attempt is owned by another account');
@@ -49,6 +57,7 @@ export function fakeClient(rows = [], { maxRows = 1000, user = USER, attempts = 
     attempts: tables.test_attempts,
     hold: null,
     failOn: null,
+    anon: false,
   };
   let serial = 0;
 
@@ -68,6 +77,7 @@ export function fakeClient(rows = [], { maxRows = 1000, user = USER, attempts = 
     if (client.failOn === call.kind || client.failOn === `${call.kind}:${call.table}`) {
       return refuse(`${call.kind} refused`);
     }
+    if (client.anon) return refuse(`permission denied for table ${call.table}`, '42501');
     if (call.kind === 'select') {
       let out = [...table.values()].filter((r) => matches(call, r) && !(call.table === 'test_attempts' && foreign.has(r.id)));
       out.sort((a, b) => {
@@ -111,7 +121,7 @@ export function fakeClient(rows = [], { maxRows = 1000, user = USER, attempts = 
       if (call.table === 'test_attempts') {
         assert.equal(call.options?.onConflict, 'id', 'an attempt is matched by its id');
         // One statement: a single refused row refuses them all, and none is written.
-        if (call.rows.some((r) => foreign.has(r.id))) return refuse('new row violates row-level security policy', '42501');
+        if (call.rows.some((r) => foreign.has(r.id))) return refuse(RLS_REFUSAL, '42501');
       }
       for (const r of call.rows) {
         assert.equal(r.user_id, user.id, 'every uploaded row names its owner');
