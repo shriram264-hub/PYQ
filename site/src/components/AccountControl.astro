@@ -22,7 +22,7 @@ import { authEnabled } from '../lib/accounts/config.js';
           <span class="account-label">My account</span>
           <span class="account-caret" aria-hidden="true"></span>
         </button>
-        <div class="account-menu" id="account-menu" data-account-menu hidden>
+        <div class="account-menu" id="account-menu" data-account-menu tabindex="-1" hidden>
           <p class="account-who">Signed in as <span data-account-name></span></p>
           <a href="/account">My progress</a>
           <a href="/account#lists">My lists</a>
@@ -167,6 +167,11 @@ import { authEnabled } from '../lib/accounts/config.js';
   }
   /* display: grid above would otherwise win over the hidden attribute. */
   .account-menu[hidden] { display: none; }
+  /* tabindex=-1 (see the markup) makes the panel itself the place focus lands
+     when a click falls on its plain text. Without it focus would drop to the
+     page, the focusout handler in account.js would close the panel, and
+     someone selecting their address would lose it. Not a control, so no ring. */
+  .account-menu:focus-visible { outline: none; }
   .account-menu a,
   .account-menu button {
     padding: 0.6rem 0.8rem;
