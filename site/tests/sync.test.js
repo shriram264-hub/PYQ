@@ -1140,18 +1140,23 @@ test('a delete made offline is not undone by a pull before it reaches the accoun
   assert.deepEqual(tombstones(), ['R1']);
   assert.deepEqual(lists(), {});
 
-  // Back online, the read works but the delete is refused: the pull saw the set and must not adopt it.
+  // Back online, the read works but the delete is refused: the run throws, so it
+  // saves nothing and the tombstone stays owed. (Whether the pull would have
+  // adopted the set cannot show here: a run that threw leaves the lists alone
+  // whatever the merge did. It shows in the successful run below.)
   client.failOn = 'delete';
   await assert.rejects(syncLists(client, USER, { full: true }), { message: 'delete refused' });
   assert.deepEqual(setNamesById(client), { R1: 'Polity' }, 'still on the account');
-  assert.deepEqual(lists(), {}, 'and still not a list here');
   assert.deepEqual(tombstones(), ['R1']);
   assert.equal(store.has(LISTS_MARKER_KEY), false);
 
   client.failOn = null;
   await syncLists(client, USER, { full: true });
-  assert.deepEqual(setNamesById(client), {});
-  assert.deepEqual(lists(), {});
+  // The set was on the account for this pull to read (it is the one just
+  // deleted), and the pull did not adopt it: the merge ignoring a tombstoned set
+  // is also pinned in lists.test.js ("a tombstoned set is deleted, not adopted").
+  assert.deepEqual(setNamesById(client), {}, 'the pull saw the set, so the delete went out');
+  assert.deepEqual(lists(), {}, 'and did not adopt it as a list here');
   assert.deepEqual(tombstones(), []);
 });
 
@@ -1409,13 +1414,16 @@ test('a list created by a run and deleted while it ran is tombstoned, deleted by
   store.delete(LISTS_MARKER_KEY);
   client.failOn = 'delete';
   await assert.rejects(syncLists(client, USER, { full: true }), { message: 'delete refused' });
-  assert.deepEqual(lists(), {}, 'a pull that cannot yet delete it does not adopt it');
+  assert.deepEqual(tombstones(), ['S1'], 'a refused delete leaves it owed');
 
   client.failOn = null;
   await syncLists(client, USER, { full: true });
-  assert.deepEqual(setNamesById(client), {});
+  // Its set was on the account for this pull to read (the delete below removes
+  // it), and the pull did not bring it back as a list; see also the merge test
+  // in lists.test.js ("a tombstoned set is deleted, not adopted").
+  assert.deepEqual(setNamesById(client), {}, 'the pull saw the set, so the delete went out');
   assert.deepEqual(remoteKeys(client, 'S1'), []);
-  assert.deepEqual(lists(), {});
+  assert.deepEqual(lists(), {}, 'and did not adopt it as a list here');
   assert.deepEqual(tombstones(), []);
 });
 
