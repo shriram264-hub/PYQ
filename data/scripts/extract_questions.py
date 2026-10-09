@@ -183,6 +183,21 @@ def apply_corrections(questions, path):
 MIN_TOPIC_QUESTIONS = 5
 
 
+def load_taxonomy(path):
+    """Read data/taxonomy.json, stopping with a clear message if it is not there."""
+    if not path.exists():
+        sys.exit(f"{path} not found: the subjects and topics come from data/taxonomy.json, "
+                 "so extraction cannot run without it")
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def _destination(where, dest):
+    """A taxonomy destination must be exactly [subject, topic]; anything else is a typo in the file."""
+    if not (isinstance(dest, list) and len(dest) == 2 and all(isinstance(x, str) for x in dest)):
+        sys.exit(f"taxonomy.json {where}: expected a [subject, topic] pair of two strings, got {dest!r}")
+    return dest[0], dest[1]
+
+
 def apply_taxonomy(questions, taxonomy):
     """Relabel every question with the approved subject and topic (data/taxonomy.json).
 
@@ -195,8 +210,9 @@ def apply_taxonomy(questions, taxonomy):
     subjects = set(taxonomy["subjects"])
     allowed = [tuple(p) for p in taxonomy["allowed"]]
     allowed_set = set(allowed)
-    topics = taxonomy["topics"]
-    overrides = taxonomy.get("questions", {})
+    topics = {key: _destination(f"topics['{key}']", dest) for key, dest in taxonomy["topics"].items()}
+    overrides = {key: _destination(f"questions['{key}']", dest)
+                 for key, dest in taxonomy.get("questions", {}).items()}
 
     labels = []
     for q in questions:
@@ -208,14 +224,20 @@ def apply_taxonomy(questions, taxonomy):
         subject, topic = topics[key]
 
         # A hand-placed question overrides its topic's mapping only when that
-        # pair is being re-homed: the topic name changes, or the pair leaves an
+        # pair is being re-homed, that is when the move actually changes where
+        # its questions live: the topic name changes, or the pair leaves an
         # approved subject. A raw alias that merely takes its approved name
-        # (Polity -> Indian Polity, same topic) is not re-homed, and its
-        # overrides are ignored.
+        # (Polity -> Indian Polity, same topic) is not re-homed, so an override
+        # there could never apply. It is a stale entry, so the run stops and
+        # names it rather than silently ignoring it.
         rehomed = topic != raw_topic or (raw_subject in subjects and subject != raw_subject)
-        override = overrides.get(f"{q['year']}-{q['q_no']}")
-        if rehomed and override:
-            subject, topic = override
+        override_key = f"{q['year']}-{q['q_no']}"
+        if override_key in overrides:
+            if not rehomed:
+                sys.exit(f"taxonomy.json questions['{override_key}']: {tag} sits in '{key}', which is "
+                         "not re-homed (its topic name and approved subject stay the same), so this "
+                         "override would be ignored; remove it, or re-home the pair in topics")
+            subject, topic = overrides[override_key]
 
         if subject not in subjects:
             sys.exit(f"{tag}: '{subject}' is not an approved subject (taxonomy.json subjects)")
@@ -223,6 +245,12 @@ def apply_taxonomy(questions, taxonomy):
             sys.exit(f"{tag}: {subject} / {topic} is not an approved subject and topic "
                      f"pair (taxonomy.json allowed), reached from '{key}'")
         labels.append((subject, topic))
+
+    present = {f"{q['year']}-{q['q_no']}" for q in questions}
+    orphans = sorted(set(overrides) - present)
+    if orphans:
+        sys.exit("taxonomy.json questions: " + ", ".join(f"'{k}'" for k in orphans)
+                 + " match no question in the extracted data; fix the year-number or remove the entry")
 
     per_topic = Counter(labels)
     small = [f"{s} / {t} ({per_topic[(s, t)]})" for s, t in allowed
@@ -262,11 +290,11 @@ def main():
     pdf_path = sys.argv[1]
     out = Path(__file__).resolve().parent.parent
 
+    taxonomy = load_taxonomy(out / "taxonomy.json")  # before the slow PDF read, so a missing file fails fast
     print(f"Reading {pdf_path} ...")
     questions = parse(read_lines(pdf_path))
     fixed = apply_corrections(questions, out / "corrections.json")
     print(f"Applied {fixed} correction(s) from corrections.json")
-    taxonomy = json.loads((out / "taxonomy.json").read_text(encoding="utf-8"))
     subject_counts = apply_taxonomy(questions, taxonomy)
     print(f"Relabelled {len(questions)} questions with taxonomy.json")
     for i, q in enumerate(questions, 1):
