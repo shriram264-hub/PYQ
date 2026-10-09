@@ -198,6 +198,11 @@ import { authEnabled } from '../lib/accounts/config.js';
   .account-who [data-account-name] { color: var(--ink); font-weight: 700; }
   .account-menu a:hover,
   .account-menu button:hover { background: var(--ground); }
+  /* The panel is paper, hung from a green masthead. The masthead's own ring
+     (document.css: field ink, drawn for the green field) would be paper on
+     paper in the light stock, so inside the panel the sitewide ring returns.
+     Three classes deep so it wins over that rule whatever the sheet order. */
+  .account .account-menu :focus-visible { outline-color: var(--focus); }
   /* Sign out while the last sync runs (account.js): it says "Signing out…"
      and takes no second press, so it stops looking pressable. */
   .account-menu button[aria-disabled='true'] {
