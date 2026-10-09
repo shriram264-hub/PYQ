@@ -26,11 +26,11 @@ wrong. This is the single biggest gap in the corpus today and the most common
 reason aspirants pay for question banks at all.
 
 Honest risks, which shape how this must be built:
-- 3,959 explanations is a real content cost. Generating them with an LLM is
+- 3,981 explanations is a real content cost. Generating them with an LLM is
   cheap to do badly and expensive to do well.
 - A wrong explanation in exam prep is worse than no explanation: it teaches the
   error and destroys trust permanently.
-- Mitigations: start with the highest-frequency topics rather than all 3,959;
+- Mitigations: start with the highest-frequency topics rather than all 3,981;
   label AI-assisted explanations honestly; give users a one-tap "this looks
   wrong" report and act on it; never present an unreviewed explanation as
   authoritative.
