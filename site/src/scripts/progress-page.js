@@ -290,9 +290,15 @@ function drawLists(view) {
   // The card being renamed, while the person is in its form: a redraw (a sync,
   // a year arriving) must leave it in the page, or the field loses the focus and
   // a phone's keyboard closes mid-word. Everything around it is replaced; its
-  // count and subjects are refreshed in place.
-  const form = ui.edit && document.querySelector('.acct-edit');
-  const keep = form?.contains(document.activeElement) ? form.closest('.acct-card') : null;
+  // count and subjects are refreshed in place. Only while that form is still
+  // the one being edited: Rename activated on another card (without the focus
+  // leaving the field) makes ui.edit point there, and keeping this form would
+  // leave a dead one beside the new one, and a second #EDIT_INPUT.
+  const form = ui.edit ? document.querySelector('.acct-edit') : null;
+  const keep =
+    form && form.dataset.list === ui.edit.id && form.contains(document.activeElement)
+      ? form.closest('.acct-card')
+      : null;
   const grid = listsBox.querySelector('.acct-cards');
   const at = keep ? cards.findIndex((c) => c.dataset.scope === keep.dataset.scope) : -1;
   if (!keep || !grid || at < 0) {
