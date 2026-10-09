@@ -391,11 +391,29 @@ const FIRST_SYNC_HOLD_MS = 2500;
 let firstLoad = true;
 let held = false;
 let lastSettled = false;
+let landed = false;
+
+// /account#lists (the account menu's "My lists", a bookmark): the browser
+// scrolls to the section but puts no focus there, so a keyboard or screen
+// reader user would start again from the top of the page. The Revision heading
+// takes focus instead (tabindex=-1). It cannot while the body is hidden
+// (data-pending), so the first reveal does it, and only if the person has not
+// already moved on to something else; a hash change after that is a deliberate
+// move and always lands.
+function landOnLists(always = false) {
+  if (location.hash !== '#lists') return;
+  if (!always && document.activeElement !== document.body && document.activeElement !== null) return;
+  document.getElementById(LISTS_HEADING)?.focus();
+}
 
 function reveal(settled) {
   lastSettled = settled;
   if (held) return;
   acct.removeAttribute('data-pending');
+  if (!landed) {
+    landed = true;
+    landOnLists();
+  }
   if (!firstLoad) return;
   acct.toggleAttribute('data-settling', !settled);
   if (settled) firstLoad = false;
@@ -664,6 +682,15 @@ if (authEnabled) {
   }
   if (control) new MutationObserver(follow).observe(control, { attributes: true, attributeFilter: ['data-auth'] });
 }
+
+// Following "My lists" while already on this page: the address changes only by
+// its hash, so nothing loads (hashchange), or, when it was already #lists,
+// nothing changes at all (the click).
+window.addEventListener('hashchange', () => landOnLists(true));
+document.addEventListener('click', (event) => {
+  const link = event.target.closest?.('a[href]');
+  if (link && link.pathname === location.pathname && link.hash === '#lists') setTimeout(() => landOnLists(true));
+});
 
 // A sync that lands brings the account's marks and lists, and possibly years
 // this page has not fetched. Other tabs and a restored page change storage too.
