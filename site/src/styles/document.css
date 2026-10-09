@@ -155,6 +155,16 @@ body {
   outline-offset: 2px;
 }
 
+/* The mastheads (Masthead.astro, the homepage mast, the /upsc cover) sit on the
+   green field, and in the light stock --focus is that same green, so the ring
+   above vanished there. Inside them it is drawn in the field's own ink, as the
+   account button does, which holds against the field and its deeper breadcrumb
+   band in both stocks. */
+.masthead :focus-visible,
+.mast :focus-visible {
+  outline-color: var(--field-ink);
+}
+
 html {
   scrollbar-color: var(--rule) transparent;
   caret-color: var(--field-text);
