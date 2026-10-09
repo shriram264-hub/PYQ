@@ -32,11 +32,15 @@ services:
     # Same service, so the public URL and the backend's CORS allowlist are
     # unchanged. Reverting is this one value.
     rootDir: site
-    # The site builds every page from ../data/questions.json, outside rootDir.
+    # The site builds every page from ../data/questions.json, outside rootDir,
+    # and a forwarding page for each old address in ../data/legacy-urls.json.
+    # A data change that removes or re-creates a subject or topic page must
+    # update legacy-urls.json in the same commit, or check-links fails the build.
     buildFilter:
       paths:
         - site/**
         - data/questions.json
+        - data/legacy-urls.json
     buildCommand: npm install && npm run build && node scripts/check-links.mjs
     staticPublishPath: dist
     envVars:
