@@ -17,7 +17,8 @@ export function getStaticPaths() {
 // is what questionHTML takes. The fields are listed, not spread: the corpus
 // object also carries id, slug and the slug parts, which the renderer rebuilds
 // from the fields below and which would only add weight to every file. The
-// subject is the corpus's canonical one, so links match the static pages.
+// subject is the label the data carries, one of the approved names, so links
+// match the static pages.
 export function GET({ params }) {
   const full = Object.fromEntries(
     questionsForYear(params.year).map((q) => [

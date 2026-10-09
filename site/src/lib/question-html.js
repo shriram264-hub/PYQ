@@ -17,19 +17,6 @@ export const esc = (s) =>
 const slugify = (v) =>
   String(v).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
-// The extraction emitted several labels for one subject; the static pages are
-// built from the canonical names, so links must use the same mapping.
-const ALIASES = {
-  Polity: 'Indian Polity',
-  Economy: 'Indian Economy',
-  Environment: 'Environment & Ecology',
-  'Science and Technology': 'Science & Technology',
-  Science: 'Science & Technology',
-};
-// Exported for the drift test, which holds it to canonicalSubject in corpus.js.
-// Own keys only: a subject called "constructor" is not an alias of anything.
-export const canonical = (s) => (Object.hasOwn(ALIASES, s) ? ALIASES[s] : s);
-
 // The question's own page. Year and number are made numbers first: whatever
 // the source sends, only digits reach the address.
 export const questionPath = (q) =>
@@ -45,7 +32,7 @@ export function questionHTML(q) {
   // are made numbers first: whatever the API sends, only digits reach the page.
   const year = Number(q.year);
   const qNo = Number(q.q_no);
-  const subject = canonical(q.subject);
+  const subject = q.subject;
   const sSlug = slugify(subject);
   const tSlug = slugify(q.subtopic);
   const path = questionPath(q);

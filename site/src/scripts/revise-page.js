@@ -9,7 +9,7 @@ import {
   serialOf,
   subjectsCovered,
 } from '../lib/accounts/summary.js';
-import { canonical, questionHTML, questionPath } from '../lib/question-html.js';
+import { questionHTML, questionPath } from '../lib/question-html.js';
 
 // The /revise page: one revision list (?list=<id>) or the Needs review pile
 // (?review), every question in full, 20 at a time. The keys come from this
@@ -331,7 +331,7 @@ function drawSubjects() {
     if (file?.status !== 'loaded') continue;
     const entry = fullEntry(file.data, key);
     // subjectsCovered reads the per-year index's shape, [path, subject, title].
-    if (entry.status === 'ok') view[key] = [questionPath(entry.q), canonical(entry.q.subject), ''];
+    if (entry.status === 'ok') view[key] = [questionPath(entry.q), entry.q.subject, ''];
   }
   const { top, more: rest } = subjectsCovered(order, view);
   subjectsEl.replaceChildren();

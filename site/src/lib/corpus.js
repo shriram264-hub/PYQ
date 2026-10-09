@@ -9,24 +9,6 @@ const questions = JSON.parse(
   readFileSync(resolve(process.cwd(), '../data/questions.json'), 'utf-8')
 );
 
-/**
- * The PDF extraction emitted several labels for the same subject. Left alone
- * these produce competing pages (a 401-question "Indian Polity" and a
- * 20-question "Polity"), which is both confusing in filters and actively bad
- * for search indexing.
- */
-const SUBJECT_ALIASES = {
-  Polity: 'Indian Polity',
-  Economy: 'Indian Economy',
-  Environment: 'Environment & Ecology',
-  'Science and Technology': 'Science & Technology',
-  Science: 'Science & Technology',
-};
-
-export function canonicalSubject(subject) {
-  return SUBJECT_ALIASES[subject] ?? subject;
-}
-
 export function slugify(value) {
   return String(value)
     .toLowerCase()
@@ -35,17 +17,16 @@ export function slugify(value) {
     .replace(/^-+|-+$/g, '');
 }
 
-export const ALL_QUESTIONS = questions.map((q) => {
-  const subject = canonicalSubject(q.subject);
-  return {
-    ...q,
-    subject,
-    subjectSlug: slugify(subject),
-    subtopicSlug: slugify(q.subtopic),
-    slug: `${q.year}-q${q.q_no}-${slugify(q.question.slice(0, 60))}`,
-    qkey: questionKey('upsc', q.year, q.q_no),
-  };
-});
+// Subject and topic labels are used exactly as the data carries them. The data
+// is built against data/taxonomy.json, which fails the build on any other label,
+// so there is nothing to tidy here.
+export const ALL_QUESTIONS = questions.map((q) => ({
+  ...q,
+  subjectSlug: slugify(q.subject),
+  subtopicSlug: slugify(q.subtopic),
+  slug: `${q.year}-q${q.q_no}-${slugify(q.question.slice(0, 60))}`,
+  qkey: questionKey('upsc', q.year, q.q_no),
+}));
 
 function countBy(items, key) {
   const map = new Map();

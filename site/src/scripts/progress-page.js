@@ -214,7 +214,7 @@ function confirmBox({ id, name, keys }) {
   return box;
 }
 
-// "Polity · Economy · +2 more". Empty while the years this card's questions are
+// "Indian Polity · Indian Economy · +2 more". Empty while the years this card's questions are
 // in are still on their way (the line is there, so the card does not grow when
 // it fills), and for questions the index does not know.
 function subjectsLine(keys) {

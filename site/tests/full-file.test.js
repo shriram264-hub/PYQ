@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { GET, getStaticPaths } from '../src/pages/upsc/full/[year].json.js';
-import { YEARS, canonicalSubject } from '../src/lib/corpus.js';
+import { YEARS } from '../src/lib/corpus.js';
 import { questionHTML } from '../src/lib/question-html.js';
 
 // The per-year full-question files (/upsc/full/<year>.json) are what the revise
@@ -12,6 +12,7 @@ import { questionHTML } from '../src/lib/question-html.js';
 const FIELDS = ['year', 'q_no', 'subject', 'subtopic', 'difficulty', 'question', 'a', 'b', 'c', 'd', 'answer', 'answer_note', 'status'];
 
 const RAW = JSON.parse(readFileSync(new URL('../../data/questions.json', import.meta.url), 'utf-8'));
+const APPROVED = new Set(JSON.parse(readFileSync(new URL('../../data/taxonomy.json', import.meta.url), 'utf-8')).subjects);
 const rawByKey = new Map(RAW.map((q) => [`upsc-${q.year}-${q.q_no}`, q]));
 
 // Built exactly as the build builds it: the endpoint's own GET, for every year it lists.
@@ -35,16 +36,16 @@ test('every entry has exactly the 13 fields, in order, and no id, slug or key', 
   }
 });
 
-test('every entry is filed under its own key, with numbers as numbers, text as text, and the canonical subject', () => {
+test('every entry is filed under its own key, with numbers as numbers, text as text, and an approved subject', () => {
   for (const [year, file] of files) {
     for (const [key, entry] of Object.entries(file)) {
       assert.equal(key, `upsc-${year}-${entry.q_no}`);
       assert.equal(entry.year, Number(year), key);
       assert.ok(Number.isInteger(entry.year) && Number.isInteger(entry.q_no), key);
       for (const field of FIELDS.slice(2)) assert.equal(typeof entry[field], 'string', `${key} ${field}`);
-      // The canonical name, as the static pages use: the revise page's subjects
-      // line counts by it, and an alias would make one subject two.
-      assert.equal(entry.subject, canonicalSubject(entry.subject), key);
+      // One of the approved names, as the static pages use: the revise page's
+      // subjects line counts by it, and a stray label would make one subject two.
+      assert.ok(APPROVED.has(entry.subject), `${key}: not an approved subject: ${entry.subject}`);
     }
   }
 });

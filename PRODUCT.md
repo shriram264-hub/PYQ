@@ -33,7 +33,7 @@ Semantic search over a complete, dated corpus of past questions. Competing mater
 
 ## Capabilities and Constraints
 
-**Confirmed corpus:** 3,959 questions spanning 1995–2026, across 13 subjects (after canonicalising duplicate extraction labels — `Polity`→`Indian Polity`, `Economy`→`Indian Economy`, `Environment`→`Environment & Ecology`, `Science and Technology`/`Science`→`Science & Technology`) and 203 subject+subtopic pairs after canonicalisation. 82 of those hold fewer than 5 questions; they get pages but are kept out of the search index.
+**Confirmed corpus:** 3,981 questions spanning 1995–2026, across 11 subjects and 116 subject+topic pairs, none holding fewer than 5 questions. Labels follow `data/taxonomy.json`, and the data build fails on any other. Because no topic is under 5, every topic gets a page and a place in the sitemap; the site would still keep a thinner one out of the sitemap and mark it `noindex`.
 
 **Search:** all question vectors are precomputed in `data/embeddings.npy`; the server embeds only the user's query at request time, via ONNX Runtime (`fastembed`, `BAAI/bge-small-en-v1.5`), blended with a small exact-keyword boost.
 
@@ -59,7 +59,7 @@ The name intentionally does not contain "UPSC" or "PYQ"; keyword relevance is ex
 
 ## Evidence on Hand
 
-Real, in-repo: `data/questions.json` — 3,959 genuine past questions with options, official answers, and status flags for questions UPSC cancelled or disputed. `data/question_bank.pdf` is the source compilation (UnlockIAS). `data/embeddings.npy` holds the precomputed vectors.
+Real, in-repo: `data/questions.json` — 3,981 genuine past questions with options, official answers, and status flags for questions UPSC cancelled or disputed. `data/question_bank.pdf` is the source compilation (UnlockIAS). `data/embeddings.npy` holds the precomputed vectors.
 
 There are **no** users yet, no testimonials, no traffic figures, no press, no institutional endorsement, and no accuracy audit by a subject expert. None of these may be implied or fabricated in any interface copy.
 

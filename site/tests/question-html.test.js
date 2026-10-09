@@ -1,15 +1,15 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { canonical, esc, questionHTML } from '../src/lib/question-html.js';
-import { ALL_QUESTIONS, canonicalSubject } from '../src/lib/corpus.js';
+import { esc, questionHTML } from '../src/lib/question-html.js';
+import { ALL_QUESTIONS } from '../src/lib/corpus.js';
 
-// The question file as the extraction wrote it, which is what the search API
-// serves: subjects under every label the extraction emitted ("Polity",
-// "Environment", "Science and Technology"...), not the corpus's canonical names.
-// ALL_QUESTIONS has already been through canonicalSubject, so a renderer whose
-// aliases had drifted would still pass every check made with it alone.
+// The question file as the search API serves it. The labels in it are the
+// approved ones already (data/taxonomy.json), and the corpus and the renderer
+// both use them as they are. Rendering these records, rather than the corpus's
+// copies, is the check that the renderer and the data agree.
 const RAW = JSON.parse(readFileSync(new URL('../../data/questions.json', import.meta.url), 'utf-8'));
+const TAXONOMY = JSON.parse(readFileSync(new URL('../../data/taxonomy.json', import.meta.url), 'utf-8'));
 
 // These strings were captured from the renderer while it still lived inline in
 // pages/upsc/search.astro, before it moved to lib/question-html.js. They pin the
@@ -17,13 +17,13 @@ const RAW = JSON.parse(readFileSync(new URL('../../data/questions.json', import.
 // here. Each is one string per line, joined with a newline, so the whitespace
 // the template literal produced (including a whitespace-only line) is exact.
 const FIXTURES = {
-  // a normal question, subject given under an alias, answer recorded, special characters in the stem
+  // a normal question, answer recorded, special characters in the stem
   normal: {
     input: {
       year: 2019,
       q_no: 7,
-      subject: "Polity",
-      subtopic: "Fundamental Rights",
+      subject: "Indian Polity",
+      subtopic: "Fundamental Rights & Duties",
       difficulty: "moderate",
       question: "Consider the following statements about Article 21 & the \"right to life\":\n1. It is available to citizens only.\n2. It can be suspended <during> Emergency.\nWhich of the statements given above is/are correct?",
       a: "1 only",
@@ -40,7 +40,7 @@ const FIXTURES = {
       "        <a class=\"serial qref\" href=\"/upsc/question/2019-q7-consider-the-following-statements-about-article-21-and-the-ri\" tabindex=\"-1\">2019 · Q7</a>",
       "        <a href=\"/upsc/subject/indian-polity\">Indian Polity</a>",
       "        <span class=\"qsep\" aria-hidden=\"true\">›</span>",
-      "        <a href=\"/upsc/topic/indian-polity/fundamental-rights\">Fundamental Rights</a>",
+      "        <a href=\"/upsc/topic/indian-polity/fundamental-rights-and-duties\">Fundamental Rights &amp; Duties</a>",
       "        <span class=\"qdiff qdiff-moderate\">moderate</span>",
       "        ",
       "      </div>",
@@ -61,8 +61,8 @@ const FIXTURES = {
     input: {
       year: 2015,
       q_no: 44,
-      subject: "Science and Technology",
-      subtopic: "Space Technology",
+      subject: "Science & Technology",
+      subtopic: "Space Technology & Astronomy",
       difficulty: "easy",
       question: "Which one of the following is a communication satellite launched by ISRO?",
       a: "INSAT-4A",
@@ -79,7 +79,7 @@ const FIXTURES = {
       "        <a class=\"serial qref\" href=\"/upsc/question/2015-q44-which-one-of-the-following-is-a-communication-satellite-laun\" tabindex=\"-1\">2015 · Q44</a>",
       "        <a href=\"/upsc/subject/science-and-technology\">Science &amp; Technology</a>",
       "        <span class=\"qsep\" aria-hidden=\"true\">›</span>",
-      "        <a href=\"/upsc/topic/science-and-technology/space-technology\">Space Technology</a>",
+      "        <a href=\"/upsc/topic/science-and-technology/space-technology-and-astronomy\">Space Technology &amp; Astronomy</a>",
       "        <span class=\"qdiff qdiff-easy\">easy</span>",
       "        <span class=\"qflag\">Cancelled by UPSC</span>",
       "      </div>",
@@ -95,8 +95,8 @@ const FIXTURES = {
     input: {
       year: 2022,
       q_no: 91,
-      subject: "Economy",
-      subtopic: "Money & Banking",
+      subject: "Indian Economy",
+      subtopic: "Monetary Policy & Money Supply",
       difficulty: "difficult",
       question: "With reference to the \"Monetary Policy Committee\" of India, consider:\n1. It has six members.\n2. Governor has a casting vote.",
       a: "1 only",
@@ -113,7 +113,7 @@ const FIXTURES = {
       "        <a class=\"serial qref\" href=\"/upsc/question/2022-q91-with-reference-to-the-monetary-policy-committee-of-india\" tabindex=\"-1\">2022 · Q91</a>",
       "        <a href=\"/upsc/subject/indian-economy\">Indian Economy</a>",
       "        <span class=\"qsep\" aria-hidden=\"true\">›</span>",
-      "        <a href=\"/upsc/topic/indian-economy/money-and-banking\">Money &amp; Banking</a>",
+      "        <a href=\"/upsc/topic/indian-economy/monetary-policy-and-money-supply\">Monetary Policy &amp; Money Supply</a>",
       "        <span class=\"qdiff qdiff-difficult\">difficult</span>",
       "        <span class=\"qflag qflag-warn\">Answer disputed</span>",
       "      </div>",
@@ -199,24 +199,43 @@ test('esc handles the four characters that matter and coerces non-strings', () =
 });
 
 // The search results link to the same pages the build generates. The renderer
-// keeps its own copy of the subject aliases and slug rules (it also runs in the
-// browser, where it cannot import the corpus), so this is the check that the
-// copies have not drifted: for every real question, the links it renders are the
-// ones the corpus builds the static pages from.
-test('the renderer names every subject label the extraction emitted as the corpus does', () => {
-  const labels = new Set(RAW.map((q) => q.subject));
-  assert.ok(labels.has('Polity') && labels.has('Environment'), 'the raw file still carries aliased labels');
-  for (const label of labels) {
-    assert.equal(canonical(label), canonicalSubject(label), label);
-    // The per-year files carry canonical names already: mapping one again keeps it.
-    assert.equal(canonical(canonicalSubject(label)), canonicalSubject(label), label);
+// keeps its own copy of the slug rule (it also runs in the browser, where it
+// cannot import the corpus), and there is no subject renaming on either side:
+// the corpus and the renderer both use the label the data carries. So the data
+// must hold only the approved names, and these tests check that, and that the
+// links a question renders are the ones the corpus builds its pages from.
+test('the data holds only the approved subjects, all eleven of them', () => {
+  const approved = new Set(TAXONOMY.subjects);
+  assert.equal(approved.size, 11, 'the approved list is eleven distinct names');
+  for (const rows of [RAW, ALL_QUESTIONS]) {
+    const used = new Set(rows.map((q) => q.subject));
+    for (const subject of used) assert.ok(approved.has(subject), `not an approved subject: ${subject}`);
+    assert.equal(used.size, 11, 'every approved subject has questions');
   }
 });
 
-test('only the aliases themselves are mapped, not names every object inherits', () => {
-  for (const name of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']) {
-    assert.equal(canonical(name), name, name);
-    assert.match(questionHTML({ ...FIXTURES.normal.input, subject: name }), new RegExp(`>${name}</a>`), name);
+test('the corpus keeps the subject label each question carries', () => {
+  assert.equal(RAW.length, ALL_QUESTIONS.length);
+  RAW.forEach((raw, i) => assert.equal(ALL_QUESTIONS[i].subject, raw.subject, ALL_QUESTIONS[i].qkey));
+});
+
+test('the renderer shows and links the subject as sent, never renamed', () => {
+  // Names the extraction used to emit, and names every object inherits: none is
+  // an alias of anything now, so each comes out as itself.
+  const names = [
+    ['Polity', 'polity'],
+    ['Economy', 'economy'],
+    ['Science', 'science'],
+    ['constructor', 'constructor'],
+    ['__proto__', 'proto'],
+    ['toString', 'tostring'],
+    ['hasOwnProperty', 'hasownproperty'],
+    ['valueOf', 'valueof'],
+  ];
+  for (const [name, slug] of names) {
+    const html = questionHTML({ ...FIXTURES.normal.input, subject: name });
+    assert.ok(html.includes(`>${name}</a>`), name);
+    assert.ok(html.includes(`href="/upsc/subject/${slug}"`), name);
   }
 });
 
