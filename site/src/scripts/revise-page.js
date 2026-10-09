@@ -34,6 +34,10 @@ const PAGE = 20;
 const FILE_TIMEOUT_MS = 15000;
 const NOT_SAVED = 'Your browser would not save that. Check that it lets this site store data.';
 const NOT_HERE = "This list isn't on this device.";
+// What the live region says when the list goes while the page is open: the same
+// words /account uses (progress-page.js), where the same thing happens. The
+// page itself then shows NOT_HERE, which is what is true from here on.
+const GONE_ELSEWHERE = 'That list was deleted on another device.';
 
 const $ = (selector) => document.querySelector(selector);
 const sheet = $('.revise');
@@ -479,7 +483,7 @@ async function retry(path) {
 function gone() {
   const hadFocus = items.contains(document.activeElement) || more.contains(document.activeElement);
   showMissing();
-  say(NOT_HERE);
+  say(GONE_ELSEWHERE);
   if (hadFocus) titleEl.focus();
 }
 
