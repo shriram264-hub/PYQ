@@ -82,8 +82,13 @@ const takeWarnings = () => warnings.splice(0);
 
 const kinds = (client, kind, table = 'question_progress') => client.calls.filter((c) => c.kind === kind && c.table === table);
 const listCalls = (client) => client.calls.filter((c) => c.table === 'bookmark_sets' || c.table === 'bookmarks');
+// The warning each step logs when it fails (the first also when the run stops
+// in claimDevice, before any step).
+const SYNC_FAILED = 'SawaalBox: will retry syncing';
+const LISTS_FAILED = 'SawaalBox: will retry syncing lists';
+const TESTS_FAILED = 'SawaalBox: will retry syncing tests';
 // What a run that reaches nothing logs: each of its three steps failed.
-const EVERY_STEP_FAILED = ['SawaalBox: will retry syncing', 'SawaalBox: will retry syncing lists', 'SawaalBox: will retry syncing tests'];
+const EVERY_STEP_FAILED = [SYNC_FAILED, LISTS_FAILED, TESTS_FAILED];
 const failedSteps = () => takeWarnings().map((w) => w[0]);
 const statuses = (client) => Object.fromEntries([...client.table.values()].map((r) => [r.question_key, r.status]));
 
@@ -678,8 +683,7 @@ test('a lists step that keeps failing is retried each run, and never makes the p
   const client = fakeClient();
   client.failOn = 'select:bookmark_sets';
   await startSync(client, USER); // the first run: progress pulls everything, lists fail
-  const [warning] = takeWarnings();
-  assert.equal(warning[0], 'SawaalBox: will retry syncing lists');
+  assert.deepEqual(failedSteps(), [LISTS_FAILED]);
   assert.ok(store.has(SYNC_MARKER_KEY), 'the progress marker stands');
   assert.equal(store.has(LISTS_MARKER_KEY), false, 'nothing was pulled, so no lists marker');
   assert.equal(kinds(client, 'select', 'bookmark_sets').length, 1);
@@ -688,7 +692,7 @@ test('a lists step that keeps failing is retried each run, and never makes the p
     mark(key, 'done', NEW);
     window.dispatchEvent(new Event('online'));
     await idle();
-    assert.equal(takeWarnings().length, 1, 'the lists step failed again');
+    assert.deepEqual(failedSteps(), [LISTS_FAILED], 'the lists step failed again');
     const last = kinds(client, 'select').at(-1);
     assert.deepEqual(last.filters, [['in', 'question_key', [key]]], `run for ${key}: progress asked only about its key`);
     assert.equal(last.range, undefined);
@@ -796,14 +800,14 @@ test('progress failing does not hold the lists back, and lists failing does not 
   const client = fakeClient();
   client.failOn = 'select:question_progress';
   await startSync(client, USER);
-  assert.equal(takeWarnings().length, 1);
+  assert.deepEqual(failedSteps(), [SYNC_FAILED]);
   assert.deepEqual(remoteKeys(client, 'S1'), ['x']);
   assert.equal(lists().L1.remoteId, 'S1');
 
   client.failOn = 'select:bookmark_sets';
   tick('L1', 'y'); // a change the lists step has to send
   await idle();
-  assert.equal(takeWarnings().length, 1);
+  assert.deepEqual(failedSteps(), [LISTS_FAILED]);
   assert.deepEqual(statuses(client), { [A]: 'done' }, 'the progress step ran on its own');
 });
 
@@ -1463,7 +1467,7 @@ test("a shared browser: A, sign-out, B, sign-out, A. Neither account takes on th
   accountA.failOn = 'select';
   click(S2, null, NEW);
   await idle();
-  takeWarnings();
+  assert.deepEqual(failedSteps(), [SYNC_FAILED], 'only progress had a change to ask about');
   signOutEvent();
   const aAfterSignOut = rowsOf(accountA);
 
@@ -1492,7 +1496,7 @@ test("a shared browser: A, sign-out, B, sign-out, A. Neither account takes on th
   accountB.failOn = 'select';
   click(S4, null, NEWER);
   await idle();
-  takeWarnings();
+  assert.deepEqual(failedSteps(), [SYNC_FAILED], 'only progress had a change to ask about');
   signOutEvent();
   const bAfterSignOut = rowsOf(accountB);
 
@@ -1567,8 +1571,7 @@ test("when the device cannot be cleared of the previous account's copy, the run 
   const client = fakeClient([row(A, 'review', OLD)]);
   failWrites = true;
   await startSync(client, USER);
-  const [warning] = takeWarnings();
-  assert.equal(warning[0], 'SawaalBox: will retry syncing');
+  assert.deepEqual(failedSteps(), [SYNC_FAILED], 'the run stopped in claimDevice');
   assert.deepEqual(client.calls, []);
   assert.deepEqual(statuses(client), { [A]: 'review' });
   assert.equal(store.get(STORAGE_KEY), before);
@@ -1591,9 +1594,10 @@ test("a new account whose first syncs fail keeps its own queued clear, and sends
   assert.equal(store.get(OWNER_KEY), USER_B.id, 'claimed at once: the device now holds only B\'s work');
   click(Q, 'done', NEW);
   await idle();
+  assert.deepEqual(failedSteps(), EVERY_STEP_FAILED, 'still offline, and no step has pulled yet');
   click(Q, null, NEWER); // later than B's account copy
   await idle();
-  takeWarnings();
+  assert.deepEqual(failedSteps(), EVERY_STEP_FAILED);
   assert.deepEqual(loadState().pending.map((op) => [op.type, op.key]), [['delete', Q]]);
 
   accountB.failOn = null;
@@ -1723,7 +1727,7 @@ test('a run that changed nothing, and one that failed, announce that they are ov
   const before = synced;
   client.failOn = 'select';
   await startSync(client, USER, { full: true });
-  assert.equal(takeWarnings().length > 0, true, 'the failure is still reported');
+  assert.deepEqual(failedSteps(), EVERY_STEP_FAILED, 'the failure is still reported');
   assert.equal(done, 2, 'a run whose requests all failed');
   assert.equal(synced, before, 'and sawaalbox:synced still means a change, not an end');
 });
