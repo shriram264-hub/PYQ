@@ -144,13 +144,20 @@ function load(path) {
   return file;
 }
 
-// Every year the keys are in, all at once; a year already asked for is not
-// asked for again.
+// Every year these keys are in, in parallel; a year already asked for is not
+// asked for again. The page asks for the first page's years first, and the
+// rest only once those have settled (see draw), so the questions on screen
+// never wait behind files that only later pages need.
 function request(keys) {
   for (const path of fullPathsFor(keys)) if (!files.has(path)) load(path);
 }
 
-const loadingPaths = (keys) => fullPathsFor(keys).filter((path) => files.get(path)?.status === 'loading');
+// The years these keys need that have not settled: not asked for yet, or loading.
+const unsettledPaths = (keys) =>
+  fullPathsFor(keys).filter((path) => {
+    const status = files.get(path)?.status;
+    return status !== 'loaded' && status !== 'failed';
+  });
 
 // --- One question's place on the page. ---
 
@@ -184,12 +191,21 @@ function noteRow(key, message, ...after) {
 }
 
 function retryButton(path) {
-  const year = yearOf(path);
   const node = button('rv-text-btn', 'Try again');
   node.dataset.retry = path;
-  // The visible words first, then which year, since a page can hold several.
-  node.setAttribute('aria-label', `Try again to load questions from ${year}`);
+  labelRetry(node, path, false);
   return node;
+}
+
+// The visible words first, then which year, since a page can hold several; the
+// name changes with the words while it is fetching, so a screen reader on the
+// button hears that too.
+function labelRetry(node, path, busy) {
+  const year = yearOf(path);
+  node.textContent = busy ? 'Loading…' : 'Try again';
+  node.setAttribute('aria-label', busy ? `Loading questions from ${year}` : `Try again to load questions from ${year}`);
+  if (busy) node.setAttribute('aria-disabled', 'true');
+  else node.removeAttribute('aria-disabled');
 }
 
 // The busy state of a failed row's Try again, changed in place so a focused
@@ -198,10 +214,7 @@ function setBusy(slot, path) {
   const retry = slot.el.querySelector('[data-retry]');
   if (!retry) return;
   const busy = files.get(path)?.status === 'loading';
-  if ((retry.getAttribute('aria-disabled') === 'true') === busy) return;
-  retry.textContent = busy ? 'Loading…' : 'Try again';
-  if (busy) retry.setAttribute('aria-disabled', 'true');
-  else retry.removeAttribute('aria-disabled');
+  if ((retry.getAttribute('aria-disabled') === 'true') !== busy) labelRetry(retry, path, busy);
 }
 
 function removeStrip(key) {
@@ -274,9 +287,13 @@ function draw() {
   }
   sheet.toggleAttribute('data-settling', slots.some((slot) => slot.state === 'wait'));
 
+  // The years of the questions on the page have settled: now ask for the rest
+  // (for Show more and the subjects line).
+  if (!unsettledPaths(order.slice(0, shown)).length) request(order);
+
   // Every year this visit needs has settled: the subjects can be named, and
   // the loading line gives way to what happened.
-  if (!loadingPaths(order).length) {
+  if (!unsettledPaths(order).length) {
     drawSubjects();
     if (loadingNote) {
       loadingNote = false;
@@ -323,6 +340,8 @@ function drawSubjects() {
 
 function drawEmpty() {
   items.querySelector(':scope > .rv-empty')?.remove();
+  // No questions, no subjects: the line's reserved room goes (revise.astro).
+  sheet.toggleAttribute('data-empty', !order.length);
   if (order.length) return;
   if (target.mode === 'review') {
     items.append(text('p', 'rv-empty', 'Nothing marked for review.'));
@@ -371,8 +390,9 @@ function start() {
   slots = [];
   items.replaceChildren();
   if (order.length) askFonts();
-  request(order);
-  loadingNote = loadingPaths(order).length > 0;
+  // The first page's years now; draw asks for the rest once these settle.
+  request(order.slice(0, PAGE));
+  loadingNote = unsettledPaths(order).length > 0;
   say(loadingNote ? `Loading ${plural(order.length, 'question', 'questions')}…` : '');
   addSlots(Math.min(PAGE, order.length));
   drawHead();
@@ -411,17 +431,23 @@ function remove(slot) {
   drawMore();
   draw();
   say(`Removed from "${list.name}".`);
-  // The next question's heading, or the page's when there is none after it.
-  focusSlot(slots[at]);
+  // Somewhere near where the question was, so the page does not jump: the next
+  // question; else (it was the last on the page, or the next is still on its
+  // way) Show more, if it is there; else the question before; else, with none
+  // left, the page's heading.
+  const showing = !more.hidden && !sheet.hasAttribute('data-settling');
+  (focusTarget(slots[at]) ?? (showing ? moreButton : null) ?? focusTarget(slots[at - 1]) ?? titleEl).focus();
 }
 
-// Appends the next 20. Their years were asked for when the page opened; if one
-// is still on its way, wait for it (the button says it is busy) so that what
-// is appended is drawn whole, and focus can land on its first question.
+// Appends the next 20. Their years were asked for once the first page's had
+// settled; if one is still on its way, wait for it (the button says it is busy)
+// so that what is appended is drawn whole, and focus can land on its first
+// question.
 async function showMore() {
   if (moreBusy || missing) return;
   const next = order.slice(shown, shown + PAGE);
-  const waiting = loadingPaths(next).map((path) => files.get(path).promise);
+  request(next);
+  const waiting = unsettledPaths(next).map((path) => files.get(path).promise);
   if (waiting.length) {
     moreBusy = true;
     moreButton.setAttribute('aria-disabled', 'true');

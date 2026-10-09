@@ -105,9 +105,12 @@ import Colophon from '../components/Colophon.astro';
     margin: 0.4rem 0 0;
     font: 600 0.88rem var(--font-structure);
   }
-  /* "This list isn't on this device": nothing to count, no subjects. */
+  /* "This list isn't on this device": nothing to count, no subjects. An empty
+     list or pile: a count of 0, no subjects. Both are known before the first
+     draw is shown, so dropping the lines moves nothing. */
   .revise[data-missing] .rv-count,
-  .revise[data-missing] .rv-subjects {
+  .revise[data-missing] .rv-subjects,
+  .revise[data-empty] .rv-subjects {
     display: none;
   }
 

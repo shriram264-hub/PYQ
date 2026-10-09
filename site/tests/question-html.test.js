@@ -213,6 +213,13 @@ test('the renderer names every subject label the extraction emitted as the corpu
   }
 });
 
+test('only the aliases themselves are mapped, not names every object inherits', () => {
+  for (const name of ['constructor', '__proto__', 'toString', 'hasOwnProperty', 'valueOf']) {
+    assert.equal(canonical(name), name, name);
+    assert.match(questionHTML({ ...FIXTURES.normal.input, subject: name }), new RegExp(`>${name}</a>`), name);
+  }
+});
+
 test('links match the static pages, for every question as the search API sends it', () => {
   assert.equal(RAW.length, ALL_QUESTIONS.length);
   RAW.forEach((raw, i) => {
