@@ -3769,7 +3769,8 @@ git commit -m "feat(tests): Practice tests page with papers, carry on and past r
 - Modify:
   - `site/src/pages/upsc/test/index.astro` (the `#practice` section between `#papers` and `#results`, plus its script);
   - `site/src/pages/upsc/subject/[slug]/[...page].astro` and `site/src/pages/upsc/topic/[subject]/[topic]/[...page].astro` (Practise links);
-  - `PRODUCT.md` (one sentence).
+  - `PRODUCT.md` (one sentence);
+  - `site/src/pages/privacy.astro` and `site/src/lib/legal.js` (practice-test attempts in the privacy policy and the data inventory).
 
 **Interfaces:**
 - **Consumes:**
@@ -4253,6 +4254,11 @@ fields.disabled = false;
 
    Read the frontmatter for the exact names of the subject slug and topic slug variables, since `SUBTOPICS` entries carry `subjectSlug` and `slug`. Style `.practise-line` in each page's scoped style: Archivo 600, 0.9rem, `margin: 0.6rem 0 0`.
 3. In `PRODUCT.md`, in the Monetization paragraph, add after the "Undecided" sentence: *"Mock tests (every past paper, and practice sets by subject, topic and year) are live and free during the beta, behind one access check (`canStartTest`) that payments will fill in."*
+4. **Privacy policy and data inventory** (controller ruling during Task 3): the site now keeps practice-test attempts. They are stored in this browser under `sawaalbox-tests-v1`, with pull marker `sawaalbox-sync-tests-v1`. When signed in they are also saved to the account's `test_attempts` table. An attempt holds the questions, the student's answers and review marks, the time used, its status and the score; nothing else is stored.
+   - Update the inventory comment at the top of `site/src/lib/legal.js` the same way its existing items are written, with file:line pointers: storage key, sync table, rebase on a new account (synced attempts leave, never-synced ones join), and never deleted except by account deletion (cascade).
+   - Update `site/src/pages/privacy.astro` wherever it lists what is kept: in the browser, in the account, why, where it is stored, how long, and what deletion removes. Say "marks, revision lists and practice-test attempts" (or "test results" where that reads better) everywhere it now says only "marks and lists".
+   - Change no other policy terms, and add no claims beyond what the code does.
+   - Put a line in the report listing every sentence changed, so the owner can review the legal copy.
 
 - [ ] **Step 6: Test, build, check headless**
 
