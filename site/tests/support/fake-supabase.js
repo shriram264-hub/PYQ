@@ -24,14 +24,22 @@ export const USER = { id: 'user-1' };
  *    is that table, keyed by id. An upsert there must match on the id
  *    (`onConflict: 'id'`), and a delete is refused with the database's
  *    { code: '42501' }, since nobody is granted delete on it
+ *  - foreignAttempts: test_attempts rows another account owns. The id is made
+ *    on a device, so one table holds every account's attempts, and row-level
+ *    security keeps them apart: these rows are in `client.attempts` but no
+ *    select here returns them, and an upsert naming one of their ids is
+ *    refused, the whole request, with { code: '42501', message: 'new row
+ *    violates row-level security policy' }, as the database refuses it
  */
-export function fakeClient(rows = [], { maxRows = 1000, user = USER, attempts = [] } = {}) {
+export function fakeClient(rows = [], { maxRows = 1000, user = USER, attempts = [], foreignAttempts = [] } = {}) {
+  for (const r of foreignAttempts) assert.notEqual(r.user_id, user.id, 'a foreign attempt is owned by another account');
   const tables = {
     question_progress: new Map(rows.map((r) => [r.question_key, { ...r }])),
     bookmark_sets: new Map(),
     bookmarks: new Map(),
-    test_attempts: new Map(attempts.map((r) => [r.id, { ...r }])),
+    test_attempts: new Map([...attempts, ...foreignAttempts].map((r) => [r.id, { ...r }])),
   };
+  const foreign = new Set(foreignAttempts.map((r) => r.id));
   const calls = [];
   const client = {
     calls,
@@ -61,7 +69,7 @@ export function fakeClient(rows = [], { maxRows = 1000, user = USER, attempts = 
       return refuse(`${call.kind} refused`);
     }
     if (call.kind === 'select') {
-      let out = [...table.values()].filter((r) => matches(call, r));
+      let out = [...table.values()].filter((r) => matches(call, r) && !(call.table === 'test_attempts' && foreign.has(r.id)));
       out.sort((a, b) => {
         for (const col of call.order) if (a[col] !== b[col]) return a[col] < b[col] ? -1 : 1;
         return 0;
@@ -100,7 +108,11 @@ export function fakeClient(rows = [], { maxRows = 1000, user = USER, attempts = 
       return { data: null, error: null };
     }
     if (call.kind === 'upsert') {
-      if (call.table === 'test_attempts') assert.equal(call.options?.onConflict, 'id', 'an attempt is matched by its id');
+      if (call.table === 'test_attempts') {
+        assert.equal(call.options?.onConflict, 'id', 'an attempt is matched by its id');
+        // One statement: a single refused row refuses them all, and none is written.
+        if (call.rows.some((r) => foreign.has(r.id))) return refuse('new row violates row-level security policy', '42501');
+      }
       for (const r of call.rows) {
         assert.equal(r.user_id, user.id, 'every uploaded row names its owner');
         if (call.table === 'bookmarks') {

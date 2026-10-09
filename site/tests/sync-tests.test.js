@@ -353,6 +353,105 @@ test('no run ever deletes an attempt, and the account would refuse one', async (
   assert.ok(direct.attempts.has(ID1));
 });
 
+// --- An attempt another account holds. ---
+
+const USER_A = { id: 'user-A' };
+const USER_B = { id: 'user-B' };
+const uploadedIds = (client) => attemptCalls(client, 'upsert').map((c) => c.rows.map((r) => r.id));
+
+test("an attempt another account holds leaves this device instead of blocking the sync: A's upload landed but its save did not, then B signed in", async () => {
+  // A, on this browser: the upload lands in A's account, the save here does not,
+  // so the device still takes the attempt for one never sent.
+  const accountA = account([], { user: USER_A });
+  seedTests(make(ID1));
+  const write = store.set.bind(store);
+  store.set = (k, v) => {
+    if (k === TESTS_KEY) throw new Error('QuotaExceededError');
+    return write(k, v);
+  };
+  await startSync(accountA, USER_A);
+  delete store.set;
+  assert.deepEqual(takeWarnings().map((w) => w[0]), ['SawaalBox: will retry syncing tests']);
+  assert.equal(accountA.attempts.get(ID1).user_id, USER_A.id);
+  assert.equal(stored(ID1).syncedAt, null);
+  document.dispatchEvent(new Event('sawaalbox:signed-out')); // offline: nothing more reaches A
+
+  // Signed out, someone starts a test; then B signs in on the same browser.
+  const mine = make(ID2, 10);
+  assert.ok(saveTests(putAttempt(loadTests(), mine)));
+  const accountB = account([], { user: USER_B, foreignAttempts: [...accountA.attempts.values()] });
+  await startSync(accountB, USER_B);
+  assert.deepEqual(takeWarnings(), [], 'the run did not fail');
+  assert.deepEqual(uploadedIds(accountB), [[ID1, ID2], [ID1], [ID2]], 'refused as a batch, then sent one at a time');
+  assert.equal(stored(ID1), undefined, "A's attempt left this device; A's account keeps it");
+  assert.equal(accountB.attempts.get(ID1).user_id, USER_A.id, 'and was not overwritten');
+  assert.equal(accountB.attempts.get(ID2).user_id, USER_B.id, "B's own attempt went up");
+  assert.equal(isDirty(stored(ID2)), false);
+  assert.equal(JSON.parse(store.get(TESTS_MARKER_KEY)).user, USER_B.id);
+
+  // And it stays unblocked: the next run has nothing to send.
+  await syncTests(accountB, USER_B, { full: true });
+  assert.equal(attemptCalls(accountB, 'upsert').length, 3);
+});
+
+test('a batch with one attempt another account holds: the others upload, and that one leaves this device', async () => {
+  const [a1, a2, a3] = [make(ID1, 1), make(ID2, 2), make(ID3, 3)];
+  seedTests(a1, a2, a3);
+  const client = account([], { foreignAttempts: [toRow(a2, USER_A.id)] });
+  await syncTests(client, USER);
+  assert.deepEqual(uploadedIds(client), [[ID1, ID2, ID3], [ID1], [ID2], [ID3]]);
+  assert.equal(client.attempts.get(ID1).user_id, USER.id);
+  assert.equal(client.attempts.get(ID2).user_id, USER_A.id);
+  assert.equal(client.attempts.get(ID3).user_id, USER.id);
+  assert.deepEqual(Object.keys(loadTests().attempts).sort(), [ID1, ID3]);
+  assert.equal(isDirty(stored(ID1)), false);
+  assert.equal(isDirty(stored(ID3)), false);
+  assert.ok(store.has(TESTS_MARKER_KEY));
+  assert.equal(synced, 1);
+});
+
+test('an attempt another account holds leaves this device even when it was answered here during the run', async () => {
+  const a = make(ID1);
+  seedTests(a);
+  const client = account([], { foreignAttempts: [toRow(a, USER_A.id)] });
+  const release = slowNetwork(client);
+  const run = syncTests(client, USER);
+  assert.ok(saveTests(putAttempt(loadTests(), chooseAnswer(stored(ID1), KEYS[0], 'a', T(40)))));
+  release();
+  await run;
+  assert.equal(stored(ID1), undefined);
+  assert.deepEqual(loadTests().attempts, {});
+});
+
+// Refusals from a patched account, to reach what the fake never does by itself.
+function refuseUpserts(client, errors) {
+  const from = client.from;
+  client.from = (name) => {
+    const table = from(name);
+    if (name !== 'test_attempts') return table;
+    return { ...table, upsert: (rows, options) => (errors.length ? Promise.resolve({ data: null, error: errors.shift() }) : table.upsert(rows, options)) };
+  };
+}
+const RLS = { code: '42501', message: 'new row violates row-level security policy' };
+
+test('only a refused attempt this account could not see is taken for another account\'s; any other refusal fails the run as before', async () => {
+  // The account shows the row, so it is this account's: a refusal is something else.
+  const base = confirmed(make(ID1));
+  const answered = chooseAnswer(base, KEYS[0], 'a', T(5));
+  seedTests(answered);
+  const own = account([], { attempts: [toRow(base, USER.id)] });
+  refuseUpserts(own, [RLS, RLS]);
+  await assert.rejects(syncTests(own, USER), { code: '42501' });
+  assert.deepEqual(stored(ID1), answered, 'kept, and still to send');
+
+  // Refused as a batch, then for another reason one at a time.
+  const other = account();
+  refuseUpserts(other, [RLS, { code: 'XX000', message: 'internal error' }]);
+  await assert.rejects(syncTests(other, USER), { code: 'XX000' });
+  assert.deepEqual(stored(ID1), answered);
+  assert.equal(store.has(TESTS_MARKER_KEY), false);
+});
+
 // --- Wiring. ---
 
 test('a test started, submitted or abandoned (sawaalbox:test) starts a run', async () => {

@@ -17,6 +17,10 @@ const MAX_TARGETED_IDS = 50;
 // a first sign-in with a full device (200 attempts) to modest requests.
 const UPLOAD_ROWS_PER_REQUEST = 50;
 
+// The database's code for "insufficient privilege". On an upsert here it is
+// row-level security refusing a row (see upload).
+const REFUSED = '42501';
+
 export const TESTS_MARKER_KEY = 'sawaalbox-sync-tests-v1';
 const testsPull = pullMarker(TESTS_MARKER_KEY);
 export const forgetTestsPull = () => testsPull.forget();
@@ -28,12 +32,46 @@ async function pullIds(client, ids) {
 }
 
 /**
+ * Upserts this device's winning copies, in batches, and returns the ids of the
+ * ones another account holds. An attempt's id is made on the device, so one
+ * table holds every account's attempts, and an id can already be another
+ * account's row: on a shared browser, A's upload landed but its response was
+ * lost (or the save after it failed), so the attempt stayed here as never sent,
+ * and the rebase kept it for B (sync.js claimDevice). B cannot see A's row, and
+ * row-level security refuses B's upsert onto it, the whole batch with it. Ids
+ * are random, so that is the only way an id is taken: a batch refused so is
+ * sent again one row at a time, and a row still refused that the pull did not
+ * show (`seen`) is another account's. Any other error throws, as does a
+ * refusal of a row this account can see, which cannot be another account's.
+ */
+async function upload(client, user, attempts, seen) {
+  const send = (batch) => client.from(TABLE).upsert(batch.map((a) => toRow(a, user.id)), { onConflict: 'id' });
+  const foreign = [];
+  for (let i = 0; i < attempts.length; i += UPLOAD_ROWS_PER_REQUEST) {
+    const batch = attempts.slice(i, i + UPLOAD_ROWS_PER_REQUEST);
+    const { error } = await send(batch);
+    if (!error) continue;
+    if (error.code !== REFUSED) throw error;
+    for (const a of batch) {
+      const { error: refused } = await send([a]);
+      if (!refused) continue;
+      if (refused.code !== REFUSED || seen.has(a.id)) throw refused;
+      foreign.push(a.id);
+    }
+  }
+  return foreign;
+}
+
+/**
  * One tests sync. A full pull of the account's attempts when this device has
  * not done one for this user in the last 10 minutes (or `full`); in between,
  * only the attempts changed here, and nothing at all when none has. The merge
  * (lib/tests/merge.js) decides each attempt; the winners from this device are
- * upserted, never deleted. Any request error throws and leaves storage as it
- * was, so the next run starts from the same place.
+ * upserted, never deleted. An attempt the account refuses because another
+ * account holds its id leaves this device (that account keeps it), so it
+ * cannot stop the step on every run (see upload). Any other request error
+ * throws and leaves storage as it was, so the next run starts from the same
+ * place.
  */
 export async function syncTests(client, user, { full = false } = {}) {
   const startedAt = Date.now();
@@ -52,18 +90,17 @@ export async function syncTests(client, user, { full = false } = {}) {
   const local = scopeIds ? Object.fromEntries(scopeIds.map((id) => [id, snapshot[id]])) : snapshot;
   const { attempts, toUpload } = mergeAttempts(local, rows);
 
-  for (let i = 0; i < toUpload.length; i += UPLOAD_ROWS_PER_REQUEST) {
-    const batch = toUpload.slice(i, i + UPLOAD_ROWS_PER_REQUEST).map((a) => toRow(a, user.id));
-    const { error } = await client.from(TABLE).upsert(batch, { onConflict: 'id' });
-    if (error) throw error;
-  }
+  const foreign = await upload(client, user, toUpload, new Set(rows.map((r) => r.id)));
 
   // Read storage again: an answer given, or a test started, while the requests
-  // above were in flight is kept (see settleAttempts). Pruned as saveTests
+  // above were in flight is kept (see settleAttempts), except in an attempt
+  // another account holds, which goes however it changed. Pruned as saveTests
   // prunes: an account with more attempts than the device keeps would
   // otherwise look changed after every full pull.
   const current = loadTests();
-  const settled = pruneAttempts(settleAttempts(snapshot, current.attempts, attempts, scopeIds));
+  const kept = settleAttempts(snapshot, current.attempts, attempts, scopeIds);
+  for (const id of foreign) delete kept[id];
+  const settled = pruneAttempts(kept);
   const changed = !attemptsEqual(current.attempts, settled);
   if (changed && !saveTests({ ...current, attempts: settled })) {
     throw new Error('tests could not be saved on this device');
