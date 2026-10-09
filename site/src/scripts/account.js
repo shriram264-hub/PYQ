@@ -9,10 +9,13 @@ let noteTimer;
 function note(text) {
   const el = root.querySelector('[data-account-note]');
   // On phones the note is fixed to the viewport (see the stylesheet) so it can
-  // never run off the screen. It starts just under the control (which sits
-  // beside the theme toggle, never in a nav that could wrap around it), or at
-  // the top edge when the header has scrolled away.
-  el.style.setProperty('--account-note-top', `${Math.max(root.getBoundingClientRect().bottom + 8, 8)}px`);
+  // never run off the screen. It starts just under the whole header, not under
+  // the control: the control sits on the header's first row, and the nav links
+  // wrap onto a second row beneath it that a note anchored to the control would
+  // cover for its eight seconds. Where the header has scrolled away it sits at
+  // the top edge instead.
+  const anchor = root.closest('header') ?? root;
+  el.style.setProperty('--account-note-top', `${Math.max(anchor.getBoundingClientRect().bottom + 8, 8)}px`);
   el.textContent = text;
   el.hidden = false;
   clearTimeout(noteTimer);
