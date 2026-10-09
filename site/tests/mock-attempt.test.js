@@ -149,6 +149,14 @@ test('names: a paper by its year, a set by its one topic, its one subject, or ho
   assert.equal(attemptName(custom({ subjects: [], topics: [] })), 'Practice: all subjects');
 });
 
+test('a tick that adds no time changes nothing: under a millisecond, or once the limit is reached', () => {
+  const a = paper();
+  assert.equal(addElapsed(a, 0.4, T1), a);
+  const full = addElapsed(a, 120 * MINUTE, T1);
+  assert.equal(full.elapsedMs, 120 * MINUTE);
+  assert.equal(addElapsed(full, 1000, T2), full);
+});
+
 test('progress line counts answered questions', () => {
   assert.equal(progressLine(chooseAnswer(paper(), KEYS[0], 'a', T1)), '1 of 3 answered');
 });

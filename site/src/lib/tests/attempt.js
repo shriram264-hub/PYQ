@@ -72,7 +72,10 @@ export function moveTo(a, index, now) {
 
 export function addElapsed(a, ms, now) {
   if (!open(a) || !(ms > 0)) return a;
-  return touch(a, { elapsedMs: Math.min(a.limitMs, a.elapsedMs + Math.round(ms)) }, now);
+  // A tick that adds no whole millisecond (under 0.5 ms, or past the limit) is
+  // no change, so the caller does not re-save an attempt that did not move.
+  const elapsedMs = Math.min(a.limitMs, a.elapsedMs + Math.round(ms));
+  return elapsedMs === a.elapsedMs ? a : touch(a, { elapsedMs }, now);
 }
 
 export const remainingMs = (a) => Math.max(0, a.limitMs - a.elapsedMs);
