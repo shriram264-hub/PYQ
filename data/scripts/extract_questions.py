@@ -5,6 +5,10 @@ Usage:
     pip install pypdf
     python extract_questions.py "path/to/question_bank.pdf"
 
+Subjects and topics are relabelled from data/taxonomy.json after the corrections
+are applied; the run stops if the mapping is incomplete or its result drifts from
+the approved list.
+
 Outputs (next to this script):
     questions.csv   - one row per question, opens in Excel
     questions.json  - same data, for the search app later
@@ -176,6 +180,61 @@ def apply_corrections(questions, path):
     return len(patches)
 
 
+MIN_TOPIC_QUESTIONS = 5
+
+
+def apply_taxonomy(questions, taxonomy):
+    """Relabel every question with the approved subject and topic (data/taxonomy.json).
+
+    The PDF's own labels are kept only as the lookup key ("<subject>|<topic>"), so
+    the output never carries a raw alias such as Polity or Science. Mutates
+    `subject` and `subtopic` in place and returns the number of questions per
+    subject. Exits, leaving every question untouched, if the mapping is not total
+    or its result drifts from the approved list.
+    """
+    subjects = set(taxonomy["subjects"])
+    allowed = [tuple(p) for p in taxonomy["allowed"]]
+    allowed_set = set(allowed)
+    topics = taxonomy["topics"]
+    overrides = taxonomy.get("questions", {})
+
+    labels = []
+    for q in questions:
+        tag = f"{q['year']} Q{q['q_no']}"
+        raw_subject, raw_topic = q["subject"], q["subtopic"]
+        key = f"{raw_subject}|{raw_topic}"
+        if key not in topics:
+            sys.exit(f"{tag}: '{key}' has no taxonomy mapping; add it to data/taxonomy.json")
+        subject, topic = topics[key]
+
+        # A hand-placed question overrides its topic's mapping only when that
+        # pair is being re-homed: the topic name changes, or the pair leaves an
+        # approved subject. A raw alias that merely takes its approved name
+        # (Polity -> Indian Polity, same topic) is not re-homed, and its
+        # overrides are ignored.
+        rehomed = topic != raw_topic or (raw_subject in subjects and subject != raw_subject)
+        override = overrides.get(f"{q['year']}-{q['q_no']}")
+        if rehomed and override:
+            subject, topic = override
+
+        if subject not in subjects:
+            sys.exit(f"{tag}: '{subject}' is not an approved subject (taxonomy.json subjects)")
+        if (subject, topic) not in allowed_set:
+            sys.exit(f"{tag}: {subject} / {topic} is not an approved subject and topic "
+                     f"pair (taxonomy.json allowed), reached from '{key}'")
+        labels.append((subject, topic))
+
+    per_topic = Counter(labels)
+    small = [f"{s} / {t} ({per_topic[(s, t)]})" for s, t in allowed
+             if per_topic[(s, t)] < MIN_TOPIC_QUESTIONS]
+    if small:
+        sys.exit(f"Topics with fewer than {MIN_TOPIC_QUESTIONS} questions: " + "; ".join(small))
+
+    for q, (subject, topic) in zip(questions, labels):
+        q["subject"], q["subtopic"] = subject, topic
+    return Counter(subject for subject, _ in labels)
+
+
 def check(questions):
     """Return a list of problem descriptions."""
     problems = []
@@ -207,6 +266,9 @@ def main():
     questions = parse(read_lines(pdf_path))
     fixed = apply_corrections(questions, out / "corrections.json")
     print(f"Applied {fixed} correction(s) from corrections.json")
+    taxonomy = json.loads((out / "taxonomy.json").read_text(encoding="utf-8"))
+    subject_counts = apply_taxonomy(questions, taxonomy)
+    print(f"Relabelled {len(questions)} questions with taxonomy.json")
     for i, q in enumerate(questions, 1):
         q["id"] = i
 
@@ -227,6 +289,9 @@ def main():
     print("\nQuestions per year:")
     for year, n in sorted(Counter(q["year"] for q in questions).items()):
         print(f"  {year}: {n}")
+    print("\nQuestions per subject:")
+    for subject, n in subject_counts.most_common():
+        print(f"  {subject}: {n}")
     print("\nAnswer status:")
     for status, n in Counter(q["status"] for q in questions).most_common():
         print(f"  {status}: {n}")
