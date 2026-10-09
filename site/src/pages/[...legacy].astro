@@ -1,0 +1,62 @@
+---
+// Forwarding pages for the subject and topic addresses that existed before the
+// taxonomy change and no longer do. data/legacy-urls.json holds the frozen
+// list (old address -> new address); one page is built at each old address.
+// Same idea as /search: the query string and hash are carried across.
+// Deliberately not noindex, and not in the sitemap. The canonical plus the
+// instant refresh tell search engines the address has moved; noindex would only
+// make them drop it without passing the old address's standing on.
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
+import Document from '../layouts/Document.astro';
+import { SUBJECTS, SUBTOPICS } from '../lib/corpus.js';
+
+export async function getStaticPaths() {
+  // Resolved from the working directory, as corpus.js does, because the
+  // bundler relocates this module.
+  const legacy = JSON.parse(
+    readFileSync(resolve(process.cwd(), '../data/legacy-urls.json'), 'utf-8')
+  );
+
+  return Object.entries(legacy).map(([from, to]) => ({
+    params: { legacy: from.replace(/^\//, '') },
+    props: { to },
+  }));
+}
+
+const { to } = Astro.props;
+
+// Name the new page in the visible link when it can be named. The path is
+// /upsc/subject/<subject>[/<n>] or /upsc/topic/<subject>/<topic>[/<n>].
+const subjectNames = new Map(SUBJECTS.map((s) => [s.slug, s.name]));
+const topicNames = new Map(SUBTOPICS.map((t) => [`${t.subjectSlug}/${t.slug}`, t.subtopic]));
+
+const [, , kind, ...rest] = to.split('/');
+const lastIsPage = /^\d+$/.test(rest[rest.length - 1] ?? '');
+const page = lastIsPage ? rest.pop() : null;
+const name = kind === 'subject' ? subjectNames.get(rest[0]) : topicNames.get(rest.join('/'));
+const newTitle = name ? `${name}${page ? ` (page ${page})` : ''}` : 'the new page';
+---
+
+<Document
+  title="Moved"
+  description="This page has moved to a new address."
+  canonicalPath={to}
+>
+  <meta slot="head" http-equiv="refresh" content={`0; url=${to}`} />
+  <script slot="head" is:inline define:vars={{ to }}>
+    location.replace(to + location.search + location.hash);
+  </script>
+  <main class="sheet moved">
+    <p>
+      This page has moved: <a href={to}>{newTitle}</a>
+    </p>
+  </main>
+</Document>
+
+<style>
+  .moved {
+    padding-block: 3rem;
+    font-family: var(--font-structure);
+  }
+</style>
