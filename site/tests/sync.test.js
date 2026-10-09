@@ -81,7 +81,10 @@ afterEach(() => {
 const takeWarnings = () => warnings.splice(0);
 
 const kinds = (client, kind, table = 'question_progress') => client.calls.filter((c) => c.kind === kind && c.table === table);
-const listCalls = (client) => client.calls.filter((c) => c.table !== 'question_progress');
+const listCalls = (client) => client.calls.filter((c) => c.table === 'bookmark_sets' || c.table === 'bookmarks');
+// What a run that reaches nothing logs: each of its three steps failed.
+const EVERY_STEP_FAILED = ['SawaalBox: will retry syncing', 'SawaalBox: will retry syncing lists', 'SawaalBox: will retry syncing tests'];
+const failedSteps = () => takeWarnings().map((w) => w[0]);
 const statuses = (client) => Object.fromEntries([...client.table.values()].map((r) => [r.question_key, r.status]));
 
 // What marks.js does on a click, minus the DOM: the mark and its op, one save.
@@ -227,8 +230,7 @@ test('a failed run is logged, and the next trigger retries it', async () => {
   const client = fakeClient();
   client.failOn = 'select';
   await startSync(client, USER); // never rejects: the failure is logged
-  const [warning] = takeWarnings();
-  assert.equal(warning[0], 'SawaalBox: will retry syncing');
+  assert.deepEqual(failedSteps(), EVERY_STEP_FAILED);
   assert.equal(synced, 0);
 
   client.failOn = null;
@@ -1417,7 +1419,7 @@ test('the account that signs in claims this browser at its first run, even one t
   const client = fakeClient();
   client.failOn = 'select';
   await startSync(client, USER);
-  assert.equal(takeWarnings().length, 2, 'both steps failed');
+  assert.deepEqual(failedSteps(), EVERY_STEP_FAILED, 'every step failed');
   assert.equal(store.get(OWNER_KEY), USER.id, 'the device now holds only this account\'s data and work to join it');
 
   client.failOn = null;
@@ -1536,7 +1538,7 @@ test("a previous account's tombstones are cleared from the device even when they
   remoteSet(client, 'R1', 'Mine', ['z']);
   client.failOn = 'select'; // the new account reaches nothing, so only the rebase can clear it
   await startSync(client, USER);
-  assert.equal(takeWarnings().length, 2);
+  assert.deepEqual(failedSteps(), EVERY_STEP_FAILED);
   assert.deepEqual(loadState().deletedLists, [], 'saved by the rebase');
 
   seed({ deletedLists: ['R1'] }); // and had it survived to a run that does reach the account:
@@ -1585,7 +1587,7 @@ test("a new account whose first syncs fail keeps its own queued clear, and sends
   const accountB = fakeClient([row(Q, 'review', OLD, USER_B)], { user: USER_B });
   accountB.failOn = 'select'; // B signs in on A's browser, offline
   await startSync(accountB, USER_B);
-  assert.equal(takeWarnings().length, 2);
+  assert.deepEqual(failedSteps(), EVERY_STEP_FAILED);
   assert.equal(store.get(OWNER_KEY), USER_B.id, 'claimed at once: the device now holds only B\'s work');
   click(Q, 'done', NEW);
   await idle();

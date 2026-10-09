@@ -1,7 +1,10 @@
 import { isOp, loadState, saveState } from '../lib/accounts/progress-store.js';
 import { mergeProgress, rebaseForNewAccount, settleSync } from '../lib/accounts/merge.js';
 import { deviceOwner, pullMarker, pullPages } from '../lib/accounts/pull.js';
+import { loadTests, saveTests } from '../lib/tests/store.js';
+import { rebaseTests } from '../lib/tests/merge.js';
 import { forgetListsPull, syncLists } from './sync-lists.js';
+import { forgetTestsPull, syncTests } from './sync-tests.js';
 
 // No import of marks.js here, on purpose: it registers a click handler as a
 // side effect, so a second module instance would toggle every mark twice. It
@@ -82,11 +85,14 @@ export async function syncProgress(client, user, { full = false } = {}) {
  * The start of every run. When a different account was the last to sync on
  * this browser (a shared computer: A signed out, B signed in), A's copy is
  * taken off the device first (rebaseForNewAccount), so it is neither merged
- * into B's account nor shown as B's, and both pull markers go, so the run
- * reads everything. No owner stored (the first sign-in on this browser, or
- * data from before owners were kept) merges everything, as any first sign-in
- * does. Throws when storage refuses the rebased state: merging A's copy as it
- * stands is what must not happen, so the run stops there and retries later.
+ * into B's account nor shown as B's, and every pull marker goes, so the run
+ * reads everything. A's mock test attempts are rebased the same way
+ * (rebaseTests): the ones A's account holds go, and the ones that never reached
+ * an account stay and join B's. No owner stored (the first sign-in on this
+ * browser, or data from before owners were kept) merges everything, as any
+ * first sign-in does. Throws when storage refuses the rebased marks or
+ * attempts: merging A's copy as it stands is what must not happen, so the run
+ * stops there and retries later.
  *
  * Then B claims the device at once, before any request: the owner is the
  * account whose data the device now holds, not the last one a sync reached.
@@ -103,13 +109,27 @@ function claimDevice(user) {
     // still be saved, or they would act on this account's sets.
     const size = (s) =>
       [Object.keys(s.entries).length, s.pending.length, Object.keys(s.lists).length, s.deletedLists.length].join();
-    if (size(after) !== size(before)) {
-      if (!saveState(after)) throw new Error("another account's copy could not be cleared from this device");
-      // Storage changed under the page: marks and open panels redraw.
-      document.dispatchEvent(new CustomEvent('sawaalbox:synced'));
+    let cleared = false;
+    try {
+      if (size(after) !== size(before)) {
+        if (!saveState(after)) throw new Error("another account's copy could not be cleared from this device");
+        cleared = true;
+      }
+      const tests = loadTests();
+      const keptTests = rebaseTests(tests);
+      if (Object.keys(keptTests.attempts).length !== Object.keys(tests.attempts).length) {
+        if (!saveTests(keptTests)) throw new Error("another account's tests could not be cleared from this device");
+        cleared = true;
+      }
+    } finally {
+      // Storage changed under the page: marks, open panels and test lists
+      // redraw. Once for both, and even when the marks were cleared and the
+      // attempts then refused, since the marks are gone either way.
+      if (cleared) document.dispatchEvent(new CustomEvent('sawaalbox:synced'));
     }
     progressPull.forget();
     forgetListsPull();
+    forgetTestsPull();
   }
   deviceOwner.remember(user.id);
 }
@@ -120,10 +140,10 @@ let active = null;
 
 /**
  * Starts syncing this page with the account, or asks the sync already started
- * for another run. `full` makes that run read the whole account, progress and
- * lists, whatever the pull markers say: /account asks for it, because it shows
- * everything the account holds, and a change made on another device would
- * otherwise stay out of sight for up to FULL_PULL_EVERY_MS.
+ * for another run. `full` makes that run read the whole account, progress,
+ * lists and tests, whatever the pull markers say: /account asks for it,
+ * because it shows everything the account holds, and a change made on another
+ * device would otherwise stay out of sight for up to FULL_PULL_EVERY_MS.
  */
 export function startSync(client, user, { full = false } = {}) {
   active ??= openSession(client, user);
@@ -138,9 +158,9 @@ function openSession(client, user) {
   let fullNext = false;
   let stopped = false;
 
-  // Progress, then lists. Each fails alone, and each keeps its own pull marker:
-  // a table that keeps refusing must neither hold the other back nor make it
-  // pull everything again.
+  // Progress, then lists, then tests. Each fails alone, and each keeps its own
+  // pull marker: a table that keeps refusing must neither hold the others back
+  // nor make them pull everything again.
   async function syncOnce(full) {
     try {
       claimDevice(user);
@@ -158,6 +178,12 @@ function openSession(client, user) {
       await syncLists(client, user, { full });
     } catch (e) {
       console.warn('SawaalBox: will retry syncing lists', e);
+    }
+    if (stopped) return;
+    try {
+      await syncTests(client, user, { full });
+    } catch (e) {
+      console.warn('SawaalBox: will retry syncing tests', e);
     }
   }
 
@@ -194,6 +220,7 @@ function openSession(client, user) {
   function forgetMarkers() {
     progressPull.forget();
     forgetListsPull();
+    forgetTestsPull();
   }
 
   // Sign-out asks for one last run before the session goes (auth.js
@@ -206,8 +233,10 @@ function openSession(client, user) {
 
   // marks.js has already queued the op; the event only says "something changed".
   // A list change is the same: the lists are already saved, and the run finds
-  // what differs from the account by comparing them with it. (A wrapper, so
-  // the event object is never taken for run's `full`.)
+  // what differs from the account by comparing them with it. So is a test
+  // started, submitted or abandoned (`sawaalbox:test`): the attempt is already
+  // saved, and the run sends whatever is dirty. (A wrapper, so the event object
+  // is never taken for run's `full`.)
   const onChange = () => run();
 
   // The client is dead after sign-out: no more runs with it, and the next
@@ -216,6 +245,7 @@ function openSession(client, user) {
     stopped = true;
     doc.removeEventListener('sawaalbox:mark', onChange);
     doc.removeEventListener('sawaalbox:list', onChange);
+    doc.removeEventListener('sawaalbox:test', onChange);
     win.removeEventListener('online', onChange);
     doc.removeEventListener('sawaalbox:signing-out', onSigningOut);
     doc.removeEventListener('sawaalbox:signed-out', onSignedOut);
@@ -225,6 +255,7 @@ function openSession(client, user) {
 
   doc.addEventListener('sawaalbox:mark', onChange);
   doc.addEventListener('sawaalbox:list', onChange);
+  doc.addEventListener('sawaalbox:test', onChange);
   win.addEventListener('online', onChange);
   doc.addEventListener('sawaalbox:signing-out', onSigningOut);
   doc.addEventListener('sawaalbox:signed-out', onSignedOut);

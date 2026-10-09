@@ -1,6 +1,7 @@
-// What the progress sync (scripts/sync.js) and the lists sync
-// (scripts/sync-lists.js) share when they read the account: paging, and the
-// "pulled everything recently" marker. Each sync keeps its own marker.
+// What the progress sync (scripts/sync.js), the lists sync
+// (scripts/sync-lists.js) and the tests sync (scripts/sync-tests.js) share when
+// they read the account: paging, and the "pulled everything recently" marker.
+// Each sync keeps its own marker.
 
 // Supabase returns at most 1,000 rows per request by default. A full pull that
 // stopped at the first page would look like "the account lacks these rows",
@@ -35,8 +36,8 @@ export async function pullPages(client, table, columns, orderBy) {
  * tells that a different account has signed in here, and that the synced copy
  * and queued changes on this device belong to someone else (see
  * rebaseForNewAccount in merge.js). An account claims it at the start of its
- * first run (claimDevice in scripts/sync.js), and both syncs write it again
- * after a step succeeds.
+ * first run (claimDevice in scripts/sync.js), and each sync step writes it
+ * again after it succeeds.
  */
 export const OWNER_KEY = 'sawaalbox-owner-v1';
 

@@ -123,5 +123,82 @@ do $$ begin
   raise exception 'FAIL: B changed its progress owner to A';
 exception when insufficient_privilege then null; end $$;
 
+-- Mock test attempts (migration 20261011120000_test_attempts.sql).
+reset role;
+set local role anon;
+do $$ begin
+  perform 1 from public.test_attempts;
+  raise exception 'FAIL: anon can read test_attempts';
+exception when insufficient_privilege then null; end $$;
+reset role;
+set local role authenticated;
+
+-- A writes an attempt.
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000aa","role":"authenticated"}', true);
+insert into public.test_attempts (id, user_id, exam, kind, spec, question_keys, answers, review_keys,
+  current_index, limit_ms, elapsed_ms, status, started_at, updated_at)
+values ('00000000-0000-4000-8000-0000000000a7', '00000000-0000-0000-0000-0000000000aa', 'upsc', 'paper',
+  '{"year":2019}', array['upsc-2019-1','upsc-2019-2'], '{"upsc-2019-1":"a"}', array[]::text[],
+  0, 7200000, 1000, 'in_progress', now(), now());
+
+do $$ declare n int; begin
+  select count(*) into n from public.test_attempts;
+  if n <> 1 then raise exception 'FAIL: A should see 1 attempt, saw %', n; end if;
+  update public.test_attempts set elapsed_ms = 2000;
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'FAIL: A could not update its own attempt'; end if;
+end $$;
+
+-- Nobody deletes an attempt, not even its owner.
+do $$ begin
+  delete from public.test_attempts;
+  raise exception 'FAIL: A deleted an attempt';
+exception when insufficient_privilege then null; end $$;
+
+-- B cannot see, change, take over or delete it.
+select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000bb","role":"authenticated"}', true);
+do $$ declare n int; begin
+  select count(*) into n from public.test_attempts;
+  if n <> 0 then raise exception 'FAIL: B can see % of A''s attempts', n; end if;
+  update public.test_attempts set status = 'abandoned';
+  get diagnostics n = row_count;
+  if n <> 0 then raise exception 'FAIL: B updated A''s attempt'; end if;
+end $$;
+
+do $$ begin
+  delete from public.test_attempts;
+  raise exception 'FAIL: B deleted an attempt';
+exception when insufficient_privilege then null; end $$;
+
+do $$ begin
+  insert into public.test_attempts (id, user_id, exam, kind, spec, question_keys, answers, review_keys,
+    current_index, limit_ms, elapsed_ms, status, started_at, updated_at)
+  values ('00000000-0000-4000-8000-0000000000b7', '00000000-0000-0000-0000-0000000000aa', 'upsc', 'paper',
+    '{"year":2019}', array['upsc-2019-1'], '{}', array[]::text[], 0, 7200000, 0, 'in_progress', now(), now());
+  raise exception 'FAIL: B wrote an attempt as A';
+exception when insufficient_privilege then null; end $$;
+
+-- B's own attempt, which B then tries to hand to A.
+insert into public.test_attempts (id, user_id, exam, kind, spec, question_keys, answers, review_keys,
+  current_index, limit_ms, elapsed_ms, status, started_at, updated_at)
+values ('00000000-0000-4000-8000-0000000000b8', '00000000-0000-0000-0000-0000000000bb', 'upsc', 'paper',
+  '{"year":2020}', array['upsc-2020-1'], '{}', array[]::text[], 0, 7200000, 0, 'in_progress', now(), now());
+
+do $$ begin
+  update public.test_attempts set user_id = '00000000-0000-0000-0000-0000000000aa'
+  where id = '00000000-0000-4000-8000-0000000000b8';
+  raise exception 'FAIL: B changed its attempt''s owner to A';
+exception when insufficient_privilege then null; end $$;
+
+-- An upsert onto A's id is refused, as the sync's upsert would be.
+do $$ begin
+  insert into public.test_attempts (id, user_id, exam, kind, spec, question_keys, answers, review_keys,
+    current_index, limit_ms, elapsed_ms, status, started_at, updated_at)
+  values ('00000000-0000-4000-8000-0000000000a7', '00000000-0000-0000-0000-0000000000bb', 'upsc', 'paper',
+    '{"year":2019}', array['upsc-2019-1'], '{}', array[]::text[], 0, 7200000, 0, 'in_progress', now(), now())
+  on conflict (id) do update set status = excluded.status;
+  raise exception 'FAIL: B upserted over A''s attempt';
+exception when insufficient_privilege then null; end $$;
+
 select 'All RLS checks passed' as result;
 rollback;
