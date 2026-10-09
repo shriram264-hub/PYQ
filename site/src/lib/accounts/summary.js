@@ -1,10 +1,12 @@
-// What the /account page shows, worked out from the stored state and the
-// per-year question indexes. Pure: no DOM, storage or network, so the rules
-// (which subject a mark counts under, what "needs review" means, the order
-// things appear in) are tested without a browser.
+// What the /account and /revise pages show, worked out from the stored state
+// and the per-year question files. Pure: no DOM, storage or network, so the
+// rules (which subject a mark counts under, what "needs review" means, the
+// order things appear in, which entries are fit to render) are tested without
+// a browser.
 //
 // A question key is `<exam>-<year>-<number>` (see qkey.js). The index for a
-// year is `{ [key]: [path, subject, title] }` (pages/upsc/index/[year].json.js).
+// year is `{ [key]: [path, subject, title] }` (pages/upsc/index/[year].json.js);
+// the full file for a year is `{ [key]: { year, q_no, ... } }` (full/[year].json.js).
 
 const KEY = /^([a-z][a-z0-9]*)-(\d{4})-(\d+)$/;
 
@@ -60,6 +62,83 @@ function unsettled(paths, status) {
     const s = status.get(path);
     return s !== 'loaded' && s !== 'failed';
   });
+}
+
+// --- The revise page (/revise). ---
+
+/** Where the full-question file holding this key lives (pages/upsc/full/[year].json.js), or null. */
+export function fullPath(key) {
+  const k = parseKey(key);
+  return k ? `/${k.exam}/full/${k.year}.json` : null;
+}
+
+/**
+ * The full-question files a set of keys needs: one per exam and year, each
+ * once, in a stable order. The revise page fetches these and nothing else, so
+ * a list of three questions from 2019 costs one small file.
+ */
+export function fullPathsFor(keys) {
+  return [...new Set(keys.map(fullPath).filter(Boolean))].sort();
+}
+
+// The fields of a full-file entry and their types: the search API's result
+// shape, which is what questionHTML takes.
+const FULL_FIELDS = {
+  year: 'number',
+  q_no: 'number',
+  subject: 'string',
+  subtopic: 'string',
+  difficulty: 'string',
+  question: 'string',
+  a: 'string',
+  b: 'string',
+  c: 'string',
+  d: 'string',
+  answer: 'string',
+  answer_note: 'string',
+  status: 'string',
+};
+
+/**
+ * One question out of a loaded full-question file, checked before anything
+ * renders it. The file is data fetched over the network and the key is the
+ * user's storage, so:
+ *   absent     the file does not hold the key as its own entry (the question is
+ *              gone, or the key is not a question at all)
+ *   malformed  it does, but not as an entry of the 13 fields with the right
+ *              types, filed under its own year and number. The year and number
+ *              become the block's data-qkey, which marks.js writes progress to,
+ *              so an entry filed under another key would mark the wrong question.
+ *   ok         `q` is a fresh object of exactly those 13 fields (anything else
+ *              the entry carries is left behind).
+ * questionHTML writes UPSC links and keys, so only UPSC keys are rendered.
+ */
+export function fullEntry(file, key) {
+  const k = parseKey(key);
+  if (!k || !file || typeof file !== 'object' || Array.isArray(file) || !Object.hasOwn(file, key)) {
+    return { status: 'absent' };
+  }
+  const raw = file[key];
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return { status: 'malformed' };
+  const q = {};
+  for (const [field, type] of Object.entries(FULL_FIELDS)) {
+    if (!Object.hasOwn(raw, field) || typeof raw[field] !== type) return { status: 'malformed' };
+    q[field] = raw[field];
+  }
+  const filedHere = k.exam === 'upsc' && Number.isInteger(q.year) && q.year === k.year && q.q_no === k.number;
+  return filedHere ? { status: 'ok', q } : { status: 'malformed' };
+}
+
+/**
+ * What /revise was asked to open: `?review` is the Needs review pile (it wins
+ * if a list is named too), `?list=<id>` a list, anything else nothing. Whether
+ * the list is on this device is for the page to find out.
+ */
+export function reviseTarget(search) {
+  const params = new URLSearchParams(search);
+  if (params.has('review')) return { mode: 'review' };
+  const id = params.get('list');
+  return id ? { mode: 'list', id } : { mode: 'none' };
 }
 
 /** "2019 · Q7", the serial printed on the question itself; the key as stored when it is not one of ours. */

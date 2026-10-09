@@ -1,0 +1,277 @@
+---
+import Document from '../layouts/Document.astro';
+import Masthead from '../components/Masthead.astro';
+import Colophon from '../components/Colophon.astro';
+
+// An app page, like /account: what it shows is this device's own lists and
+// marks, so it is not indexed, and it is not in the sitemap (pages/sitemap.xml.js
+// lists its pages one by one, and this is not one of them).
+---
+
+<Document
+  title="Revise"
+  description="Revise a list of saved questions, or the ones marked Needs review, in full."
+  noindex={true}
+>
+  <Masthead />
+
+  {/* data-pending: nothing in here is on screen until revise-page.js has drawn
+      it (see the gate below), so the list's name and count arriving move
+      nothing. data-settling, set by the script while a question's year is still
+      on its way, holds back Show more and the colophon, the only things below
+      the questions. */}
+  <main class="sheet revise" data-pending>
+    <div class="rv-head">
+      <h1 data-title tabindex="-1">Revise</h1>
+      <p class="rv-count" data-count></p>
+      <p class="rv-subjects" data-subjects></p>
+      <p class="rv-back"><a href="/account#lists">Back to your progress</a></p>
+    </div>
+
+    <p class="rv-note" role="status" data-note></p>
+    <noscript><p class="rv-empty">Revising a list needs JavaScript.</p></noscript>
+
+    <div id="revise-items" class="rv-items"></div>
+
+    <div class="rv-more" data-more hidden>
+      <button type="button" class="rv-btn">Show 20 more</button>
+    </div>
+  </main>
+
+  <Colophon />
+</Document>
+
+{/* The question blocks get their Mark done, Needs review and Save to list from
+    marks.js, imported exactly as QuestionBlock.astro imports it, so the page has
+    one instance of it: its MutationObserver fills the empty marks slot of each
+    block the script below adds. revise-page.js does not import it. */}
+<script>
+  import '../scripts/marks.js';
+</script>
+
+<script>
+  import '../scripts/revise-page.js';
+</script>
+
+<style is:global>
+  /* Global, not scoped: most of this page is drawn by revise-page.js, and
+     Astro's scoped styles never reach markup a script creates. Every class is
+     prefixed rv- so nothing here can leak. The question blocks themselves are
+     styled by question.css, as everywhere else. */
+  .revise {
+    padding-block: clamp(1.5rem, 4vw, 2.75rem);
+  }
+
+  /* --- the head: the list's name, how many, which subjects, the way back --- */
+
+  .rv-head {
+    display: grid;
+    gap: 0.3rem;
+    padding-bottom: 1rem;
+    margin-bottom: 0.9rem;
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .rv-head h1 {
+    margin-bottom: 0.3rem;
+    overflow-wrap: anywhere;
+    outline-offset: 4px;
+  }
+  .rv-count,
+  .rv-subjects {
+    margin: 0;
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+    line-height: 1.6;
+    min-height: 1.6em;
+  }
+  /* The subjects arrive once every year the questions are in has loaded. The
+     line is always there and always one line tall, so it fills in without
+     moving anything: it never wraps, the first part gives way with an ellipsis,
+     and "+k more", the part that says there is more, stays. */
+  .rv-subjects {
+    display: flex;
+  }
+  .rv-subjects-top {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .rv-subjects-more {
+    flex: none;
+    white-space: pre;
+  }
+  .rv-back {
+    margin: 0.4rem 0 0;
+    font: 600 0.88rem var(--font-structure);
+  }
+  /* "This list isn't on this device": nothing to count, no subjects. */
+  .revise[data-missing] .rv-count,
+  .revise[data-missing] .rv-subjects {
+    display: none;
+  }
+
+  /* The live region: "Loading 25 questions…", "Removed from …", a year that did
+     not load. Always one line tall, said or not, so a message coming or going
+     moves nothing. A failure is drawn as a note. */
+  .rv-note {
+    min-height: 1.6em;
+    margin: 0 0 0.9rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .rv-note[data-error] {
+    padding: 0.5rem 0.75rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  .rv-empty {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  /* --- the questions --- */
+
+  .rv-items {
+    display: grid;
+    gap: 1rem;
+  }
+
+  /* A question whose year is still on its way: room held for it, nothing
+     painted, so the questions after it are not drawn until it is (see
+     revise-page.js) and no one sees anything move. */
+  .rv-item[data-state='wait'] {
+    min-height: 16rem;
+    visibility: hidden;
+  }
+
+  /* A question that cannot be shown stands in as its serial and a line on why,
+     in the question block's frame. */
+  .rv-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.8rem;
+    padding: 0.75rem 1.1rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule);
+    outline-offset: 2px;
+  }
+  .rv-serial {
+    font-weight: 700;
+  }
+  .rv-row-text {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+
+  /* Remove from this list: a strip under the question, closing its frame, so
+     it reads as belonging to that question and not to the one after it. */
+  .rv-foot {
+    display: flex;
+    padding: 0.1rem 1.1rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule);
+    border-top: 0;
+  }
+
+  /* A text button, as on /account: quiet, underlined so it still reads as
+     pressable. Not red: red is stamp ink, never an action. */
+  .rv-text-btn {
+    min-height: 2.25rem;
+    padding: 0.3rem 0;
+    font: 600 0.85rem var(--font-structure);
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    text-decoration: underline;
+    text-decoration-color: var(--rule-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+  .rv-text-btn:hover {
+    text-decoration-thickness: 2px;
+  }
+  .rv-text-btn[aria-disabled='true'] {
+    cursor: progress;
+    text-decoration: none;
+  }
+
+  /* Show 20 more: the secondary button, outlined on paper with a green label.
+     This page's job is reading, so nothing on it is the filled-green primary. */
+  .rv-more {
+    margin-top: 1.25rem;
+  }
+  .rv-more[hidden] {
+    display: none;
+  }
+  .rv-btn {
+    padding: 0.7rem 1.25rem;
+    font: 700 0.95rem var(--font-structure);
+    color: var(--field-text);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .rv-btn:hover {
+    background: var(--ground);
+  }
+  .rv-btn[aria-disabled='true'] {
+    cursor: progress;
+  }
+
+  @media (pointer: coarse) {
+    .rv-text-btn,
+    .rv-btn {
+      min-height: 2.75rem;
+    }
+  }
+
+  /* Without scripting there is nothing to show but the noscript line. */
+  @media (scripting: none) {
+    .rv-count,
+    .rv-subjects,
+    .rv-note,
+    .rv-items,
+    .rv-more {
+      display: none;
+    }
+  }
+
+  /* --- nothing moves what the reader can already see --- */
+
+  /* Hidden is not painted, and moves nothing anyone can see when it appears.
+       - .revise stays hidden until the script's first draw (data-pending).
+       - Show more and the colophon stay hidden while a question is still
+         waiting for its year (data-settling). That ends by itself: every year
+         either loads or fails within the script's 15 s limit.
+     The animation is the way out if the script never runs: the page and the
+     colophon show after a few seconds on their own. */
+  @keyframes rv-reveal {
+    to {
+      visibility: visible;
+    }
+  }
+  @media (scripting: enabled) {
+    .revise[data-pending] {
+      visibility: hidden;
+      animation: rv-reveal 0s 4s forwards;
+    }
+    body:has(.revise[data-pending]) .colophon {
+      visibility: hidden;
+      animation: rv-reveal 0s 6s forwards;
+    }
+    .revise[data-settling] .rv-more,
+    body:has(.revise[data-settling]) .colophon {
+      visibility: hidden;
+      animation: none;
+    }
+  }
+</style>

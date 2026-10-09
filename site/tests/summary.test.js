@@ -2,12 +2,16 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   describe,
+  fullEntry,
+  fullPath,
+  fullPathsFor,
   indexPath,
   indexPathsFor,
   parseKey,
   pendingForKeys,
   pendingPaths,
   reviewOldestFirst,
+  reviseTarget,
   serialOf,
   subjectsCovered,
   summarise,
@@ -357,4 +361,82 @@ test('pendingForKeys counts a failed year as settled, a loading one as pending, 
     '/upsc/index/2017.json',
     '/upsc/index/2018.json',
   ]);
+});
+
+// --- The revise page: which files, which entries, which pile. ---
+
+test('fullPathsFor asks for one file per exam and year, in order', () => {
+  assert.deepEqual(fullPathsFor(['upsc-2019-7', 'upsc-2001-3', 'upsc-2019-9', 'junk']), ['/upsc/full/2001.json', '/upsc/full/2019.json']);
+});
+
+test('fullPathsFor needs nothing for no keys, and never a path for a key that names no year', () => {
+  assert.deepEqual(fullPathsFor([]), []);
+  assert.deepEqual(fullPathsFor(['constructor', '../upsc-2019-7', 'UPSC-2019-7', '']), []);
+  assert.equal(fullPath('upsc-1995-100'), '/upsc/full/1995.json');
+  assert.equal(fullPath('junk'), null);
+});
+
+// An entry as pages/upsc/full/[year].json.js writes it.
+const fullQ = (year, qNo, extra = {}) => ({
+  year, q_no: qNo, subject: 'Indian Polity', subtopic: 'Fundamental Rights', difficulty: 'moderate',
+  question: 'Which of the following?', a: 'one', b: 'two', c: 'three', d: 'four',
+  answer: 'b', answer_note: '', status: 'ok', ...extra,
+});
+const FULL_FILE = { 'upsc-2019-7': fullQ(2019, 7), 'upsc-2019-8': fullQ(2019, 8, { answer: '', status: 'cancelled' }) };
+
+test('fullEntry hands over a well-formed entry as just the 13 fields the renderer reads', () => {
+  assert.deepEqual(fullEntry(FULL_FILE, 'upsc-2019-7'), { status: 'ok', q: fullQ(2019, 7) });
+  assert.equal(fullEntry(FULL_FILE, 'upsc-2019-8').q.status, 'cancelled');
+  const extra = fullEntry({ 'upsc-2019-7': fullQ(2019, 7, { id: 9, slug: 'x', onerror: 'alert(1)' }) }, 'upsc-2019-7');
+  assert.deepEqual(Object.keys(extra.q), ['year', 'q_no', 'subject', 'subtopic', 'difficulty', 'question', 'a', 'b', 'c', 'd', 'answer', 'answer_note', 'status']);
+});
+
+test('fullEntry: a key the loaded file does not hold is absent, including one it only inherits', () => {
+  assert.equal(fullEntry(FULL_FILE, 'upsc-2019-99').status, 'absent');
+  assert.equal(fullEntry(Object.create({ 'upsc-2019-7': fullQ(2019, 7) }), 'upsc-2019-7').status, 'absent');
+  for (const key of ['constructor', '__proto__', 'toString', 'junk']) assert.equal(fullEntry(FULL_FILE, key).status, 'absent', key);
+  for (const file of [null, undefined, 'text', 7, ['upsc-2019-7']]) assert.equal(fullEntry(file, 'upsc-2019-7').status, 'absent', String(file));
+});
+
+test('fullEntry refuses an entry of the wrong shape, so it is never rendered', () => {
+  const without = (field) => {
+    const q = fullQ(2019, 7);
+    delete q[field];
+    return q;
+  };
+  const inherited = Object.assign(Object.create({ status: 'ok' }), without('status'));
+  const bad = {
+    'not an object': 'text',
+    null: null,
+    array: [fullQ(2019, 7)],
+    'year as text': fullQ('2019', 7),
+    'number as text': fullQ(2019, '7'),
+    'fractional number': fullQ(2019, 7.5),
+    'subject a number': fullQ(2019, 7, { subject: 3 }),
+    'answer null': fullQ(2019, 7, { answer: null }),
+    'question an object': fullQ(2019, 7, { question: { toString: () => 'x' } }),
+    'status missing': without('status'),
+    'option a missing': without('a'),
+    'another question filed here': fullQ(2019, 8),
+    'another year filed here': fullQ(2018, 7),
+    'a field it only inherits': inherited,
+  };
+  for (const [name, entry] of Object.entries(bad)) {
+    assert.equal(fullEntry({ 'upsc-2019-7': entry }, 'upsc-2019-7').status, 'malformed', name);
+  }
+});
+
+test('fullEntry only takes this exam: the renderer writes UPSC links and keys', () => {
+  assert.equal(fullEntry({ 'neet-2019-7': fullQ(2019, 7) }, 'neet-2019-7').status, 'malformed');
+});
+
+test('reviseTarget: review if it is asked for, else the list named, else nothing', () => {
+  assert.deepEqual(reviseTarget('?review'), { mode: 'review' });
+  assert.deepEqual(reviseTarget('?review=1'), { mode: 'review' });
+  assert.deepEqual(reviseTarget('?list=abc&review'), { mode: 'review' });
+  assert.deepEqual(reviseTarget('?list=abc'), { mode: 'list', id: 'abc' });
+  assert.deepEqual(reviseTarget('?list=a%20b%22c'), { mode: 'list', id: 'a b"c' });
+  for (const search of ['', '?', '?list=', '?lists=abc', '?foo=bar', '?List=abc']) {
+    assert.deepEqual(reviseTarget(search), { mode: 'none' }, search);
+  }
 });
