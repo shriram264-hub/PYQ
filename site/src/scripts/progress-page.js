@@ -400,10 +400,21 @@ let landed = false;
 // (data-pending), so the first reveal does it, and only if the person has not
 // already moved on to something else; a hash change after that is a deliberate
 // move and always lands.
+//
+// On a load it also has to wait for the load event: Chrome handles the fragment
+// itself once the document is parsed, and as the page finishes loading, and
+// clears the focus when the target (a section) cannot take it, which undid a
+// focus set at the first reveal within a few milliseconds (measured). The
+// timeout lets that last pass go first.
 function landOnLists(always = false) {
   if (location.hash !== '#lists') return;
   if (!always && document.activeElement !== document.body && document.activeElement !== null) return;
   document.getElementById(LISTS_HEADING)?.focus();
+}
+
+function landOnListsAfterLoad() {
+  if (document.readyState === 'complete') landOnLists();
+  else window.addEventListener('load', () => setTimeout(landOnLists), { once: true });
 }
 
 function reveal(settled) {
@@ -412,7 +423,7 @@ function reveal(settled) {
   acct.removeAttribute('data-pending');
   if (!landed) {
     landed = true;
-    landOnLists();
+    landOnListsAfterLoad();
   }
   if (!firstLoad) return;
   acct.toggleAttribute('data-settling', !settled);
