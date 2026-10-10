@@ -673,11 +673,16 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
 
   /* Hidden is not painted, and moves nothing anyone can see when it appears.
        - .take stays hidden until the script's first draw (data-pending).
-       - The colophon, the only thing below, stays hidden until then too, and
-         while the questions load (data-view='loading'), since the test pushes
-         it down when it is drawn. Loading has no timed reveal: a slow year
-         file would otherwise show the colophon mid-load and then move it.
-     The animations are the way out if the script never runs. */
+       - The colophon, the only thing below, stays hidden until then too.
+     The animations are the way out if the script never runs.
+       - The colophon is also taken out (display: none) from Start being
+         pressed (data-starting), and while the questions load
+         (data-view='loading'), since the test pushes it down when it is
+         drawn. Not visibility: Chrome keeps the last place a hidden box was
+         painted, and counts the move when it shows again elsewhere; a box
+         that was not there has no old place. It is the last thing on the
+         page, so taking it out moves nothing. No timed reveal: a slow year
+         file would otherwise bring it back mid-load, to be moved again. */
   @keyframes tk-reveal {
     to {
       visibility: visible;
@@ -692,9 +697,8 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
       visibility: hidden;
       animation: tk-reveal 0s 6s forwards;
     }
-    body:has(.take[data-view='loading']) .colophon {
-      visibility: hidden;
-      animation: none;
+    body:has(.take[data-view='loading'], .take[data-starting]) .colophon {
+      display: none;
     }
   }
 </style>

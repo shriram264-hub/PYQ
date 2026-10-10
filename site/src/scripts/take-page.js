@@ -30,6 +30,8 @@ import { newListId as newId } from '../lib/accounts/lists.js';
 const FILE_TIMEOUT_MS = 15000;
 const FONT_WAIT_MS = 3000;
 const NOT_SAVED = "Your browser isn't saving this test. You can finish it in this tab, but closing it loses your answers.";
+const ABANDONED = "You abandoned this test. Its answers are kept, but it doesn't count in your results.";
+const submittedLine = (a) => `Submitted. ${resultLine(a.result, Math.min(a.elapsedMs, a.limitMs))}.`;
 const WIDE = window.matchMedia('(min-width: 60rem)');
 
 const $ = (selector) => document.querySelector(selector);
@@ -92,6 +94,7 @@ function show(view) {
   messageEl.hidden = view !== 'message';
   testEl.hidden = view !== 'test';
   delete page.dataset.pending;
+  if (view !== 'start') delete page.dataset.starting;
 }
 
 function message(text) {
@@ -166,13 +169,15 @@ function closedElsewhere(stored) {
   else message("This test was abandoned in another tab or on another device. Its answers are kept.");
 }
 
-// A sync, or another tab, may change the attempt under us.
+// A sync, or another tab, may change the attempt under us. While this browser
+// refuses to save, the copy here is newer than the stored one, which only says
+// whether the test was closed elsewhere: its answers are never taken over ours.
 function reread() {
   if (!attempt || finished || page.dataset.view !== 'test') return;
   const stored = getAttempt(loadTests(), attempt.id);
   if (!stored) return;
   if (stored.status !== 'in_progress') return closedElsewhere(stored);
-  if (stored.updatedAt !== attempt.updatedAt) {
+  if (!saveFailed && stored.updatedAt !== attempt.updatedAt) {
     attempt = stored;
     render();
   }
@@ -230,16 +235,31 @@ function stopClock() {
 
 document.addEventListener('visibilitychange', () => (document.visibilityState === 'visible' ? startClock() : stopClock()));
 window.addEventListener('pagehide', stopClock);
+// A page restored from the back/forward cache ran nothing while it was away.
 window.addEventListener('pageshow', (event) => {
+  if (!event.persisted || !attempt) return;
+  const stored = getAttempt(loadTests(), attempt.id);
+  // Submitted or abandoned from here, or found closed: never back as a live test.
+  if (finished) return showClosed(stored);
   // Only a test on screen has anything to bring up to date; a page put away
   // while its questions were loading picks up where the loader is.
-  if (!event.persisted || !attempt || finished || page.dataset.view !== 'test') return;
-  const stored = getAttempt(loadTests(), attempt.id);
+  if (page.dataset.view !== 'test') return;
   if (stored && stored.status !== 'in_progress') return closedElsewhere(stored);
-  if (stored) attempt = stored;
+  // While saves fail, the copy here is the newer one (see reread).
+  if (stored && !saveFailed) attempt = stored;
   render();
   startClock();
 });
+
+// The closed attempt, as it is: results when they are on this device, else
+// what happened to it. Storage first; the copy here when storage never got it.
+function showClosed(stored) {
+  stopTimer();
+  const closed = stored && stored.status !== 'in_progress' ? stored : attempt;
+  if (closed.status === 'submitted' && stored?.status === 'submitted') return location.replace(resultUrl(closed.id));
+  if (closed.status === 'submitted') return message(submittedLine(closed));
+  message(ABANDONED);
+}
 
 // --- Drawing. ---
 
@@ -386,7 +406,7 @@ function finish({ timeUp = false } = {}) {
   document.dispatchEvent(new CustomEvent('sawaalbox:test'));
   if (saveFailed) {
     // Nothing on this device to open the results from: say the score here.
-    message(`Submitted. ${resultLine(attempt.result, Math.min(attempt.elapsedMs, attempt.limitMs))}.`);
+    message(submittedLine(attempt));
     return;
   }
   location.replace(`${resultUrl(attempt.id)}${timeUp ? '&timeup' : ''}`);
@@ -414,7 +434,8 @@ abandonDialog.addEventListener('close', () => {
   if (!mutate((a, now) => abandonAttempt(a, now))) return;
   finished = true;
   document.dispatchEvent(new CustomEvent('sawaalbox:test'));
-  location.assign('/upsc/test');
+  // Replaced, as a submit is, so Back does not return to the abandoned test.
+  location.replace('/upsc/test');
 });
 
 // --- Starting. ---
@@ -463,7 +484,7 @@ function openAttempt(id) {
     return;
   }
   if (stored.status === 'submitted') return location.replace(resultUrl(id));
-  if (stored.status === 'abandoned') return message("You abandoned this test. Its answers are kept, but it doesn't count in your results.");
+  if (stored.status === 'abandoned') return message(ABANDONED);
   attempt = stored;
   begin();
 }
@@ -487,19 +508,22 @@ function offerPaper(year) {
   );
   show('start');
   const startBtn = $('[data-start-button]');
+  // The test replaces the start screen once the paper is in, which can be well
+  // after the press: the colophon under it is hidden from the press (see
+  // data-starting in take.astro) so that it is not seen to jump.
+  const stopStarting = (text) => {
+    say(text, { error: true });
+    delete page.dataset.starting;
+    startBtn.disabled = false;
+  };
   startBtn.addEventListener('click', async () => {
     startBtn.disabled = true;
+    page.dataset.starting = '';
     say('');
     const path = `/upsc/full/${year}.json`;
-    if (!(await canStartTest('upsc'))) {
-      say("Tests aren't open to this account.", { error: true });
-      startBtn.disabled = false;
-      return;
-    }
+    if (!(await canStartTest('upsc'))) return stopStarting("Tests aren't open to this account.");
     if (!files.has(path) && !(await fetchYear(path))) {
-      say("The paper didn't load. Check your connection, then try again.", { error: true });
-      startBtn.disabled = false;
-      return;
+      return stopStarting("The paper didn't load. Check your connection, then try again.");
     }
     const fresh = newAttempt({
       id: newId(),
