@@ -1,0 +1,700 @@
+---
+import Document from '../../../layouts/Document.astro';
+import Masthead from '../../../components/Masthead.astro';
+import Colophon from '../../../components/Colophon.astro';
+import { PAPERS } from '../../../lib/papers.js';
+
+// An app page, like /revise: what it shows is one attempt on this device, so it
+// is not indexed and not in the sitemap. Everything below the head is drawn by
+// take-page.js; the paper list rides along so a start screen needs no fetch.
+const OPTIONS = ['a', 'b', 'c', 'd'];
+---
+
+<Document title="Practice test" description="A timed UPSC Prelims practice test." noindex={true}>
+  <Masthead />
+
+  {/* data-pending: nothing in here is on screen until take-page.js has drawn
+      its first view (see the gate below). data-view says which view that is:
+      start, loading, test or message. */}
+  <main class="sheet take" data-pending data-view="none" data-papers={JSON.stringify(PAPERS)}>
+    <header class="tk-head">
+      <h1 data-name tabindex="-1">Practice test</h1>
+      <div class="tk-bar" data-bar>
+        <p class="tk-position" data-position></p>
+        <p class="tk-clock"><span class="tk-clock-label">Time left</span> <span class="serial" data-clock></span></p>
+        <button type="button" class="tk-primary" data-submit disabled>Submit</button>
+      </div>
+    </header>
+
+    <p class="tk-note" role="status" data-note></p>
+    <noscript><p class="tk-empty">Taking a test needs JavaScript.</p></noscript>
+    <p class="tk-retry" data-retry-row hidden><button type="button" class="tk-btn" data-retry>Try again</button></p>
+
+    <section class="tk-start" data-start hidden aria-labelledby="tk-start-h">
+      <h2 id="tk-start-h" class="visually-hidden">Before you start</h2>
+      <p class="tk-facts" data-start-facts></p>
+      <ul class="tk-notes" data-start-notes></ul>
+      <ul class="tk-rules">
+        <li>Each right answer earns 2 marks. Each wrong answer loses two-thirds of a mark. A question left blank scores nothing.</li>
+        <li>The clock runs only while this page is open in front of you. Leave and come back, and it carries on from where it stopped.</li>
+        <li>Your answers are saved on this device as you go. Answers and your score stay hidden until you submit.</li>
+      </ul>
+      <p><button type="button" class="tk-primary" data-start-button>Start the test</button></p>
+      <p class="tk-back"><a href="/upsc/test">All practice tests</a></p>
+    </section>
+
+    <section class="tk-message" data-message hidden>
+      <p data-message-text></p>
+      <p class="tk-back"><a href="/upsc/test">Practice tests</a></p>
+    </section>
+
+    <div class="tk-body" data-test hidden>
+      <section class="tk-question" aria-labelledby="tk-qtext">
+        <p class="serial tk-serial" data-serial></p>
+        <p class="qtext tk-qtext" id="tk-qtext" data-question tabindex="-1"></p>
+        <fieldset class="tk-options" aria-labelledby="tk-qtext" data-options>
+          {
+            OPTIONS.map((k) => (
+              <label class="tk-option">
+                <input type="radio" name="tk-answer" value={k} />
+                <span class="serial tk-key">({k})</span>
+                <span class="tk-option-text" data-option={k} />
+              </label>
+            ))
+          }
+        </fieldset>
+        <div class="tk-actions">
+          <button type="button" class="tk-btn" data-clear>Clear answer</button>
+          <button type="button" class="tk-btn" data-review aria-pressed="false">Mark for review</button>
+          <span class="tk-move">
+            <button type="button" class="tk-btn" data-prev>Previous</button>
+            <button type="button" class="tk-btn" data-next>Next</button>
+          </span>
+        </div>
+        <p class="tk-leave"><button type="button" class="tk-text-btn" data-abandon>Abandon this test</button></p>
+      </section>
+
+      <details class="tk-grid" data-grid-box>
+        <summary>All questions <span class="tk-grid-summary" data-grid-summary></span></summary>
+        {/* Each sample sits with its word, so the legend wraps as pairs. */}
+        <p class="tk-legend">
+          <span class="tk-legend-item"><span class="tk-cell tk-cell-sample" data-answered aria-hidden="true"></span> Answered</span>
+          <span class="tk-legend-item"><span class="tk-cell tk-cell-sample" data-review aria-hidden="true"></span> Marked for review</span>
+          <span class="tk-legend-item"><span class="tk-cell tk-cell-sample" aria-hidden="true"></span> Not answered</span>
+        </p>
+        <ol class="tk-cells" data-grid></ol>
+      </details>
+    </div>
+
+    <p class="visually-hidden" aria-live="polite" data-announce></p>
+
+    <dialog class="tk-dialog" data-submit-dialog aria-labelledby="tk-submit-h">
+      <form method="dialog">
+        <h2 id="tk-submit-h">Submit this test?</h2>
+        <p data-submit-summary></p>
+        <div class="tk-dialog-actions">
+          <button value="submit" class="tk-primary">Submit now</button>
+          <button value="keep" class="tk-btn" autofocus>Keep going</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="tk-dialog" data-abandon-dialog aria-labelledby="tk-abandon-h">
+      <form method="dialog">
+        <h2 id="tk-abandon-h">Abandon this test?</h2>
+        <p>Its answers are kept, but it won't count in your results.</p>
+        <div class="tk-dialog-actions">
+          <button value="abandon" class="tk-btn">Abandon</button>
+          <button value="keep" class="tk-btn" autofocus>Keep going</button>
+        </div>
+      </form>
+    </dialog>
+  </main>
+
+  <Colophon />
+</Document>
+
+<script>
+  import '../../../scripts/take-page.js';
+</script>
+
+<style is:global>
+  /* Global, not scoped: most of this page is drawn by take-page.js, and Astro's
+     scoped styles never reach markup a script creates (the grid's cells). Every
+     class is prefixed tk- so nothing here can leak. */
+  :root:has(.take) {
+    /* The h1's size, named so the page can work out how tall the sticky head
+       is (the sidebar sits under it; see the wide layout below). Title scale,
+       not the listing pages' headline: this is a working screen, and the head
+       stays on screen the whole test. */
+    --tk-h1: clamp(1.25rem, 1rem + 1.1vw, 1.9rem);
+    --tk-bar-h: 2.75rem;
+    --tk-head-h: calc(1.5rem + 1.12 * var(--tk-h1) + 0.4rem + var(--tk-bar-h) + var(--rule-heavy));
+    /* What the browser scrolls into view (a focused cell, the question after
+       a jump from the grid) lands below the sticky head, not under it. One
+       more line of name, for a name that wraps on a phone. */
+    scroll-padding-top: calc(var(--tk-head-h) + 1.12 * var(--tk-h1) + 0.5rem);
+  }
+  .take {
+    padding-block: clamp(0.5rem, 2vw, 1.25rem) clamp(1.5rem, 4vw, 2.75rem);
+  }
+
+  /* A section a script has not chosen to show is not shown, whatever display
+     its own rule gives it. */
+  .take [hidden] {
+    display: none;
+  }
+
+  .take .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* --- the head: the name, then the bar (where you are, the clock, Submit) --- */
+
+  .tk-head {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    display: grid;
+    row-gap: 0.4rem;
+    padding-block: 0.75rem;
+    margin-bottom: 0.9rem;
+    background: var(--ground);
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .tk-head h1 {
+    font-size: var(--tk-h1);
+    overflow-wrap: anywhere;
+    outline-offset: 4px;
+  }
+
+  /* One row from 360px up, at a fixed height, so the head is the same height
+     in every view and nothing under it moves when the bar fills in. */
+  .tk-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1rem;
+    min-height: var(--tk-bar-h);
+  }
+  /* The bar belongs to a test being taken (or loading). Elsewhere it keeps its
+     room, unseen, so the head never changes height between views. */
+  .take:not([data-view='test']):not([data-view='loading']) .tk-bar {
+    visibility: hidden;
+  }
+  .tk-position {
+    margin: 0;
+    font: 600 0.88rem var(--font-structure);
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .tk-clock {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin: 0 0 0 auto;
+    font-variant-numeric: tabular-nums;
+    white-space: nowrap;
+  }
+  .tk-clock-label {
+    font: 600 0.68rem var(--font-structure);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+  }
+  .tk-clock .serial {
+    font-size: 1.1rem;
+    font-weight: 700;
+  }
+  .tk-bar .tk-primary {
+    min-height: var(--tk-bar-h);
+    padding: 0 1.1rem;
+  }
+  /* On a phone the label goes (a screen reader still hears it), so the
+     position, the clock and Submit share one row. */
+  @media (max-width: 30rem) {
+    .tk-clock-label {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      margin: -1px;
+      overflow: hidden;
+      clip-path: inset(50%);
+      white-space: nowrap;
+    }
+  }
+
+  /* The live region: "Loading 98 questions…", a year that did not load, a
+     browser that is not saving. Always one line tall, said or not, so a message
+     coming or going moves nothing. A failure is drawn as a note. */
+  .tk-note {
+    min-height: 1.6em;
+    margin: 0 0 0.9rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .tk-note[data-error] {
+    padding: 0.5rem 0.75rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  /* On the start screen a failure (the paper's file, or the access check)
+     arrives a while after Start is pressed. Above the start section, the note
+     growing into a two-line box would push it down; so there the line goes
+     after it, near the button, holding the box's room from the first draw. */
+  .take[data-view='start'] {
+    display: flex;
+    flex-direction: column;
+  }
+  .take[data-view='start'] .tk-note {
+    order: 1;
+    min-height: calc(3.2em + 1rem + 2 * var(--rule-heavy));
+    margin: 1.1rem 0 0;
+  }
+  .tk-retry {
+    margin: 0 0 1rem;
+  }
+  .tk-empty {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  /* --- buttons: square slabs in a heavy frame --- */
+
+  /* The page's one filled-green action: Start the test on the start screen,
+     Submit during the test (and Submit now, the same action, in its dialog,
+     which hides the bar's button behind its backdrop). */
+  .tk-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.85rem 1.6rem;
+    font: 700 0.95rem var(--font-structure);
+    color: var(--field-ink);
+    background: var(--field);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .tk-primary:hover {
+    background: var(--field-deep);
+  }
+  .tk-primary:disabled {
+    cursor: progress;
+  }
+  .tk-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    padding: 0.6rem 1.1rem;
+    font: 700 0.95rem var(--font-structure);
+    color: var(--field-text);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .tk-btn:hover {
+    background: var(--ground);
+  }
+  /* An unavailable step, as in the pager: faint, with a dashed frame. */
+  .tk-btn:disabled {
+    color: var(--ink-faint);
+    background: var(--paper);
+    border-style: dashed;
+    border-color: var(--rule);
+    cursor: default;
+  }
+  /* Mark for review is a switch, drawn in the answer seal's idiom: a ruled
+     square that fills when it is on. */
+  .tk-btn[data-review]::before {
+    content: '';
+    width: 0.75rem;
+    height: 0.75rem;
+    border: var(--rule-hair) solid currentColor;
+  }
+  .tk-btn[data-review][aria-pressed='true'] {
+    color: var(--ink);
+  }
+  .tk-btn[data-review][aria-pressed='true']::before {
+    background: currentColor;
+  }
+  /* A text button, as on /account: quiet, underlined so it still reads as
+     pressable. Not red: red is stamp ink, never an action. */
+  .tk-text-btn {
+    min-height: 2.25rem;
+    padding: 0.3rem 0;
+    font: 600 0.85rem var(--font-structure);
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    text-decoration: underline;
+    text-decoration-color: var(--rule-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+  .tk-text-btn:hover {
+    text-decoration-thickness: 2px;
+  }
+  @media (pointer: coarse) {
+    .tk-btn,
+    .tk-text-btn,
+    .tk-primary {
+      min-height: 2.75rem;
+    }
+  }
+
+  /* --- the start screen --- */
+
+  .tk-start {
+    display: grid;
+    gap: 1.1rem;
+    max-width: var(--measure);
+  }
+  .tk-start p {
+    margin: 0;
+  }
+  .tk-facts {
+    font: 700 1.05rem var(--font-structure);
+    letter-spacing: -0.02em;
+  }
+  .tk-notes {
+    margin: -0.5rem 0 0;
+    padding-left: 1.2rem;
+    color: var(--ink-soft);
+    list-style-type: square;
+  }
+  .tk-notes:empty {
+    display: none;
+  }
+  /* The rules are the paper's instructions, so they sit in a ruled box. */
+  .tk-rules {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 1rem 1.1rem 1rem 2.2rem;
+    list-style-type: square;
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .tk-back {
+    margin: 0;
+    font: 600 0.88rem var(--font-structure);
+  }
+  .tk-message {
+    display: grid;
+    gap: 0.6rem;
+  }
+  .tk-message p {
+    margin: 0;
+  }
+
+  /* --- the test: the question, and the grid beside or below it --- */
+
+  .tk-body {
+    display: grid;
+    gap: 1.5rem;
+    align-items: start;
+  }
+  .tk-question {
+    min-width: 0;
+    padding: 1rem 1.1rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule);
+  }
+  .tk-serial {
+    margin: 0 0 0.6rem;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+  .tk-qtext {
+    outline-offset: 4px;
+  }
+  .tk-options {
+    display: grid;
+    gap: 0.35rem;
+    min-width: 0;
+    max-width: var(--measure);
+    margin: 0 0 1.1rem;
+    padding: 0;
+    border: 0;
+  }
+  /* The chosen option's frame turns heavy and its ground recesses, and the
+     radio shows it too, so the state is never colour alone. The padding gives
+     back what the heavier frame takes, so choosing moves nothing. */
+  .tk-option {
+    display: grid;
+    grid-template-columns: auto 2rem 1fr;
+    gap: 0.35rem;
+    align-items: baseline;
+    padding: calc(0.35rem + 1px);
+    border: var(--rule-hair) solid var(--rule);
+    cursor: pointer;
+  }
+  .tk-option:has(input:checked) {
+    padding: 0.35rem;
+    background: var(--ground);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .tk-option:has(input:disabled) {
+    cursor: default;
+  }
+  .tk-option input {
+    width: 1rem;
+    height: 1rem;
+    margin: 0 0.15rem;
+    accent-color: var(--ink);
+    align-self: center;
+  }
+  .tk-key {
+    color: var(--ink-faint);
+    font-size: 0.9rem;
+  }
+  .tk-option-text {
+    min-width: 0;
+  }
+  /* Capped at the options' measure, so Previous and Next sit under the
+     options on a wide screen rather than across the sheet from them. */
+  .tk-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+    max-width: var(--measure);
+  }
+  .tk-move {
+    display: flex;
+    gap: 0.6rem;
+    margin-left: auto;
+  }
+  .tk-leave {
+    margin: 1rem 0 0;
+    padding-top: 0.5rem;
+    border-top: var(--rule-hair) dashed var(--rule);
+  }
+
+  /* The grid: a disclosure under the question on a phone, a sidebar on a wide
+     screen (take-page.js holds it open there). */
+  .tk-grid {
+    min-width: 0;
+    padding: 0 1.1rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule);
+  }
+  .tk-grid > summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.25rem 0.6rem;
+    min-height: 2.75rem;
+    padding-block: 0.5rem;
+    font: 700 0.95rem var(--font-structure);
+    color: var(--field-text);
+    list-style: none;
+    cursor: pointer;
+  }
+  .tk-grid > summary::-webkit-details-marker {
+    display: none;
+  }
+  /* The answer seal's square: empty when shut, filled when open. */
+  .tk-grid > summary::before {
+    content: '';
+    width: 0.85rem;
+    height: 0.85rem;
+    border: var(--rule-hair) solid currentColor;
+  }
+  .tk-grid[open] > summary::before {
+    background: currentColor;
+  }
+  .tk-grid-summary {
+    font: 600 0.85rem var(--font-structure);
+    color: var(--ink-soft);
+  }
+  .tk-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1rem;
+    margin: 0.25rem 0 0.8rem;
+    font: 600 0.8rem var(--font-structure);
+    color: var(--ink-soft);
+  }
+  .tk-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+  .tk-cells {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(2.5rem, 1fr));
+    gap: 0.3rem;
+    margin: 0 0 1.1rem;
+    padding: 0;
+    list-style: none;
+  }
+  .tk-cells li {
+    display: flex;
+  }
+  /* The three states by shape, never by colour alone: answered is filled with
+     ink, not answered is a hairline frame on paper, and marked for review is a
+     solid square tab in the top-right corner (ink on a blank cell, paper on a
+     filled one). The current question has a heavy outline. */
+  .tk-cell {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 100%;
+    aspect-ratio: 1;
+    padding: 0;
+    font: 700 0.95rem var(--font-serial);
+    font-variant-numeric: tabular-nums;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .tk-cell[data-answered] {
+    color: var(--paper);
+    background: var(--ink);
+  }
+  .tk-cell[data-review]::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 0.5rem;
+    height: 0.5rem;
+    background: var(--ink);
+  }
+  .tk-cell[data-answered][data-review]::after {
+    background: var(--paper);
+  }
+  .tk-cell[aria-current='step'] {
+    outline: var(--rule-heavy) solid var(--rule-strong);
+    outline-offset: 2px;
+  }
+  /* Focus is the sitewide ring, plus an inner frame, so a focused cell never
+     reads as the current one (whose ring is the same weight). */
+  .tk-cell:focus-visible {
+    outline: var(--rule-heavy) solid var(--focus);
+    outline-offset: 2px;
+  }
+  .tk-cell:focus-visible::before {
+    content: '';
+    position: absolute;
+    inset: 3px;
+    border: var(--rule-hair) solid currentColor;
+  }
+  .tk-cell-sample {
+    display: inline-block;
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    cursor: default;
+  }
+  .tk-cell-sample[data-review]::after {
+    width: 0.4rem;
+    height: 0.4rem;
+  }
+
+  @media (min-width: 60rem) {
+    .tk-body {
+      grid-template-columns: minmax(0, 1fr) 16rem;
+    }
+    .tk-grid {
+      position: sticky;
+      top: calc(var(--tk-head-h) + 1rem);
+      padding-top: 0.9rem;
+    }
+    .tk-grid > summary {
+      display: none;
+    }
+    /* A hundred and fifty cells are taller than a screen: the cells scroll in
+       their own box, which take-page.js keeps the current one in view of. The
+       padding keeps the current cell's outline inside that box. */
+    .tk-cells {
+      max-height: calc(100vh - var(--tk-head-h) - 9rem);
+      overflow-y: auto;
+      padding: 4px;
+      margin-inline: -4px;
+      overscroll-behavior: contain;
+    }
+  }
+
+  /* --- the dialogs --- */
+
+  .tk-dialog {
+    width: min(30rem, 100% - 2rem);
+    padding: 1.25rem 1.4rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+  }
+  /* Deep Field, the one colour that is dark on both stocks: ink would dim the
+     day sitting but lay a grey fog over the night one. */
+  .tk-dialog::backdrop {
+    background: color-mix(in srgb, var(--field-deep) 70%, transparent);
+  }
+  .tk-dialog h2 {
+    margin-bottom: 0.6rem;
+    font-size: 1.25rem;
+  }
+  .tk-dialog p {
+    margin: 0;
+  }
+  .tk-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+  }
+
+  /* Without scripting there is nothing to show but the noscript line. */
+  @media (scripting: none) {
+    .tk-bar,
+    .tk-note {
+      display: none;
+    }
+  }
+
+  /* --- nothing moves what the reader can already see --- */
+
+  /* Hidden is not painted, and moves nothing anyone can see when it appears.
+       - .take stays hidden until the script's first draw (data-pending).
+       - The colophon, the only thing below, stays hidden until then too, and
+         while the questions load (data-view='loading'), since the test pushes
+         it down when it is drawn. Loading has no timed reveal: a slow year
+         file would otherwise show the colophon mid-load and then move it.
+     The animations are the way out if the script never runs. */
+  @keyframes tk-reveal {
+    to {
+      visibility: visible;
+    }
+  }
+  @media (scripting: enabled) {
+    .take[data-pending] {
+      visibility: hidden;
+      animation: tk-reveal 0s 4s forwards;
+    }
+    body:has(.take[data-pending]) .colophon {
+      visibility: hidden;
+      animation: tk-reveal 0s 6s forwards;
+    }
+    body:has(.take[data-view='loading']) .colophon {
+      visibility: hidden;
+      animation: none;
+    }
+  }
+</style>
