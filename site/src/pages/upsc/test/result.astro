@@ -1,0 +1,388 @@
+---
+import Document from '../../../layouts/Document.astro';
+import Masthead from '../../../components/Masthead.astro';
+import Colophon from '../../../components/Colophon.astro';
+
+// An app page, like /revise: what it shows is one attempt on this device, so it
+// is not indexed and not in the sitemap. Everything here is drawn by
+// result-page.js: the head from storage at once, By subject and the review once
+// the questions' year files are in.
+---
+
+<Document title="Test results" description="The score and review of a UPSC Prelims practice test." noindex={true}>
+  <Masthead />
+
+  {/* data-pending: nothing in here is on screen until result-page.js has drawn
+      the head (see the gate below). data-settling, set by the script while the
+      year files are on their way, holds back the colophon, the only thing below
+      By subject and the review, which arrive last. */}
+  <main class="sheet result" data-pending>
+    <div class="rs-head">
+      <h1 data-title tabindex="-1">Results</h1>
+      <p class="rs-when" data-when></p>
+      <p class="rs-timeup" data-timeup hidden>Time ran out, so the test was submitted for you.</p>
+      <p class="rs-score" data-score></p>
+      <p class="rs-accuracy" data-accuracy></p>
+      <p class="rs-links" data-links></p>
+    </div>
+    <p class="rs-note" role="status" data-note></p>
+    <p class="rs-retry" data-retry-row hidden><button type="button" class="rs-btn" data-retry-all>Try again</button></p>
+    <noscript><p class="rs-empty">Seeing your results needs JavaScript.</p></noscript>
+
+    <section class="rs-section" data-subjects-section hidden aria-labelledby="rs-subjects-h">
+      <h2 id="rs-subjects-h">By subject</h2>
+      <table class="rs-table">
+        <thead>
+          <tr>
+            <th scope="col">Subject</th>
+            <th scope="col" class="rs-num">Right</th>
+            <th scope="col" class="rs-num">Wrong</th>
+            <th scope="col" class="rs-num">Not answered</th>
+          </tr>
+        </thead>
+        <tbody data-subjects></tbody>
+      </table>
+    </section>
+
+    <section class="rs-section" data-review-section hidden aria-labelledby="rs-review-h">
+      <h2 id="rs-review-h">Review</h2>
+      <div class="rs-filters" role="group" aria-label="Show" data-filters></div>
+      <div id="rs-items" class="rs-items"></div>
+      <div class="rs-more" data-more hidden><button type="button" class="rs-btn">Show 20 more</button></div>
+    </section>
+  </main>
+
+  <Colophon />
+</Document>
+
+{/* The question blocks get their Mark done, Needs review and Save to list from
+    marks.js, imported exactly as revise.astro imports it, so the page has one
+    instance of it: its MutationObserver fills the empty marks slot of each block
+    the script below adds. result-page.js does not import it. */}
+<script>
+  import '../../../scripts/marks.js';
+</script>
+
+<script>
+  import '../../../scripts/result-page.js';
+</script>
+
+<style is:global>
+  /* Global, not scoped: most of this page is drawn by result-page.js, and
+     Astro's scoped styles never reach markup a script creates. Every class is
+     prefixed rs- so nothing here can leak. The question blocks themselves are
+     styled by question.css, as everywhere else. */
+  .result {
+    padding-block: clamp(1.5rem, 4vw, 2.75rem);
+  }
+
+  /* A part the script has not chosen to show is not shown, whatever display
+     its own rule gives it. */
+  .result [hidden] {
+    display: none;
+  }
+
+  /* --- the head: the test's name, when, the score, the ways on --- */
+
+  .rs-head {
+    display: grid;
+    gap: 0.3rem;
+    padding-bottom: 1rem;
+    margin-bottom: 0.9rem;
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .rs-head h1 {
+    margin-bottom: 0.3rem;
+    overflow-wrap: anywhere;
+    outline-offset: 4px;
+  }
+  .rs-head p {
+    margin: 0;
+  }
+  /* A line with nothing to say (no score for a test that is not finished, say)
+     takes no room. Every line is decided before the first draw is shown. */
+  .rs-head p:empty {
+    display: none;
+  }
+  .rs-when,
+  .rs-accuracy {
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+  }
+  .rs-timeup {
+    padding-left: 0.6rem;
+    font-size: 0.95rem;
+    border-left: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .rs-score {
+    font: 700 1.2rem var(--font-structure);
+    letter-spacing: -0.01em;
+    line-height: 1.35;
+    font-variant-numeric: tabular-nums;
+  }
+  .rs-head .rs-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.25rem;
+    margin-top: 0.4rem;
+    font: 600 0.88rem var(--font-structure);
+  }
+
+  /* The live region: "Loading 98 questions…", "Showing 17 wrong answers", a
+     year that did not load, a test that is not here or not finished. Always one
+     line tall, said or not, so a message coming or going moves nothing. A
+     failure is drawn as a note. */
+  .rs-note {
+    min-height: 1.6em;
+    margin: 0 0 0.9rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .rs-note[data-error] {
+    padding: 0.5rem 0.75rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .rs-retry {
+    margin: 0 0 1rem;
+  }
+  .rs-empty {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  /* --- by subject, then the review --- */
+
+  .rs-section {
+    margin-top: clamp(1.5rem, 4vw, 2.25rem);
+  }
+  .rs-section h2 {
+    margin-bottom: 0.8rem;
+    outline-offset: 4px;
+  }
+
+  /* Full width up to a cap, as /account's By subject table is: across the
+     whole sheet the counts sat a screen's width from their subjects. */
+  .rs-table {
+    width: 100%;
+    max-width: 44rem;
+    border-collapse: collapse;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
+  }
+  .rs-table th,
+  .rs-table td {
+    padding: 0.5rem 0.9rem;
+    text-align: left;
+    border-bottom: var(--rule-hair) solid var(--rule);
+  }
+  .rs-table thead th {
+    font: 600 0.68rem var(--font-structure);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .rs-table tbody th {
+    font: 600 0.95rem var(--font-structure);
+    overflow-wrap: anywhere;
+  }
+  .rs-table .rs-num {
+    text-align: right;
+  }
+  .rs-table td.rs-num {
+    font: 700 1rem var(--font-serial);
+    font-variant-numeric: tabular-nums;
+  }
+  .rs-table tbody tr:last-child > * {
+    border-bottom: 0;
+  }
+  /* On a phone the column heads are the widest thing in the table: let them
+     wrap, and narrow the cells' padding, so the table fits a 360px screen. */
+  @media (max-width: 30rem) {
+    .rs-table th,
+    .rs-table td {
+      padding: 0.45rem 0.5rem;
+    }
+    .rs-table thead th {
+      letter-spacing: 0.06em;
+    }
+  }
+
+  /* The filters: outlined toggles. The one showing has a heavy frame and an
+     underline, so it is never told by colour alone; its padding gives back what
+     the heavier frame takes, so pressing one moves nothing. */
+  .rs-filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-bottom: 1.1rem;
+  }
+  .rs-filters button {
+    min-height: 2.25rem;
+    padding: calc(0.4rem + 1px) calc(0.85rem + 1px);
+    font: 600 0.88rem var(--font-structure);
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .rs-filters button:hover {
+    background: var(--ground);
+  }
+  .rs-filters button[aria-pressed='true'] {
+    padding: 0.4rem 0.85rem;
+    font-weight: 700;
+    border: var(--rule-heavy) solid var(--rule-strong);
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 0.25em;
+  }
+
+  .rs-items {
+    display: grid;
+    gap: 1rem;
+  }
+
+  /* What the student chose and what it scored, between the options and their
+     marks: under a dashed fold the width of the block, like the answer's
+     below it. The line itself is short. */
+  .rs-verdict {
+    max-width: none;
+    margin: 0 0 0.85rem;
+    padding-top: 0.6rem;
+    font: 600 0.9rem var(--font-structure);
+    line-height: 1.45;
+    border-top: var(--rule-hair) dashed var(--rule);
+  }
+  /* The option the student chose carries the words, not a colour. */
+  .rs-pick {
+    display: inline-block;
+    margin-left: 0.5rem;
+    padding: 0 0.35rem;
+    font: 700 0.72rem var(--font-structure);
+    line-height: 1.5;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    vertical-align: 0.08em;
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  /* A question that cannot be shown stands in as its serial and a line on why,
+     in the question block's frame. */
+  .rs-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.8rem;
+    padding: 0.75rem 1.1rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule);
+    outline-offset: 2px;
+  }
+  .rs-serial {
+    font-weight: 700;
+  }
+  .rs-row-text {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+  }
+  .rs-items > .rs-empty {
+    font-size: 0.95rem;
+  }
+
+  /* Show 20 more and Try again: the secondary button, outlined on paper with a
+     green label. This page's job is reading, so nothing on it is the
+     filled-green primary. */
+  .rs-more {
+    margin-top: 1.25rem;
+  }
+  .rs-btn {
+    padding: 0.7rem 1.25rem;
+    font: 700 0.95rem var(--font-structure);
+    color: var(--field-text);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .rs-btn:hover {
+    background: var(--ground);
+  }
+  .rs-btn[aria-disabled='true'] {
+    cursor: progress;
+  }
+  /* A text button, as on /revise: quiet, underlined so it still reads as
+     pressable. Not red: red is stamp ink, never an action. */
+  .rs-text-btn {
+    min-height: 2.25rem;
+    padding: 0.3rem 0;
+    font: 600 0.85rem var(--font-structure);
+    letter-spacing: 0.02em;
+    color: var(--ink);
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    text-decoration: underline;
+    text-decoration-color: var(--rule-strong);
+    text-decoration-thickness: 1px;
+    text-underline-offset: 0.2em;
+    cursor: pointer;
+  }
+  .rs-text-btn:hover {
+    text-decoration-thickness: 2px;
+  }
+
+  @media (pointer: coarse) {
+    .rs-btn,
+    .rs-text-btn,
+    .rs-filters button {
+      min-height: 2.75rem;
+    }
+  }
+
+  /* Without scripting there is nothing to show but the noscript line. */
+  @media (scripting: none) {
+    .rs-note {
+      display: none;
+    }
+  }
+
+  /* --- nothing moves what the reader can already see --- */
+
+  /* Hidden is not painted, and moves nothing anyone can see when it appears.
+       - .result stays hidden until the script has drawn the head
+         (data-pending), and the colophon with it.
+       - While the year files are on their way (data-settling), By subject and
+         the review are not drawn, and the colophon, the only thing below them,
+         is taken out (display: none). Not visibility: Chrome keeps the last
+         place a hidden box was laid out, and counts the move when it shows
+         again elsewhere; a box that was not there has no old place. It is the
+         last thing on the page, so taking it out moves nothing. That ends by
+         itself: every year loads or fails within the script's 15 s limit.
+     The animations are the way out if the script never runs: the page and the
+     colophon show after a few seconds on their own (data-settling is only ever
+     set by the script). */
+  @keyframes rs-reveal {
+    to {
+      visibility: visible;
+    }
+  }
+  @media (scripting: enabled) {
+    .result[data-pending] {
+      visibility: hidden;
+      animation: rs-reveal 0s 4s forwards;
+    }
+    body:has(.result[data-pending]) .colophon {
+      visibility: hidden;
+      animation: rs-reveal 0s 6s forwards;
+    }
+    body:has(.result[data-settling]) .colophon {
+      display: none;
+    }
+  }
+</style>

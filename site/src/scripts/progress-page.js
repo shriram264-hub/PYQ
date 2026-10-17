@@ -16,6 +16,7 @@ import {
   subjectsCovered,
   summarise,
 } from '../lib/accounts/summary.js';
+import { TESTS_KEY, latestLine, loadTests } from '../lib/tests/store.js';
 
 // The /account page. Everything it shows comes from this device's storage (a
 // sync keeps that in step with the account), plus the per-year question indexes
@@ -44,6 +45,7 @@ const summaryBox = $('[data-summary]');
 const listsBox = $('[data-lists]');
 const listsNote = $('[data-lists-note]');
 const whereNote = $('[data-where-note]');
+const testsLine = $('[data-tests-line]');
 
 const el = (tag, className, ...children) => {
   const node = document.createElement(tag);
@@ -454,6 +456,9 @@ function render({ state = loadState(), restore = true } = {}) {
   // Settled once no index this state needs is still on its way (summary.js).
   const settled = pendingPaths(state, requests).length === 0;
   drawLists(view);
+  // The latest practice test, from this device's attempts (a sync keeps them
+  // in step with the account). Drawn with the cards, so it is in the first draw.
+  testsLine.textContent = latestLine(loadTests());
   drawSummary(view, settled);
   restoreFocus(before);
   reveal(settled);
@@ -703,11 +708,12 @@ document.addEventListener('click', (event) => {
   if (link && link.pathname === location.pathname && link.hash === '#lists') setTimeout(() => landOnLists(true));
 });
 
-// A sync that lands brings the account's marks and lists, and possibly years
-// this page has not fetched. Other tabs and a restored page change storage too.
+// A sync that lands brings the account's marks, lists and test attempts, and
+// possibly years this page has not fetched. Other tabs (a test submitted in
+// one) and a restored page change storage too.
 document.addEventListener('sawaalbox:synced', refresh);
 window.addEventListener('storage', (event) => {
-  if (event.key === STORAGE_KEY || event.key === null) refresh();
+  if (event.key === STORAGE_KEY || event.key === TESTS_KEY || event.key === null) refresh();
 });
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) refresh();

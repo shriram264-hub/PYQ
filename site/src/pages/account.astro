@@ -42,7 +42,9 @@ import { LEGAL } from '../lib/legal.js';
       it (see the gate in the styles), so what it draws never pushes anything
       the reader can already see.
       Revision comes first: its cards are the part that can be drawn from this
-      device alone. By subject needs the question indexes, so it grows after
+      device alone. Practice tests comes next, for the same reason: its line is
+      the latest result in this device's storage, drawn with the cards in the
+      first draw. By subject needs the question indexes, so it grows after
       they arrive, and it goes last so that growth moves nothing but the
       colophon, which is held back until then. */}
   <div class="acct" data-pending data-sync-full={authEnabled ? '' : undefined}>
@@ -50,6 +52,12 @@ import { LEGAL } from '../lib/legal.js';
       <h2 id="acct-lists-h" tabindex="-1">Revision</h2>
       <p class="acct-note" role="status" data-lists-note></p>
       <div data-lists></div>
+    </section>
+
+    <section class="acct-section" aria-labelledby="acct-tests-h">
+      <h2 id="acct-tests-h">Practice tests</h2>
+      <p class="acct-tests-line" data-tests-line></p>
+      <p class="acct-tests-link"><a href="/upsc/test">Practice tests</a></p>
     </section>
 
     <section class="acct-section" aria-labelledby="acct-sum-h">
@@ -128,8 +136,10 @@ import { LEGAL } from '../lib/legal.js';
   /* One live region per place something can happen. It is always in the page
      (a region that is created together with its text may not be announced).
      While it holds nothing, or a success only a screen reader needs, it takes
-     no room; a failure is shown. */
-  .acct-note {
+     no room; a failure is shown. The Practice tests line is set as one of
+     these notes is, but always shown. */
+  .acct-note,
+  .acct-tests-line {
     margin: 0;
     max-width: var(--measure);
     font-size: 0.9rem;
@@ -169,6 +179,14 @@ import { LEGAL } from '../lib/legal.js';
   }
   .acct-btn[hidden] {
     display: none;
+  }
+
+  /* --- practice tests: the latest result, and the way to the tests --- */
+
+  /* The structural link, as "Back to your progress" on /revise. */
+  .acct-tests-link {
+    margin: 0.6rem 0 0;
+    font: 600 0.88rem var(--font-structure);
   }
 
   /* --- by subject --- */
