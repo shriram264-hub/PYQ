@@ -233,7 +233,29 @@ function stopClock() {
   flushTime();
 }
 
-document.addEventListener('visibilitychange', () => (document.visibilityState === 'visible' ? startClock() : stopClock()));
+// Leaving the test (another tab, another app, the phone locked) asks for a sync
+// run, so a student who goes on to finish it on another device continues from
+// these answers: otherwise they would reach the account only at the next start,
+// submit, abandon or page load, and the other device's later save would win
+// the whole-attempt merge over them. One request per leave, not per answer
+// (that would be a request per click), and none when nothing has changed since
+// the last one. Signed out, nothing listens. Not on pagehide: a page being
+// navigated away from would cut the run off anyway.
+let askedAt = null; // the stored attempt's updatedAt when a leave last asked
+function askSyncOnLeave() {
+  if (finished || !attempt || page.dataset.view !== 'test') return;
+  const stored = getAttempt(loadTests(), attempt.id);
+  if (stored?.status !== 'in_progress' || stored.updatedAt === askedAt) return;
+  askedAt = stored.updatedAt;
+  document.dispatchEvent(new CustomEvent('sawaalbox:test'));
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') return startClock();
+  // The clock stops first, so the time it saves goes with the answers.
+  stopClock();
+  askSyncOnLeave();
+});
 window.addEventListener('pagehide', stopClock);
 // A page restored from the back/forward cache ran nothing while it was away.
 window.addEventListener('pageshow', (event) => {

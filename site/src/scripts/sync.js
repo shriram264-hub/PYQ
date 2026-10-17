@@ -234,9 +234,10 @@ function openSession(client, user) {
   // marks.js has already queued the op; the event only says "something changed".
   // A list change is the same: the lists are already saved, and the run finds
   // what differs from the account by comparing them with it. So is a test
-  // started, submitted or abandoned (`sawaalbox:test`): the attempt is already
-  // saved, and the run sends whatever is dirty. (A wrapper, so the event object
-  // is never taken for run's `full`.)
+  // started, submitted or abandoned, or its page put away with changes
+  // (`sawaalbox:test`): the attempt is already saved, and the run sends
+  // whatever is dirty. (A wrapper, so the event object is never taken for
+  // run's `full`.)
   const onChange = () => run();
 
   // The client is dead after sign-out: no more runs with it, and the next

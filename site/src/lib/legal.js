@@ -98,8 +98,9 @@
 //     holding the attempt as in item 1a except syncedAt (lib/tests/merge.js:12-31
 //     toRow), upserted by scripts/sync-tests.js:58-74. A run happens on page
 //     loads while signed in and when a test is started, submitted or
-//     abandoned (the `sawaalbox:test` event, sync.js:258), not on every
-//     answer. A copy stays in this browser (item 1a), with a pull marker
+//     abandoned, or its page is hidden with changes since the last such run
+//     (the `sawaalbox:test` event, sync.js:259; take-page.js askSyncOnLeave),
+//     not on every answer. A copy stays in this browser (item 1a), with a pull marker
 //     `sawaalbox-sync-tests-v1` holding the user id and a time
 //     (sync-tests.js:34, lib/accounts/pull.js:66-81), removed on sign-out
 //     (sync.js forgetMarkers :220-224). Attempts are never deleted: the table
