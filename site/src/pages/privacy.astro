@@ -20,12 +20,12 @@ const mail = `mailto:${LEGAL.email}`;
     <ul>
       <li>Reading and searching past questions needs no account. There are no ads, no analytics and no tracking cookies.</li>
       <li>
-        Without an account, your marks, revision lists and theme stay in your browser on this device. The only thing you
-        type that leaves your device is the text of a search.
+        Without an account, your marks, revision lists, practice-test attempts and theme stay in your browser on this
+        device. The only thing you type that leaves your device is the text of a search.
       </li>
       <li>
-        If you sign in with Google, we keep your name, email address, profile picture link, marks and lists, so they follow
-        you to any device.{!authEnabled && ' Sign-in is not open yet.'}
+        If you sign in with Google, we keep your name, email address, profile picture link, marks, revision lists and
+        practice-test attempts, so they follow you to any device.{!authEnabled && ' Sign-in is not open yet.'}
       </li>
       <li>We don't sell your data or share it with anyone except the services below that run the site.</li>
       <li>Email <a href={mail}>{LEGAL.email}</a> to see, correct or delete what we hold.</li>
@@ -47,6 +47,14 @@ const mail = `mailto:${LEGAL.email}`;
         <strong>Marks and lists.</strong> When you use Mark done, Needs review or Save to list, the question and your choice
         are saved in your browser's storage on this device. They are not sent anywhere.
       </li>
+      <li>
+        <strong>Practice tests.</strong> When you take a past paper or a practice set, the test is saved in your browser's
+        storage on this device: which paper or set it is, its questions, your answers, the questions you mark for review,
+        the question you were on, the time allowed and the time used, whether it is in progress, submitted or abandoned,
+        when it was started, last changed and submitted, and its score. A practice set also keeps your choices on the form
+        and the random number that drew its questions. A test you abandon is kept, with its answers. None of this is sent
+        anywhere.
+      </li>
       <li><strong>Theme.</strong> If you pick Light or Dark, that choice is saved the same way.</li>
       <li>
         <strong>Searches.</strong> When you search, the text you typed and any filters you chose (subject, years,
@@ -61,8 +69,8 @@ const mail = `mailto:${LEGAL.email}`;
       </li>
     </ul>
     <p>
-      To remove what is saved in your browser, clear this site's data in your browser's settings. Marks and lists kept only
-      in your browser are lost if you do.
+      To remove what is saved in your browser, clear this site's data in your browser's settings. Marks, revision lists and
+      practice-test attempts kept only in your browser are lost if you do.
     </p>
   </section>
 
@@ -81,15 +89,16 @@ const mail = `mailto:${LEGAL.email}`;
       <li>your name, email address and the link to your Google profile picture;</li>
       <li>an ID for your Google account, so the same Google account always opens the same SawaalBox account.</li>
     </ul>
-    <p>Your marks and revision lists are then saved to your account as well as in your browser:</p>
+    <p>Your marks, revision lists and practice-test attempts are then saved to your account as well as in your browser:</p>
     <ul>
       <li>for each mark, the question, whether it is Done or Needs review, and when you marked it;</li>
-      <li>for each list, its name and its questions, each with the date it was saved.</li>
+      <li>for each list, its name and its questions, each with the date it was saved;</li>
+      <li>for each practice test, the details your browser keeps about it (see above).</li>
     </ul>
     <p>
       Your browser keeps your sign-in session, which includes your name and email address, so you stay signed in until you
-      sign out. Signing out does not remove your marks and lists from this browser: on a shared computer, clear this site's
-      data in your browser's settings after you sign out.
+      sign out. Signing out does not remove your marks, lists and practice-test attempts from this browser: on a shared
+      computer, clear this site's data in your browser's settings after you sign out.
     </p>
     <p>
       If you sign in from a page that shows a search, that page's web address, search included, is passed through the
@@ -101,7 +110,7 @@ const mail = `mailto:${LEGAL.email}`;
   <section data-numbered aria-labelledby="why">
     <h2 id="why">Why we use it</h2>
     <ul>
-      <li>Your marks and lists: to show them to you on every device where you sign in.</li>
+      <li>Your marks, lists and practice-test attempts: to show them to you on every device where you sign in.</li>
       <li>Your email address and Google account ID: to know which account is yours, and to check that a request about your data comes from you.</li>
       <li>Your name: its first letter appears on the account button. We don't show your picture.</li>
       <li>Search text: to find the questions you asked for. Logs: to find and fix problems.</li>
@@ -117,8 +126,8 @@ const mail = `mailto:${LEGAL.email}`;
     <h2 id="where">Where it is kept, and who handles it</h2>
     <ul>
       <li>
-        <strong>Supabase</strong> runs sign-in and the database that holds accounts, marks and lists, and stores them in
-        Mumbai, India.
+        <strong>Supabase</strong> runs sign-in and the database that holds accounts, marks, lists and practice-test
+        attempts, and stores them in Mumbai, India.
       </li>
       <li><strong>Render</strong> runs the website and the search service, on servers in the United States.</li>
       <li>
@@ -135,10 +144,10 @@ const mail = `mailto:${LEGAL.email}`;
       </li>
     </ul>
     <p>
-      So your account, marks and lists are stored in India, while search logs and records of page visits are kept by
-      Render, outside India. Connections to the site, the search service and Supabase use HTTPS. In the database, access
-      rules let each signed-in account read and change only its own marks and lists. If a breach affects your data, we will
-      tell you and the authorities as the law requires.
+      So your account, marks, lists and practice-test attempts are stored in India, while search logs and records of page
+      visits are kept by Render, outside India. Connections to the site, the search service and Supabase use HTTPS. In the
+      database, access rules let each signed-in account read and change only its own marks, lists and practice-test
+      attempts. If a breach affects your data, we will tell you and the authorities as the law requires.
     </p>
   </section>
 
@@ -146,10 +155,15 @@ const mail = `mailto:${LEGAL.email}`;
     <h2 id="how-long">How long we keep it</h2>
     <ul>
       <li>
-        Your account, marks and lists: for as long as your account exists. When you ask us to delete your account, we
-        delete it together with your marks, your lists and Supabase's record of your sign-ins.
+        Your account, marks, lists and practice-test attempts: for as long as your account exists. When you ask us to
+        delete your account, we delete it together with your marks, your lists, your practice-test attempts and Supabase's
+        record of your sign-ins.
       </li>
-      <li>What is saved in your browser: until you remove it, or clear this site's data.</li>
+      <li>
+        What is saved in your browser: until you remove it, or clear this site's data. Your browser keeps your 200 most
+        recently changed practice tests; an older one is removed from it, and remains only in your account if it was saved
+        there.
+      </li>
       <li>Emails you send us: in our mailbox, until you ask us to delete them or we no longer need them.</li>
       <li>
         Records of requests kept by the services that run the site (by Render for page visits and searches, and by
@@ -166,8 +180,8 @@ const mail = `mailto:${LEGAL.email}`;
       <li>ask what personal data we hold about you, what we do with it, and who handles it for us;</li>
       <li>ask us to correct, complete or update it;</li>
       <li>
-        ask us to delete it: we delete your account, marks and lists, and the sign-in records we can remove (logs kept by
-        the services that run the site expire on their own schedule);
+        ask us to delete it: we delete your account, marks, lists and practice-test attempts, and the sign-in records we
+        can remove (logs kept by the services that run the site expire on their own schedule);
       </li>
       <li>withdraw your consent at any time, after which we delete your account;</li>
       <li>nominate someone to use these rights for you if you die or become unable to;</li>

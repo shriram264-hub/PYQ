@@ -2,9 +2,10 @@
 // /privacy, /terms, /contact and /account all read them from here, so a change
 // of address or reply time is one edit.
 //
-// FACTS INVENTORY (checked 2026-10-03). Every statement on /privacy, /terms and
-// /contact traces to an item below. When the code changes what is stored or
-// sent, update this list and the pages together, and move `updated`.
+// FACTS INVENTORY (checked 2026-10-03; practice tests, items 1a and 9a and the
+// test parts of 8, 10 and 11, checked 2026-10-17). Every statement on /privacy,
+// /terms and /contact traces to an item below. When the code changes what is
+// stored or sent, update this list and the pages together, and move `updated`.
 //
 // Signed out
 //  1. Marks and revision lists are saved in this browser's localStorage under
@@ -14,6 +15,24 @@
 //     (progress-store.js:110-111), and lists as name + question keys
 //     (progress-store.js:29). Nothing is sent anywhere while signed out:
 //     syncing starts only on `sawaalbox:signed-in` (components/AccountControl.astro:35).
+//  1a. Practice-test attempts (a past paper or a practice set) are saved in
+//     this browser's localStorage under `sawaalbox-tests-v1`
+//     (lib/tests/store.js:7), apart from marks and lists. An attempt holds
+//     (lib/tests/attempt.js:25-43): a random id; the exam; paper or practice
+//     set; what it was built from (the paper's year, or the set's subjects,
+//     topics, years, question count, minutes, the two switches and the random
+//     seed that drew it); its question keys; the answers given; the questions
+//     marked for review in the test; the question it is on; the time allowed
+//     and the time used; its status (in_progress, submitted, abandoned); when
+//     it was started, last changed and submitted; the result once submitted
+//     (right, wrong, blank, score, out of); and, on the device only, the time
+//     it last matched the account (`syncedAt`, never sent: lib/tests/merge.js:12-31
+//     toRow). Nothing else. Abandoning keeps the attempt and its answers, with
+//     the status abandoned (attempt.js:88). The browser keeps the 200 most
+//     recently changed attempts (store.js:11; pruneAttempts :43-47, run by
+//     every save, :51-59); an older one leaves this browser and remains only
+//     where the account holds it (item 9a). Nothing is sent while signed out,
+//     as for item 1.
 //  2. The theme choice is saved under `sawaalbox-theme`, 'light' or 'dark'
 //     (components/ThemeToggle.astro:55; read before paint in layouts/Document.astro:33).
 //  3. Search sends the search text and the chosen filters (subject, years,
@@ -49,12 +68,14 @@
 //     storage; @supabase/auth-js GoTrueClient storage = globalThis.localStorage),
 //     plus a PKCE code verifier during sign-in (auth.js:26). Sign-out first
 //     gives the sync one last run of at most 3 s (auth.js finishSyncing), then
-//     removes the session and nothing else: marks and lists stay in this
-//     browser after sign-out (sync.js onSignedOut forgets only the pull
-//     markers). When a different account next signs in on this browser, the
-//     previous account's synced marks and synced lists are removed from it
-//     before anything is merged (merge.js rebaseForNewAccount, sync.js
-//     claimDevice); marks and lists never synced join the account signing in.
+//     removes the session and nothing else: marks, lists and test attempts
+//     stay in this browser after sign-out (sync.js onSignedOut forgets only
+//     the pull markers). When a different account next signs in on this
+//     browser, the previous account's synced marks, synced lists and synced
+//     test attempts are removed from it before anything is merged (merge.js
+//     rebaseForNewAccount, lib/tests/merge.js:124-126 rebaseTests, sync.js
+//     claimDevice :103-135); marks, lists and test attempts never synced join
+//     the account signing in.
 //     It is loaded only when someone presses Sign in or a session is already
 //     stored (auth.js:5-7, account.js:47).
 //  8a. Sign-in returns to the page it started on, query string included, so a
@@ -71,11 +92,29 @@
 //     account whose data this browser holds (the last to sign in here), kept
 //     after sign-out so the next account to sign in here is recognised
 //     (lib/accounts/pull.js OWNER_KEY).
+//  9a. Practice-test attempts sync to Supabase as well
+//     (supabase/migrations/20261011120000_test_attempts.sql): one
+//     test_attempts row per attempt (:5-22) under the account's user_id (:7),
+//     holding the attempt as in item 1a except syncedAt (lib/tests/merge.js:12-31
+//     toRow), upserted by scripts/sync-tests.js:58-74. A run happens on page
+//     loads while signed in and when a test is started, submitted or
+//     abandoned (the `sawaalbox:test` event, sync.js:258), not on every
+//     answer. A copy stays in this browser (item 1a), with a pull marker
+//     `sawaalbox-sync-tests-v1` holding the user id and a time
+//     (sync-tests.js:34, lib/accounts/pull.js:66-81), removed on sign-out
+//     (sync.js forgetMarkers :220-224). Attempts are never deleted: the table
+//     grants no delete (migration :30-31) and the sync only upserts, so they
+//     go only with the account (item 11). A new account on this browser:
+//     item 8. An attempt whose id another account's row already holds (row-level
+//     security refuses it) is removed from this browser, and that account
+//     keeps it (sync-tests.js:58-74, :113).
 // 10. Access rules: row-level security on every table; each signed-in user can
 //     read and change only their own rows, and nobody signed out can reach them
-//     (migration :40-77).
+//     (migration :40-77; test_attempts: 20261011120000_test_attempts.sql
+//     :25-44, select, insert and update of the user's own rows, no delete).
 // 11. Deleting the account deletes the data: every table references auth.users
-//     `on delete cascade` (migration :5, :14, :24, :33). Deletion is done by the
+//     `on delete cascade` (migration :5, :14, :24, :33; test_attempts
+//     20261011120000_test_attempts.sql:7). Deletion is done by the
 //     operator on request; the site has no self-serve delete. Supabase's
 //     sign-in audit rows (auth.audit_log_entries) have no foreign key to
 //     auth.users, so they outlive the cascade and are purged by hand as part
@@ -138,7 +177,7 @@ export const LEGAL = Object.freeze({
   email: 'hello@sawaalbox.in',
   place: 'Bengaluru, Karnataka',
   // The date on all three pages. Move it whenever their wording changes.
-  updated: '2026-10-03',
+  updated: '2026-10-17',
   // The owner's words, used verbatim on /terms and /account.
   betaTerms: "Free during the beta. Some features may later need a paid pass; we'll tell you before anything you use changes.",
   minAge: 18,

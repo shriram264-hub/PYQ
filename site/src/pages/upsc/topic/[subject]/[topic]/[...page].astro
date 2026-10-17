@@ -46,6 +46,9 @@ const description = `${topic.count} UPSC Prelims questions on ${topic.subtopic} 
   <p slot="meta" class="years-line serial">
     Asked in {years.join(', ')}
   </p>
+  <p slot="meta" class="practise-line">
+    <a href={`/upsc/test?subject=${topic.subjectSlug}&topic=${topic.slug}#practice`}>Practise this topic</a>
+  </p>
 
   <div class="qlist">
     {page.data.map((q) => <QuestionBlock q={q} />)}
@@ -55,6 +58,13 @@ const description = `${topic.count} UPSC Prelims questions on ${topic.subtopic} 
 </Listing>
 
 <style>
+  .practise-line {
+    margin: 0.6rem 0 0;
+    font-family: var(--font-structure);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
   .years-line {
     margin: 0.7rem 0 0;
     font-size: 0.85rem;

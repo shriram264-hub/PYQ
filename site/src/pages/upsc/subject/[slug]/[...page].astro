@@ -44,6 +44,8 @@ const description = `All ${subject.count.toLocaleString('en-IN')} ${subject.name
     { name: subject.name, href: basePath },
   ]}
 >
+  <p slot="meta" class="practise-line"><a href={`/upsc/test?subject=${subject.slug}#practice`}>Practise this subject</a></p>
+
   {
     topics.length > 0 && (
       <nav class="topics" aria-label="Topics in this subject">
@@ -69,6 +71,13 @@ const description = `All ${subject.count.toLocaleString('en-IN')} ${subject.name
 </Listing>
 
 <style>
+  .practise-line {
+    margin: 0.6rem 0 0;
+    font-family: var(--font-structure);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
   .topics {
     margin-bottom: 1.75rem;
   }

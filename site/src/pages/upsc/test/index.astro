@@ -2,11 +2,26 @@
 import Listing from '../../../layouts/Listing.astro';
 import { PAPERS } from '../../../lib/papers.js';
 import { authEnabled } from '../../../lib/accounts/config.js';
+import { SUBJECTS, SUBTOPICS, YEARS } from '../../../lib/corpus.js';
+import { COUNTS } from '../../../lib/tests/attempt.js';
+import { defaultMinutes } from '../../../lib/tests/build.js';
 
 // The Practice tests page (spec, "1. Starting a test"). Indexable: the list of
 // papers is server-rendered and works without JavaScript, each a plain link to
 // the take page's start screen. Carry on and Past results are this device's own
-// attempts, drawn by tests-page.js.
+// attempts, drawn by tests-page.js. The practice-set form is server-rendered
+// too, so it costs no layout shift; practice-form.js enables it.
+
+const byName = (a, b) => a.localeCompare(b, 'en');
+// Every subject A to Z, each with every topic in it, A to Z: the form offers
+// all 116 topics, thin ones included, since a set may want exactly those.
+const SUBJECT_TOPICS = [...SUBJECTS]
+  .sort((a, b) => byName(a.name, b.name))
+  .map((s) => ({
+    ...s,
+    topics: SUBTOPICS.filter((t) => t.subject === s.name).sort((a, b) => byName(a.subtopic, b.subtopic)),
+  }));
+const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
 ---
 
 <Listing
@@ -45,6 +60,94 @@ import { authEnabled } from '../../../lib/accounts/config.js';
       </ol>
     </section>
 
+    <section class="tp-section" id="practice" aria-labelledby="tp-practice-h">
+      <h2 id="tp-practice-h">Build a practice set</h2>
+      <p class="tp-lede">
+        Choose subjects, topics and years, and how many questions. Questions are drawn at random from those that match.
+      </p>
+      <form class="tp-form" data-practice novalidate>
+        <fieldset class="tp-fields" data-practice-fields disabled>
+          <fieldset class="tp-group">
+            <legend>Subjects and topics <span class="tp-hint">(none ticked: every subject)</span></legend>
+            <ul class="tp-subjects" style={`--tp-rows: ${Math.ceil(SUBJECT_TOPICS.length / 2)}`}>
+              {
+                SUBJECT_TOPICS.map((s) => (
+                  <li class="tp-subject">
+                    <label class="tp-check">
+                      <input type="checkbox" name="subject" value={s.name} data-slug={s.slug} />
+                      <span>{s.name}</span> <span class="serial tp-count">{s.count}</span>
+                    </label>
+                    <details class="tp-topics">
+                      <summary>
+                        Topics<span class="visually-hidden"> in {s.name}</span>
+                      </summary>
+                      <ul>
+                        {s.topics.map((t) => (
+                          <li>
+                            <label class="tp-check">
+                              <input
+                                type="checkbox"
+                                name="topic"
+                                value={JSON.stringify([s.name, t.subtopic])}
+                                data-slug={t.slug}
+                                data-subject={s.slug}
+                              />
+                              <span>{t.subtopic}</span> <span class="serial tp-count">{t.count}</span>
+                            </label>
+                          </li>
+                        ))}
+                      </ul>
+                    </details>
+                  </li>
+                ))
+              }
+            </ul>
+          </fieldset>
+          <fieldset class="tp-group tp-years">
+            <legend>Years</legend>
+            <label>
+              From
+              <select name="fromYear">
+                {YEARS_UP.map((y, i) => <option value={y} selected={i === 0}>{y}</option>)}
+              </select>
+            </label>
+            <label>
+              To
+              <select name="toYear">
+                {YEARS_UP.map((y, i) => <option value={y} selected={i === YEARS_UP.length - 1}>{y}</option>)}
+              </select>
+            </label>
+          </fieldset>
+          <fieldset class="tp-group tp-counts">
+            <legend>Questions</legend>
+            {
+              COUNTS.map((n) => (
+                <label class="tp-check">
+                  <input type="radio" name="count" value={n} checked={n === 25} /> <span class="serial">{n}</span>
+                </label>
+              ))
+            }
+          </fieldset>
+          <label class="tp-group tp-minutes">
+            Time in minutes
+            <input type="number" name="minutes" min="5" max="180" step="1" inputmode="numeric" value={defaultMinutes(25)} />
+          </label>
+          <fieldset class="tp-group tp-which">
+            <legend>Which questions</legend>
+            <label class="tp-check"><input type="checkbox" name="skipDone" /> Skip questions I've marked Done</label>
+            <label class="tp-check"><input type="checkbox" name="onlyReview" /> Only my Needs review questions</label>
+          </fieldset>
+          <p class="tp-pool" role="status" data-pool></p>
+          {/* Try again comes after Start, on its row: appearing there it moves nothing. */}
+          <div class="tp-actions">
+            <button type="submit" class="tp-primary" data-practice-start>Start practice set</button>
+            <span class="tp-pool-retry" data-pool-retry hidden><button type="button" class="tp-btn">Try again</button></span>
+          </div>
+        </fieldset>
+      </form>
+      <noscript><p class="tp-lede">Building a practice set needs JavaScript.</p></noscript>
+    </section>
+
     <section class="tp-section" id="results" aria-labelledby="tp-results-h" hidden>
       <h2 id="tp-results-h">Past results</h2>
       <ul class="tp-rows" data-results></ul>
@@ -64,8 +167,13 @@ import { authEnabled } from '../../../lib/accounts/config.js';
   </div>
 </Listing>
 
+{/* One script, not two: one module graph runs in one go, so a Practise link's
+    ticks and open topic list (practice-form.js) are always in place before
+    tests-page.js can lift the gate. As two scripts, a late second file could
+    land after the gate and move what is already on screen. */}
 <script>
   import '../../../scripts/tests-page.js';
+  import '../../../scripts/practice-form.js';
 </script>
 
 <style is:global>
@@ -247,9 +355,310 @@ import { authEnabled } from '../../../lib/accounts/config.js';
     margin-top: 1.25rem;
   }
 
-  /* Without scripting the status line can never say anything. */
+  /* --- the practice-set form (practice-form.js) --- */
+
+  .tp .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  .tp-lede {
+    margin: 0 0 1.1rem;
+    color: var(--ink-soft);
+  }
+
+  .tp-form {
+    max-width: 50rem;
+  }
+
+  /* The fieldsets keep their meaning (each legend names its group to a screen
+     reader) but drop the browser's frame: each group is ruled off by one
+     hairline above it, as the papers are. The legend floats so that it sits
+     under that rule instead of in a gap cut out of it. */
+  .tp-fields,
+  .tp-group {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+  }
+  .tp-fields {
+    display: grid;
+  }
+  .tp-group {
+    padding: 0.8rem 0 1rem;
+    border-top: var(--rule-hair) solid var(--rule);
+  }
+  .tp-group > legend {
+    float: left;
+    width: 100%;
+    padding: 0;
+    margin: 0 0 0.45rem;
+  }
+  /* A list or a row of boxes sets out its own layout, so it would sit beside
+     the floated legend rather than under it. */
+  .tp-group > legend + * {
+    clear: left;
+  }
+  .tp-group > legend,
+  .tp-minutes {
+    font: 700 1.02rem var(--font-structure);
+    letter-spacing: -0.01em;
+  }
+  .tp-hint {
+    font: 400 0.92rem var(--font-read);
+    letter-spacing: 0;
+    color: var(--ink-soft);
+  }
+
+  /* Years, count and time are short: on a wide sheet they share one row, one
+     rule running across all three. */
+  @media (min-width: 48rem) {
+    .tp-fields {
+      grid-template-columns: auto auto minmax(0, 1fr);
+    }
+    .tp-fields > * {
+      grid-column: 1 / -1;
+    }
+    .tp-fields > .tp-years,
+    .tp-fields > .tp-counts,
+    .tp-fields > .tp-minutes {
+      grid-column: auto;
+    }
+    .tp-fields > .tp-years,
+    .tp-fields > .tp-counts {
+      padding-right: 2.5rem;
+    }
+  }
+
+  /* A box and its words. The whole label is the target. */
+  .tp-check {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.5rem;
+    padding: 0.3rem 0;
+    cursor: pointer;
+  }
+  .tp-check input {
+    flex: none;
+    width: 1rem;
+    height: 1rem;
+    margin: 0;
+    align-self: center;
+    accent-color: var(--ink);
+  }
+  .tp-count {
+    font-size: 0.85rem;
+    color: var(--ink-faint);
+  }
+
+  /* Subjects A to Z, down one column and then the next. */
+  .tp-subjects {
+    display: grid;
+    column-gap: 2rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  @media (min-width: 48rem) {
+    .tp-subjects {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: repeat(var(--tp-rows), auto);
+      grid-auto-flow: column;
+      align-items: start;
+    }
+  }
+  .tp-subject {
+    padding-bottom: 0.3rem;
+  }
+  .tp-subject > .tp-check {
+    font: 600 1rem var(--font-structure);
+  }
+
+  /* Topics fold away under their subject, opened with the answer seal's
+     drawn square, and line up with the subject's name. */
+  .tp-topics {
+    margin-left: 1.5rem;
+  }
+  .tp-topics summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.1rem 0;
+    font: 600 0.85rem var(--font-structure);
+    color: var(--field-text);
+    list-style: none;
+    cursor: pointer;
+  }
+  .tp-topics summary::-webkit-details-marker {
+    display: none;
+  }
+  .tp-topics summary::before {
+    content: '';
+    width: 0.7rem;
+    height: 0.7rem;
+    border: var(--rule-hair) solid currentColor;
+  }
+  .tp-topics[open] summary::before {
+    background: currentColor;
+  }
+  .tp-topics ul {
+    margin: 0.15rem 0 0.4rem;
+    padding: 0 0 0 1.1rem;
+    list-style: none;
+  }
+  /* One topic per line, set as text with the box hung to its left, so that a
+     long name wraps under itself and its count follows the last word (as a
+     flex row, the count went to the far edge). The box is centred on the
+     first line: (line height - box) / 2 below the padding. */
+  .tp-topics .tp-check {
+    --tp-pad: 0.2rem;
+    position: relative;
+    display: block;
+    padding: var(--tp-pad) 0 var(--tp-pad) 1.5rem;
+    font: 500 0.92rem/1.35 var(--font-structure);
+  }
+  .tp-topics .tp-check input {
+    position: absolute;
+    left: 0;
+    top: calc(var(--tp-pad) + (1.35 * 0.92rem - 1rem) / 2);
+  }
+
+  /* The years and the counts each sit in a row under their legend. A grid,
+     not a line of inline boxes: beside a floated legend, a line's widest size
+     counts the legend too, and the settings row above was sized for both. */
+  .tp-years,
+  .tp-counts {
+    display: grid;
+    justify-content: start;
+    align-items: center;
+    column-gap: 1.25rem;
+  }
+  .tp-years {
+    grid-template-columns: auto auto;
+  }
+  .tp-counts {
+    grid-template-columns: repeat(4, auto); /* one for each of COUNTS */
+  }
+  .tp-years > legend,
+  .tp-counts > legend {
+    grid-column: 1 / -1;
+  }
+  .tp-years label {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font: 600 0.9rem var(--font-structure);
+    color: var(--ink-soft);
+  }
+  .tp-minutes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.45rem;
+  }
+  .tp-which .tp-check {
+    display: flex;
+  }
+
+  .tp-fields select,
+  .tp-fields input[type='number'] {
+    padding: 0.35rem 0.45rem;
+    font: 400 1rem var(--font-serial);
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    opacity: 1;
+  }
+  .tp-fields input[type='number'] {
+    width: 5.5rem;
+  }
+
+  /* "312 questions match. The set will have 25." Its height is held, said or
+     not, so a message arriving moves nothing: one line on a wide sheet, two on
+     a narrow one, where "Only 12 questions match: the set will have all 12."
+     and the error lines wrap (measured at 360 and 390). The words sit at the
+     foot of that space, against Start. */
+  .tp-pool {
+    display: flex;
+    align-items: flex-end;
+    min-height: 3.2em;
+    margin: 0.1rem 0 0.6rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  @media (min-width: 48rem) {
+    .tp-pool {
+      min-height: 1.6em;
+    }
+  }
+  .tp-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem;
+  }
+
+  /* The page's one filled-green action. */
+  .tp-primary {
+    padding: 0.7rem 1.25rem;
+    font: 700 0.95rem var(--font-structure);
+    color: var(--field-ink);
+    background: var(--field);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .tp-primary:hover {
+    background: var(--field-deep);
+  }
+  /* Nothing matches (or no scripting): unavailable, as a pager step is. */
+  .tp-primary:disabled {
+    color: var(--ink-faint);
+    background: var(--paper);
+    border-style: dashed;
+    border-color: var(--rule);
+    cursor: default;
+  }
+
+  /* Disabled only until practice-form.js runs, a moment: kept fully legible,
+     not greyed. */
+  .tp-fields:disabled .tp-check,
+  .tp-fields:disabled select {
+    cursor: default;
+  }
+  .tp-fields select:disabled,
+  .tp-fields input:disabled {
+    color: var(--ink);
+    opacity: 1;
+  }
+
+  @media (pointer: coarse) {
+    .tp-check {
+      padding-block: 0.5rem;
+    }
+    .tp-topics .tp-check {
+      --tp-pad: 0.45rem;
+    }
+    .tp-topics summary {
+      padding-block: 0.45rem;
+    }
+    .tp-primary {
+      min-height: 2.75rem;
+    }
+  }
+
+  /* Without scripting the status lines can never say anything. */
   @media (scripting: none) {
-    .tp-note {
+    .tp-note,
+    .tp-pool {
       display: none;
     }
   }
@@ -265,8 +674,13 @@ import { authEnabled } from '../../../lib/accounts/config.js';
       visibility: visible;
     }
   }
+  /* The colophon is held with it. Arriving at #practice on a wide screen, it is
+     in view under the form, and it would move when Past results is drawn or a
+     Practise link opens a topic list (measured at 1280: 0.037). Hidden from
+     the first paint, it has no place on screen to move from. */
   @media (scripting: enabled) {
-    .tp[data-pending] {
+    .tp[data-pending],
+    body:has(.tp[data-pending]) .colophon {
       visibility: hidden;
       animation: tp-reveal 0s 4s forwards;
     }

@@ -47,7 +47,7 @@ Semantic search over a complete, dated corpus of past questions. Competing mater
 
 **Domain:** `sawaalbox.in` (registered 2026-10-03); the site moves to it from the Render URL once DNS is live.
 
-**Monetization:** a one-time pass valid until an exam date, not an auto-renewing subscription; advertising is ruled out. Passes are sold **per exam** (UPSC, SSC, and others as their question banks arrive), and a student can hold several. Signing in is free and never requires a purchase; paid features show an "Upgrade" prompt leading to a plans page. **Undecided:** the price, and exactly which features a pass unlocks (expected: mock tests and analytics). Payments will run through Razorpay, since Stripe does not take UPI or domestic INR for Indian merchants.
+**Monetization:** a one-time pass valid until an exam date, not an auto-renewing subscription; advertising is ruled out. Passes are sold **per exam** (UPSC, SSC, and others as their question banks arrive), and a student can hold several. Signing in is free and never requires a purchase; paid features show an "Upgrade" prompt leading to a plans page. **Undecided:** the price, and exactly which features a pass unlocks (expected: mock tests and analytics). Mock tests (every past paper, and practice sets by subject, topic and year) are live and free during the beta, behind one access check (`canStartTest`) that payments will fill in. Payments will run through Razorpay, since Stripe does not take UPI or domestic INR for Indian merchants.
 
 ## Brand Commitments
 
