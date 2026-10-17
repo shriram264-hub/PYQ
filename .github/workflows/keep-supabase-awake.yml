@@ -1,0 +1,31 @@
+# Supabase pauses a free-plan project after 7 days without activity, and while
+# it is paused nobody can sign in and nothing syncs (it happened on 2026-10-17).
+# One small database call a day keeps it awake. The function it calls,
+# public.keep_alive(), returns 1 and reads nothing
+# (supabase/migrations/20261017120000_keep_alive.sql). The key below is the
+# project's publishable key: public by design, the same one the site ships
+# (render.yaml), and row-level security does the guarding.
+#
+# GitHub runs scheduled workflows only from the default branch, and stops them
+# after 60 days without a commit to the repository; "Run workflow" on the
+# Actions tab starts one by hand.
+
+name: Keep Supabase awake
+
+on:
+  schedule:
+    - cron: '17 3 * * *' # every day, 03:17 UTC (08:47 in India)
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Call keep_alive
+        run: |
+          curl --fail --silent --show-error --max-time 60 --retry 3 --retry-delay 20 \
+            -X POST "https://fcmwzpokqufvkojcqaxo.supabase.co/rest/v1/rpc/keep_alive" \
+            -H "apikey: sb_publishable_9gqFXj_3dIbp3Mun5I3Lvg_533uA-r3" \
+            -H "Content-Type: application/json" \
+            -d '{}'
