@@ -88,10 +88,13 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
 
     <p class="visually-hidden" aria-live="polite" data-announce></p>
 
-    <dialog class="tk-dialog" data-submit-dialog aria-labelledby="tk-submit-h">
+    {/* aria-describedby: a screen reader hears the body with the title, not
+        only the title and the focused Keep going: here, the counts the
+        student is deciding on. */}
+    <dialog class="tk-dialog" data-submit-dialog aria-labelledby="tk-submit-h" aria-describedby="tk-submit-d">
       <form method="dialog">
         <h2 id="tk-submit-h">Submit this test?</h2>
-        <p data-submit-summary></p>
+        <p id="tk-submit-d" data-submit-summary></p>
         <div class="tk-dialog-actions">
           <button value="submit" class="tk-primary">Submit now</button>
           <button value="keep" class="tk-btn" autofocus>Keep going</button>
@@ -99,10 +102,10 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
       </form>
     </dialog>
 
-    <dialog class="tk-dialog" data-abandon-dialog aria-labelledby="tk-abandon-h">
+    <dialog class="tk-dialog" data-abandon-dialog aria-labelledby="tk-abandon-h" aria-describedby="tk-abandon-d">
       <form method="dialog">
         <h2 id="tk-abandon-h">Abandon this test?</h2>
-        <p>Its answers are kept, but it won't count in your results.</p>
+        <p id="tk-abandon-d">Its answers are kept, but it won't count in your results.</p>
         <div class="tk-dialog-actions">
           <button value="abandon" class="tk-btn">Abandon</button>
           <button value="keep" class="tk-btn" autofocus>Keep going</button>

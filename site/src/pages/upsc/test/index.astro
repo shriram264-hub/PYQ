@@ -154,10 +154,12 @@ const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
       <p class="tp-more" data-more hidden><button type="button" class="tp-btn" data-more-button></button></p>
     </section>
 
-    <dialog class="tp-dialog" data-abandon-dialog aria-labelledby="tp-abandon-h">
+    {/* aria-describedby: a screen reader hears the body with the title, not
+        only the title and the focused Keep it. */}
+    <dialog class="tp-dialog" data-abandon-dialog aria-labelledby="tp-abandon-h" aria-describedby="tp-abandon-d">
       <form method="dialog">
         <h2 id="tp-abandon-h" data-abandon-title>Abandon this test?</h2>
-        <p>Its answers are kept, but it won't count in your results.</p>
+        <p id="tp-abandon-d">Its answers are kept, but it won't count in your results.</p>
         <div class="tp-dialog-actions">
           <button value="abandon" class="tp-btn">Abandon</button>
           <button value="keep" class="tp-btn" autofocus>Keep it</button>
