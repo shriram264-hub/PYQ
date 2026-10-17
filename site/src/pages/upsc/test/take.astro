@@ -230,9 +230,10 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
     }
   }
 
-  /* The live region: "Loading 98 questions…", a year that did not load, a
-     browser that is not saving. Always one line tall, said or not, so a message
-     coming or going moves nothing. A failure is drawn as a note. */
+  /* The live region: "Loading the paper…", "Loading 98 questions…", a year
+     that did not load, a browser that is not saving. Always one line tall,
+     said or not, so a message coming or going moves nothing. A failure is
+     drawn as a note. */
   .tk-note {
     min-height: 1.6em;
     margin: 0 0 0.9rem;
@@ -287,7 +288,14 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
   .tk-primary:hover {
     background: var(--field-deep);
   }
+  /* Disabled while something is on its way (Start while the paper loads,
+     Submit while the questions do): unavailable, drawn as a pager step is,
+     outlined with faint ink in a dashed frame, so the press visibly took. */
   .tk-primary:disabled {
+    color: var(--ink-faint);
+    background: var(--paper);
+    border-style: dashed;
+    border-color: var(--rule);
     cursor: progress;
   }
   .tk-btn {

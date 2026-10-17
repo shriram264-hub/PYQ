@@ -457,6 +457,13 @@ async function begin() {
   fitGrid();
   render();
   show('test');
+  // Start, which had focus, was disabled on the press and its section is now
+  // hidden (as is Try again, after a retry): focus has fallen, or is about to
+  // fall, to <body>, where a keyboard or screen-reader user would have to find
+  // the test from the top. Land them on its name. A test resumed on load starts
+  // on <body> too. Focus anywhere else (a masthead link) is left where it is.
+  const focused = document.activeElement;
+  if (!focused || focused === document.body || startEl.contains(focused) || retryRow.contains(focused)) nameEl.focus();
   // render() ran while the test was hidden, with nothing laid out to scroll.
   keepInView(cells[attempt.current].button);
   submitBtn.disabled = false;
@@ -519,7 +526,10 @@ function offerPaper(year) {
   startBtn.addEventListener('click', async () => {
     startBtn.disabled = true;
     page.dataset.starting = '';
-    say('');
+    // Said at once: on a slow connection the paper can take a while, and the
+    // press must not look like it did nothing. begin() takes the line over and
+    // clears it once the test is up; stopStarting puts what went wrong there.
+    say('Loading the paper…');
     const path = `/upsc/full/${year}.json`;
     if (!(await canStartTest('upsc'))) return stopStarting("Tests aren't open to this account.");
     if (!files.has(path) && !(await fetchYear(path))) {
