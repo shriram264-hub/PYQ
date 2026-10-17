@@ -4,6 +4,10 @@ import Colophon from '../../components/Colophon.astro';
 import ThemeToggle from '../../components/ThemeToggle.astro';
 import AccountControl from '../../components/AccountControl.astro';
 import { CORPUS, SUBJECTS, YEARS } from '../../lib/corpus.js';
+import { PAPERS } from '../../lib/papers.js';
+
+// Newest first, so [0] is the latest paper the take page can start.
+const latestPaper = PAPERS[0].year;
 
 const digits = (n) => String(n).split('');
 const API_BASE = process.env.PUBLIC_API_BASE || 'https://upsc-pyq-search-api.onrender.com';
@@ -86,31 +90,51 @@ const EXAMPLES = [
       </div>
     </section>
 
-    <aside class="registration ruled" aria-label="Corpus record">
-      <div class="box-head">
-        <h2>The record</h2>
-      </div>
-      <dl class="reg-grid">
-        <div class="reg-row">
-          <dt class="field-label">Questions</dt>
-          <dd class="digits">
-            {digits(CORPUS.total).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
-          </dd>
+    {/* The right column: Practice tests above the record, and no taller than
+        Search, so the page below does not move. Beside Search on a wide screen,
+        under it (in this order) where the cover stacks. */}
+    <div class="side">
+      <section class="tests ruled" aria-labelledby="tests-heading">
+        <div class="box-head">
+          <h2 id="tests-heading">Practice tests</h2>
         </div>
-        <div class="reg-row">
-          <dt class="field-label">Years covered</dt>
-          <dd class="digits">
-            {digits(CORPUS.yearCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
-          </dd>
+        <div class="box-body">
+          <p class="reading lede">
+            Sit any paper since {CORPUS.minYear}, timed and scored the way UPSC scores it today. Free during the beta.
+          </p>
+          <div class="tests-actions">
+            <a class="tests-btn" href="/upsc/test">Start a test</a>
+            <ul class="tests-links">
+              <li><a href={`/upsc/test/take?paper=${latestPaper}`}>Sit the {latestPaper} paper</a></li>
+              <li><a href="/upsc/test#practice">Build a practice set</a></li>
+            </ul>
+          </div>
         </div>
-        <div class="reg-row">
-          <dt class="field-label">Subjects</dt>
-          <dd class="digits">
-            {digits(CORPUS.subjectCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
-          </dd>
-        </div>
-      </dl>
-    </aside>
+      </section>
+
+      <aside class="registration ruled" aria-label="Corpus record">
+        <dl class="reg-grid">
+          <div class="reg-row">
+            <dt class="field-label">Questions</dt>
+            <dd class="digits">
+              {digits(CORPUS.total).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
+            </dd>
+          </div>
+          <div class="reg-row">
+            <dt class="field-label">Years</dt>
+            <dd class="digits">
+              {digits(CORPUS.yearCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
+            </dd>
+          </div>
+          <div class="reg-row">
+            <dt class="field-label">Subjects</dt>
+            <dd class="digits">
+              {digits(CORPUS.subjectCount).map((d, i) => <b class="serial" style={`--i:${i}`}>{d}</b>)}
+            </dd>
+          </div>
+        </dl>
+      </aside>
+    </div>
   </main>
 
   <div class="sheet"><hr class="fold" /></div>
@@ -147,14 +171,6 @@ const EXAMPLES = [
         ))
       }
     </ul>
-  </section>
-
-  <section class="sheet index-block" aria-labelledby="tests-heading">
-    <h2 id="tests-heading">Practice tests</h2>
-    <p class="reading tests-lede">
-      Every past paper, timed and scored the way UPSC scores it today. Free during the beta.
-    </p>
-    <p class="tests-link"><a href="/upsc/test">Sit a past paper or build a practice set</a></p>
   </section>
 
   <Colophon />
@@ -270,7 +286,17 @@ const EXAMPLES = [
     font-size: clamp(1.35rem, 0.9rem + 1.8vw, 2.3rem);
   }
 
-  .registration .box-head h2 {
+  /* The right column: Practice tests, then the record. A wrapper rather than a
+     third grid item, so the two stay together and in that order under Search
+     where the cover stacks. The panel's heading is set at the size the record's
+     heading had, so the two boxes read as one family. */
+  .side {
+    display: grid;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+
+  .side .box-head h2 {
     font-size: 1rem;
     letter-spacing: 0.02em;
   }
@@ -279,8 +305,7 @@ const EXAMPLES = [
     padding: 1.1rem;
   }
 
-  .lede,
-  .tests-lede {
+  .lede {
     color: var(--ink-soft);
     font-size: 1.02rem;
   }
@@ -339,13 +364,83 @@ const EXAMPLES = [
     color: var(--ink-soft);
   }
 
-  /* --- registration grid: digits in boxes, as on the booklet --- */
+  /* --- practice tests: an outlined action and two plain links ---
+     Search is this page's one filled-green action, so Start a test is drawn as
+     DESIGN.md's Secondary: paper, a green-text label, a heavy frame, and the
+     ground fill on hover (as .acct-btn on /account and .tp-link-btn on the
+     tests page). */
+
+  .tests .lede {
+    margin-bottom: 0;
+    /* Keeps "beta." from standing alone on the last line. */
+    text-wrap: pretty;
+  }
+
+  /* The action and its two links share a row, the links stacked beside the
+     button: between 62rem and 72rem the column is too narrow for the line to
+     stay at two lines, and a button row plus a links row on top of three
+     lines would make this column taller than Search. */
+  .tests-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1.25rem;
+    margin-top: 0.9rem;
+  }
+
+  /* The line height is set, not left at normal: normal follows the font's own
+     metrics, so the button would change height when Archivo replaces the
+     fallback and move the links centred beside it. */
+  .tests-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.25rem;
+    font: 700 0.95rem/1.2 var(--font-structure);
+    color: var(--field-text);
+    text-decoration: none;
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+  }
+
+  .tests-btn:hover {
+    background: var(--ground);
+  }
+
+  /* The links are set as the subject pages set their Practise line. */
+  .tests-links {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 0.3rem;
+    font-family: var(--font-structure);
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  @media (pointer: coarse) {
+    .tests-btn {
+      min-height: 2.75rem;
+    }
+
+    .tests-links a {
+      display: inline-block;
+      padding-block: 0.45rem;
+    }
+  }
+
+  /* --- the record, compact: the three counts in one row, digits in boxes as
+     on the booklet. No heading of its own: each count carries its label, and
+     the aside is named for screen readers. --- */
 
   .reg-grid {
     margin: 0;
-    padding: 1rem 1.1rem;
-    display: grid;
-    gap: 0.9rem;
+    padding: 0.8rem 1.1rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem 1.5rem;
   }
 
   .reg-row {
@@ -360,15 +455,15 @@ const EXAMPLES = [
   .digits {
     margin: 0;
     display: flex;
-    gap: 0.25rem;
+    gap: 0.2rem;
   }
 
   .digits b {
     display: grid;
     place-items: center;
-    width: 1.9rem;
-    height: 2.4rem;
-    font-size: 1.25rem;
+    width: 1.5rem;
+    height: 1.9rem;
+    font-size: 1rem;
     font-weight: 700;
     color: var(--ink);
     background: var(--ground);
@@ -475,21 +570,6 @@ const EXAMPLES = [
     color: var(--ink-soft);
   }
 
-  /* One line and one plain link: Search stays this page's only filled action.
-     The link is set as the subject pages set their Practise line. */
-  .tests-lede {
-    margin-bottom: 0.6rem;
-    /* Two lines at desktop width: keeps "beta." from standing alone. */
-    text-wrap: pretty;
-  }
-
-  .tests-link {
-    margin: 0;
-    font-family: var(--font-structure);
-    font-size: 0.92rem;
-    font-weight: 600;
-  }
-
   @media (max-width: 62rem) {
     .cover {
       grid-template-columns: minmax(0, 1fr);
@@ -523,6 +603,20 @@ const EXAMPLES = [
 
     .search-row {
       flex-direction: column;
+    }
+  }
+
+  /* As drawn the three counts need a 345px screen (measured). At 320px they
+     would be 25px short and Subjects would drop to a second row, so from
+     22rem down the boxes and gaps narrow (they then need 301px). */
+  @media (max-width: 22rem) {
+    .reg-grid {
+      padding-inline: 0.9rem;
+      column-gap: 0.9rem;
+    }
+
+    .digits b {
+      width: 1.3rem;
     }
   }
 </style>

@@ -262,7 +262,7 @@ One centred sheet, `min(100% - 2rem, 76rem)`, used by every band: masthead, main
 
 Rhythm is in rem. Rows and inline controls separate at 0.35 to 0.6rem; box interiors pad at 1 to 1.1rem; grid gutters sit at 1.25rem; sections are spaced by clamp(2.5rem, 6vw, 4rem) on the homepage and clamp(1.5rem, 4vw, 2.75rem) on listing pages. Listing heads close with a 2px heavy rule before content.
 
-Composition is asymmetric where the document is: the homepage rack splits 3fr / 2fr (open cover dominant, sealed cover beside), the UPSC cover splits 1.75fr / 1fr (instructions box, registration grid), contents pages run two columns. Indexes are single-column rows with serial, name, dotted leader and count; years are an auto-fill grid of minmax(5.5rem, 1fr) tiles.
+Composition is asymmetric where the document is: the homepage rack splits 3fr / 2fr (open cover dominant, sealed cover beside), the UPSC cover splits 1.75fr / 1fr (instructions box, then a column of the Practice tests panel above the registration grid, no taller than the instructions box), contents pages run two columns. Indexes are single-column rows with serial, name, dotted leader and count; years are an auto-fill grid of minmax(5.5rem, 1fr) tiles.
 
 Responsive changes are collapses, not re-layouts: at 62rem the UPSC cover stacks; at 52rem the rack and contents collapse to one column and each cover gets its own plank; at 40rem mastheads go single-column, input and button stack, and the cover's registration fields stack with a top hairline in place of the side hairline; at 30rem the theme toggle drops its text label and keeps its icon.
 
@@ -291,7 +291,7 @@ Printed and blunt: square slabs with a heavy ink frame.
 - **Shape:** square corners (0), 2px Heavy Rule border.
 - **Primary:** the Search submit only. Institutional Green fill, Field Ink text, Archivo 700 at 0.95rem, padding 0.85rem by 1.5 to 1.6rem. One per page.
 - **Hover / Focus:** hover deepens to Deep Field; focus is the sitewide 2px green outline offset 2px.
-- **Secondary:** outlined. Paper fill, Green Text Ink label, same heavy frame, padding 0.7rem by 1.25rem; hover and focus shift the fill to Stationery Ground. "Open the booklet" is the reference instance.
+- **Secondary:** outlined. Paper fill, Green Text Ink label, same heavy frame, padding 0.7rem by 1.25rem; hover and focus shift the fill to Stationery Ground. "Open the booklet" is the reference instance; "Start a test" in the UPSC cover's Practice tests panel is another.
 
 ### Chips
 - **Flag (stamp):** a 1px Stamp Red border with Stamp Red uppercase text at 0.68rem, 0.06em tracking, padding 0.05rem by 0.4rem. Used for "Cancelled by UPSC".
@@ -300,7 +300,7 @@ Printed and blunt: square slabs with a heavy ink frame.
 - **Query token:** an inline search phrase set in Archivo 600 on paper with a 1px Heavy Rule frame, used where copy quotes a search.
 
 ### Cards / Containers
-- **Ruled box:** paper fill inside a 2px Heavy Rule frame, square. Box heads close with their own 2px rule; interiors pad at 1.1rem. The instruction box and the registration grid are ruled boxes.
+- **Ruled box:** paper fill inside a 2px Heavy Rule frame, square. Box heads close with their own 2px rule; interiors pad at 1.1rem. The instruction box, the Practice tests panel and the registration grid are ruled boxes.
 - **Question block:** paper fill, 1px hairline frame, padding 1rem by 1.1rem. Head row in Archivo 0.78rem soft ink: serial (Courier Prime, bold, the visible permalink cue), subject › subtopic links, difficulty tag, flags. Question text in Literata is a link with no resting underline; underline appears on hover or focus. Options are a two-column grid (2rem key column in faint serial, then text). Question block styling is one shared stylesheet so server-rendered and client-rendered results cannot drift.
 - **Shadow Strategy:** none at rest (see Elevation & Depth).
 
@@ -322,7 +322,7 @@ The signature reading interaction. A `details` element under a dashed hairline; 
 Each exam is a booklet cover standing on a shelf plank. The cover is a paper plate in a 2px Heavy Rule frame with no bottom border; the plank beneath (0.6rem of Page Edge with a heavy top rule and hairline bottom) is its bottom edge, and on wide screens the plank runs across the gap so covers share one shelf. The open cover carries a green series band with "Series" and the exam's code in serial, a title, a three-cell registration field grid of serial counts, top subject links, and an outlined open control whose hit area stretches across the whole cover. It lifts at its spine on hover and focus (see Elevation & Depth). A sealed cover has a blank ground-coloured band with a dash for its code, soft ink, a Seal Red band reading SEALED, is not a link, and never moves. Exams join the rack from a single registry entry (slug, path, name, series code, corpus, top subjects).
 
 ### Registration Grid
-Corpus figures set digit by digit in 1.9 by 2.4rem ground-coloured cells with hairline frames, Courier Prime 700 at 1.25rem, under field labels, inside a ruled box. On the UPSC cover the digits stamp in on load (320ms, 45ms stagger per digit), a page-local entrance rather than a system motion.
+Corpus figures set digit by digit in 1.5 by 1.9rem ground-coloured cells (1.3rem wide at 22rem and below) with hairline frames, Courier Prime 700 at 1rem, under field labels, the three counts in one row inside a ruled box with no heading of its own. On the UPSC cover the box sits under the Practice tests panel, and the digits stamp in on load (320ms, 45ms stagger per digit), a page-local entrance rather than a system motion.
 
 ### Index and Contents Rows
 Numbered rows with a serial marker, an Archivo title, a dotted hairline leader, and a trailing count or state. In contents pages the state is OPEN in Green Text Ink or COMING in Faint Ink; coming titles drop to Soft Ink.
