@@ -325,7 +325,13 @@ function drawResults() {
 
 // --- Opening the attempt. ---
 
+// The year files asked for while the font wait ran (see the end of this file),
+// for start() to take up; null once it has, or when nothing was asked for.
+let early = null;
+
 function start() {
+  const asked = early;
+  early = null;
   const stored = id ? getAttempt(loadTests(), id) : null;
   shownAs = stored?.status ?? 'missing';
   attempt = stored?.status === 'submitted' ? stored : null;
@@ -345,7 +351,9 @@ function start() {
   sheet.setAttribute('data-settling', '');
   say(`Loading ${plural(attempt.keys.length, 'question', 'questions')}…`);
   const opened = attempt;
-  loadAll(fullPathsFor(attempt.keys)).then(() => {
+  // Those asked for early are taken as they are: loadAll would ask again for a
+  // year that has failed meanwhile, and a failure waits for Try again.
+  (asked ?? loadAll(fullPathsFor(attempt.keys))).then(() => {
     if (attempt === opened) drawResults();
   });
 }
@@ -428,6 +436,13 @@ function fontsReady() {
   const faces = Promise.all(FACES.map((font) => document.fonts.load(font)));
   return Promise.race([faces, new Promise((resolve) => setTimeout(resolve, FONT_WAIT_MS))]).catch(() => {});
 }
+
+// The year files do not wait for the faces: the font wait can take up to 3 s on
+// a slow connection, and asked for after it they would add their own time to
+// that. When this device holds the attempt as a submitted one, they are asked
+// for now, alongside the wait; start() draws once both are in, as before.
+const known = id ? getAttempt(loadTests(), id) : null;
+if (known?.status === 'submitted') early = loadAll(fullPathsFor(known.keys));
 
 fontsReady().then(() => {
   start();
