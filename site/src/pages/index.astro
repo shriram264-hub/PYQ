@@ -129,9 +129,14 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
                   </>
                 ))}
               </p>
-              <a class="cover-open-cta" href={upsc.path}>
-                Open the booklet<span class="visually-hidden">: {upsc.name}</span>
-              </a>
+              <div class="cover-actions">
+                <a class="cover-open-cta" href={upsc.path}>
+                  Open the booklet<span class="visually-hidden">: {upsc.name}</span>
+                </a>
+                <a class="cover-tests" href={`${upsc.path}/test`}>
+                  Practice tests<span class="visually-hidden">: {upsc.name}</span>
+                </a>
+              </div>
             </div>
           </article>
         </div>
@@ -436,11 +441,19 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
     z-index: 1;
   }
 
+  /* The open booklet's actions share one row, and wrap on a narrow cover. The
+     row, not the button, sits at the foot of the cover. */
+  .cover-actions {
+    margin-top: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0 1.25rem;
+  }
+
   /* Filled: opening a booklet is this page's primary action (search lives
      inside the booklet), so it takes the page's one filled-green control. */
   .cover-open-cta {
-    margin-top: auto;
-    align-self: flex-start;
     padding: 0.7rem 1.25rem;
     font-family: var(--font-structure);
     font-weight: 700;
@@ -449,6 +462,20 @@ const specimenSearch = `${upsc.path}/search?q=${encodeURIComponent(SPECIMEN_QUER
     color: var(--field-ink);
     background: var(--field);
     border: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  /* Practice tests is the quieter way in: a plain link, set as the specimen's
+     "Run this search yourself" line is, and raised above the stretched link as
+     the subject links are, so it stays its own target. The button's padding
+     gives it the same height, which centres the two and keeps the target tall
+     enough for a thumb. */
+  .cover-tests {
+    position: relative;
+    z-index: 1;
+    padding-block: 0.7rem;
+    font-family: var(--font-structure);
+    font-size: 0.92rem;
+    font-weight: 600;
   }
 
   /* The whole cover opens the booklet. The call to action's hit area is

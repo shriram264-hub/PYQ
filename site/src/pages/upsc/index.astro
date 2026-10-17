@@ -31,6 +31,7 @@ const EXAMPLES = [
       </a>
       <p class="masthead-line">UPSC Civil Services Prelims · Previous Year Questions</p>
       <div class="mast-actions">
+        <a href="/upsc/test">Tests</a>
         <a href="/account" class="nav-progress">My progress</a>
         <AccountControl />
         <ThemeToggle />
@@ -148,6 +149,14 @@ const EXAMPLES = [
     </ul>
   </section>
 
+  <section class="sheet index-block" aria-labelledby="tests-heading">
+    <h2 id="tests-heading">Practice tests</h2>
+    <p class="reading tests-lede">
+      Every past paper, timed and scored the way UPSC scores it today. Free during the beta.
+    </p>
+    <p class="tests-link"><a href="/upsc/test">Sit a past paper or build a practice set</a></p>
+  </section>
+
   <Colophon />
 </Document>
 
@@ -209,7 +218,7 @@ const EXAMPLES = [
     gap: 0.6rem 1.1rem;
   }
 
-  /* My progress reads like the links in the other mastheads' navs. */
+  /* Tests and My progress read like the links in the other mastheads' navs. */
   .mast-actions a {
     font-family: var(--font-structure);
     font-size: 0.88rem;
@@ -270,7 +279,8 @@ const EXAMPLES = [
     padding: 1.1rem;
   }
 
-  .lede {
+  .lede,
+  .tests-lede {
     color: var(--ink-soft);
     font-size: 1.02rem;
   }
@@ -465,6 +475,20 @@ const EXAMPLES = [
     color: var(--ink-soft);
   }
 
+  /* One line and one plain link: Search stays this page's only filled action.
+     The link is set as the subject pages set their Practise line. */
+  .tests-lede {
+    margin-bottom: 0.6rem;
+    /* Two lines at desktop width: keeps "beta." from standing alone. */
+    text-wrap: pretty;
+  }
+
+  .tests-link {
+    margin: 0;
+    font-family: var(--font-structure);
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
 
   @media (max-width: 62rem) {
     .cover {
@@ -484,10 +508,13 @@ const EXAMPLES = [
       justify-items: start;
     }
 
-    /* My progress and the theme toggle, let alone Sign in as well, do not fit
-       beside the wordmark on a phone: the Devanagari name would drop to a
-       second line. The actions take their own row under the wordmark, left
-       aligned, whether or not sign-in is on. The rows after it follow. */
+    /* Tests, My progress and the theme toggle, let alone Sign in as well, do
+       not fit beside the wordmark on a phone: the Devanagari name would drop
+       to a second line. The actions take their own row under the wordmark,
+       left aligned, whether or not sign-in is on. All four fit on that row
+       down to 320px (measured: 20px to spare, sign-in on); below that
+       flex-wrap would drop the last to a second row. The rows after it
+       follow. */
     .mast-actions {
       grid-column: 1;
       grid-row: 2;
