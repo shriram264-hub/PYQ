@@ -209,8 +209,22 @@ const firstSync = held
     })
   : null;
 
+// The element the address's #fragment names, if it is on the page.
+function hashTarget() {
+  try {
+    return location.hash ? document.getElementById(decodeURIComponent(location.hash.slice(1))) : null;
+  } catch {
+    return null; // a malformed escape in the fragment
+  }
+}
+
 Promise.all([fontsReady(), firstSync]).then(() => {
   draw();
+  // A Practise link (/upsc/test?…#practice) scrolled to the form while the page
+  // was hidden, and Carry on has just been drawn above it. A browser with scroll
+  // anchoring keeps the form in place; one without (Safari) is left short of it.
+  // So the target is put in view, at once, before the page shows. Focus stays.
+  hashTarget()?.scrollIntoView();
   delete wrap.dataset.pending;
 });
 
