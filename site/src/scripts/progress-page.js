@@ -711,9 +711,18 @@ document.addEventListener('click', (event) => {
 // A sync that lands brings the account's marks, lists and test attempts, and
 // possibly years this page has not fetched. Other tabs (a test submitted in
 // one) and a restored page change storage too.
+//
+// The attempts touch only the tests line. A test running in another tab saves
+// its clock every 5 s, and each save lands here: a full render each time would
+// rebuild every card and table under a keyboard or screen-reader user and drop
+// their selection. So a change to the attempts alone rewrites that one line,
+// and only when its words change (a clock save leaves them as they were).
 document.addEventListener('sawaalbox:synced', refresh);
 window.addEventListener('storage', (event) => {
-  if (event.key === STORAGE_KEY || event.key === TESTS_KEY || event.key === null) refresh();
+  if (event.key === TESTS_KEY) {
+    const line = latestLine(loadTests());
+    if (testsLine.textContent !== line) testsLine.textContent = line;
+  } else if (event.key === STORAGE_KEY || event.key === null) refresh();
 });
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) refresh();
