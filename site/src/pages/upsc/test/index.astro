@@ -1,0 +1,274 @@
+---
+import Listing from '../../../layouts/Listing.astro';
+import { PAPERS } from '../../../lib/papers.js';
+import { authEnabled } from '../../../lib/accounts/config.js';
+
+// The Practice tests page (spec, "1. Starting a test"). Indexable: the list of
+// papers is server-rendered and works without JavaScript, each a plain link to
+// the take page's start screen. Carry on and Past results are this device's own
+// attempts, drawn by tests-page.js.
+---
+
+<Listing
+  title="UPSC Prelims Practice Tests"
+  description="Sit any UPSC Prelims paper from 1995 to 2026 against the clock, or build a practice set by subject, topic and year. Scored with today's negative marking, and free during the beta."
+  heading="Practice tests"
+  standfirst="Every past paper, timed and scored the way UPSC scores it today: +2 for a right answer, minus two-thirds of a mark for a wrong one. Free during the beta."
+  crumbs={[{ name: 'Tests', href: '/upsc/test' }]}
+>
+  {/* data-sync-full: this page lists every attempt the account holds, so a sync
+      started here reads all of it (startSync in scripts/sync.js). data-pending:
+      nothing in here is on screen until tests-page.js has drawn, so Carry on
+      appearing above the papers moves nothing anyone has seen. */}
+  <div class="tp" data-pending data-sync-full={authEnabled ? '' : undefined}>
+    <p class="tp-note" role="status" data-note></p>
+
+    <section class="tp-section" id="carry" aria-labelledby="tp-carry-h" hidden>
+      <h2 id="tp-carry-h">Carry on</h2>
+      <ul class="tp-rows" data-carry></ul>
+    </section>
+
+    <section class="tp-section" id="papers" aria-labelledby="tp-papers-h">
+      <h2 id="tp-papers-h" tabindex="-1">Sit a past paper</h2>
+      <ol class="tp-papers">
+        {
+          PAPERS.map((p) => (
+            <li class="tp-paper">
+              <a class="tp-paper-name" href={`/upsc/test/take?paper=${p.year}`}>
+                UPSC Prelims {p.year}
+              </a>{' '}
+              <span class="serial tp-paper-facts">{p.questions} questions · 2 hours</span>
+              {p.notes.length > 0 && <>{' '}<span class="tp-paper-notes">{p.notes.join('. ')}.</span></>}
+            </li>
+          ))
+        }
+      </ol>
+    </section>
+
+    <section class="tp-section" id="results" aria-labelledby="tp-results-h" hidden>
+      <h2 id="tp-results-h">Past results</h2>
+      <ul class="tp-rows" data-results></ul>
+      <p class="tp-more" data-more hidden><button type="button" class="tp-btn" data-more-button></button></p>
+    </section>
+
+    <dialog class="tp-dialog" data-abandon-dialog aria-labelledby="tp-abandon-h">
+      <form method="dialog">
+        <h2 id="tp-abandon-h" data-abandon-title>Abandon this test?</h2>
+        <p>Its answers are kept, but it won't count in your results.</p>
+        <div class="tp-dialog-actions">
+          <button value="abandon" class="tp-btn">Abandon</button>
+          <button value="keep" class="tp-btn" autofocus>Keep it</button>
+        </div>
+      </form>
+    </dialog>
+  </div>
+</Listing>
+
+<script>
+  import '../../../scripts/tests-page.js';
+</script>
+
+<style is:global>
+  /* Global, not scoped: Carry on and Past results are drawn by tests-page.js,
+     and Astro's scoped styles never reach markup a script creates. Every class
+     is prefixed tp- so nothing here can leak. */
+
+  /* A part the script has not chosen to show is not shown, whatever display
+     its own rule gives it. */
+  .tp [hidden] {
+    display: none;
+  }
+
+  .tp h2 {
+    outline-offset: 4px;
+  }
+
+  /* The live region: "Abandoned. Its answers are kept." Always one line tall,
+     said or not, so a message coming or going moves nothing. */
+  .tp-note {
+    min-height: 1.6em;
+    margin: 0 0 0.6rem;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+
+  /* Sections are spaced as /account's are. Only a section that is showing
+     takes the space above it, so a hidden Carry on leaves no gap. */
+  .tp-section h2 {
+    margin-bottom: 0.8rem;
+  }
+  .tp > .tp-section:not([hidden]) ~ .tp-section:not([hidden]) {
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  /* The lists stop short of the sheet's full width, as /account's and the
+     results page's tables do: across all of it, a score or a Resume button sat
+     a screen's width from the name it belongs to. */
+  .tp-papers,
+  .tp-rows {
+    max-width: 50rem;
+  }
+
+  /* --- the papers: one row each, hairline rules between --- */
+
+  .tp-papers {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: var(--rule-hair) solid var(--rule);
+  }
+  .tp-paper {
+    display: grid;
+    gap: 0.1rem;
+    padding: 0.65rem 0;
+    border-top: var(--rule-hair) solid var(--rule);
+  }
+  .tp-paper-name {
+    font: 700 1.02rem var(--font-structure);
+    letter-spacing: -0.01em;
+  }
+  .tp-paper-facts {
+    font-size: 0.9rem;
+    white-space: nowrap;
+  }
+  .tp-paper-notes {
+    max-width: var(--measure);
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  /* Name, facts and notes in three columns once there is room, so the years
+     read down one edge and the counts down another. The facts column holds
+     "150 questions · 2 hours" on one line. */
+  @media (min-width: 44rem) {
+    .tp-paper {
+      grid-template-columns: 10.5rem 14rem minmax(0, 1fr);
+      align-items: baseline;
+      column-gap: 1.25rem;
+    }
+  }
+
+  /* --- Carry on and Past results: name, details, then the actions --- */
+
+  .tp-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: var(--rule-hair) solid var(--rule);
+  }
+  .tp-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 1rem;
+    padding: 0.65rem 0;
+    border-top: var(--rule-hair) solid var(--rule);
+  }
+  .tp-row-name {
+    font: 700 1.02rem var(--font-structure);
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+  .tp-row-detail {
+    font-size: 0.95rem;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  .tp-row-score {
+    margin-left: auto;
+    font-weight: 700;
+  }
+  .tp-row-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-left: auto;
+  }
+
+  /* --- buttons: outlined slabs in a heavy frame. The page's one filled-green
+     action is the practice set's Start; nothing here competes with it. --- */
+
+  .tp-btn,
+  .tp-link-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem 1rem;
+    font: 700 0.95rem var(--font-structure);
+    color: var(--field-text);
+    text-decoration: none;
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .tp-btn:hover,
+  .tp-link-btn:hover {
+    background: var(--ground);
+  }
+  .tp-more {
+    margin: 1.1rem 0 0;
+  }
+  @media (pointer: coarse) {
+    .tp-btn,
+    .tp-link-btn {
+      min-height: 2.75rem;
+    }
+  }
+
+  /* --- the Abandon dialog --- */
+
+  .tp-dialog {
+    width: min(30rem, 100% - 2rem);
+    padding: 1.25rem 1.4rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+  }
+  /* Deep Field, as on the test screen: the one colour that is dark on both
+     stocks. Ink would dim the day sitting but lay a pale fog over the night
+     one. */
+  .tp-dialog::backdrop {
+    background: color-mix(in srgb, var(--field-deep) 70%, transparent);
+  }
+  .tp-dialog h2 {
+    margin-bottom: 0.6rem;
+    font-size: 1.25rem;
+    overflow-wrap: anywhere;
+  }
+  .tp-dialog p {
+    margin: 0;
+  }
+  .tp-dialog-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    margin-top: 1.25rem;
+  }
+
+  /* Without scripting the status line can never say anything. */
+  @media (scripting: none) {
+    .tp-note {
+      display: none;
+    }
+  }
+
+  /* --- nothing moves what the reader can already see --- */
+
+  /* .tp stays hidden until tests-page.js has drawn it (data-pending): hidden is
+     not painted, so Carry on and Past results arriving move nothing anyone has
+     seen. The animation is the way out if the script never runs. Without
+     scripting there is no gate, and the papers show at once. */
+  @keyframes tp-reveal {
+    to {
+      visibility: visible;
+    }
+  }
+  @media (scripting: enabled) {
+    .tp[data-pending] {
+      visibility: hidden;
+      animation: tp-reveal 0s 4s forwards;
+    }
+  }
+</style>

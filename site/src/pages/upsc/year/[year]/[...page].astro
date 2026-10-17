@@ -3,6 +3,7 @@ import Listing from '../../../../layouts/Listing.astro';
 import QuestionBlock from '../../../../components/QuestionBlock.astro';
 import Pager from '../../../../components/Pager.astro';
 import { YEARS, questionsForYear } from '../../../../lib/corpus.js';
+import { PAPERS } from '../../../../lib/papers.js';
 
 export async function getStaticPaths({ paginate }) {
   return YEARS.flatMap(({ year, count }) => {
@@ -17,6 +18,9 @@ export async function getStaticPaths({ paginate }) {
 
 const { page, year, count } = Astro.props;
 const basePath = `/upsc/year/${year}`;
+// The paper as a test serves it (cancelled questions left out), so the count
+// is the one the start screen gives.
+const paper = PAPERS.find((p) => p.year === year);
 
 const pageSuffix = page.currentPage > 1 ? ` — page ${page.currentPage}` : '';
 const title = `UPSC Prelims ${year} Question Paper${pageSuffix}`;
@@ -33,6 +37,12 @@ const description = `${count} questions from the UPSC Civil Services Prelims ${y
     { name: String(year), href: basePath },
   ]}
 >
+  {/* On every page of the year, not only the first: the listing is paginated. */}
+  <p slot="meta" class="sit-line">
+    <a href={`/upsc/test/take?paper=${year}`}>Sit this paper</a>{' '}
+    <span class="serial">{paper.questions} questions · 2 hours, timed and scored</span>
+  </p>
+
   <div class="qlist">
     {page.data.map((q) => <QuestionBlock q={q} />)}
   </div>
@@ -41,6 +51,24 @@ const description = `${count} questions from the UPSC Civil Services Prelims ${y
 </Listing>
 
 <style>
+  .sit-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.15rem 0.75rem;
+    margin: 0.6rem 0 0;
+    font-family: var(--font-structure);
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+
+  /* The facts as the topic pages' years line sets them: typewritten, soft.
+     Courier Prime has no 600, so the line's weight would print them bold. */
+  .sit-line .serial {
+    font-weight: 400;
+    color: var(--ink-soft);
+  }
+
   .qlist {
     display: grid;
     gap: 0.75rem;

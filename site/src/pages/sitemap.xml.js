@@ -23,6 +23,7 @@ export async function GET({ site }) {
   add('/upsc', '0.95');
   add('/upsc/subjects', '0.9');
   add('/upsc/years', '0.9');
+  add('/upsc/test', '0.85');
 
   for (const subject of INDEXABLE_SUBJECTS) {
     const pages = Math.ceil(subject.count / PAGE_SIZE);

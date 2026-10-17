@@ -24,6 +24,7 @@ const onProgress = Astro.url.pathname === '/account';
             <a href={`${exam.path}/subjects`}>Subjects</a>
             <a href={`${exam.path}/years`}>Years</a>
             <a href={`${exam.path}/search`}>Search</a>
+            <a href={`${exam.path}/test`}>Tests</a>
           </>
         )
       }
@@ -118,14 +119,15 @@ const onProgress = Astro.url.pathname === '/account';
     gap: 1.2rem;
   }
 
-  /* Wordmark, four links and both controls need about 780px to share one row.
-     Narrower than that, inside an exam, the controls move up beside the
-     wordmark and the links take a row of their own below: two rows, as before
-     My progress joined, where one flowing row would leave the controls alone on
-     a third. Outside an exam the nav is only My progress, which flows on
-     beside the wordmark until a phone's width (below). 50rem is 800px, the same
-     line at which the account control drops its words. */
-  @media (max-width: 50rem) {
+  /* Wordmark, five links and both controls need about 830px to share one row
+     (measured; 780px before Tests joined). Narrower than that, inside an exam,
+     the controls move up beside the wordmark and the links take a row of their
+     own below: two rows, where one flowing row would leave the controls alone
+     on a row of their own. Outside an exam the nav is only My progress, which
+     flows on beside the wordmark until a phone's width (below). 53.5rem is
+     856px. The account control drops its words at 50rem (800px), so between
+     the two it keeps them, on the wordmark's row where there is room. */
+  @media (max-width: 53.5rem) {
     .masthead-inner {
       gap: 0.6rem 0.75rem;
     }
@@ -148,7 +150,9 @@ const onProgress = Astro.url.pathname === '/account';
 
   /* Wordmark, My progress and both controls need about 440px. On a narrower
      phone every page takes the same two rows: the controls beside the
-     wordmark, the links below. */
+     wordmark, the links below. The five exam links fill that row at about
+     330px with the wide gap, more than a 360px phone's sheet; at 0.9rem they
+     keep to one row down to 350px. */
   @media (max-width: 27.5rem) {
     .masthead-tools {
       order: 2;
@@ -159,6 +163,7 @@ const onProgress = Astro.url.pathname === '/account';
       order: 3;
       flex-basis: 100%;
       margin-left: 0;
+      column-gap: 0.9rem;
     }
   }
 
