@@ -9,29 +9,61 @@ import {
 import { deviceOwner } from '../lib/accounts/pull.js';
 import { STORAGE_KEY, loadState, saveState } from '../lib/accounts/progress-store.js';
 import { deleteList, renameList } from '../lib/accounts/lists.js';
+import { subjectsCoveredBy, summarise } from '../lib/accounts/summary.js';
 import {
-  indexPathsFor,
-  pendingForKeys,
-  pendingPaths,
-  subjectsCovered,
-  summarise,
-} from '../lib/accounts/summary.js';
-import { TESTS_KEY, latestLine, loadTests } from '../lib/tests/store.js';
+  coverageOf,
+  figures,
+  oldestLine,
+  pickPlan,
+  recentTests,
+  resumeOf,
+  reviewOf,
+  weakestOf,
+} from '../lib/accounts/dashboard.js';
+import { examRules } from '../lib/exam-rules.js';
+import { parseCatalogue } from '../lib/tests/catalogue.js';
+import { MIN_ANSWERED, breakdown, headline, submittedFor } from '../lib/tests/analytics.js';
+import { TESTS_KEY, loadTests } from '../lib/tests/store.js';
 
-// The /account page. Everything it shows comes from this device's storage (a
-// sync keeps that in step with the account), plus the per-year question indexes
-// that turn stored keys back into subjects.
+// The /account page, My progress. Everything it shows comes from this device's
+// storage (a sync keeps that in step with the account), plus the exam's question
+// catalogue, which turns stored keys into subjects and topics. Top to bottom:
+//   - Pick up where you left off: a test to resume, the Needs review pile, the
+//     weakest topic; or, with none of those, a first test.
+//   - Your tests and analytics: headline figures, the way to the analytics and
+//     the tests, and the latest results. From stored results alone: no catalogue.
+//   - Your revision lists: Rename, Delete and Revise.
+//   - Coverage by subject, from the catalogue. It is last, so that it growing
+//     when the catalogue lands moves nothing but the colophon, which is out of
+//     the page until then.
+// The catalogue is fetched only when this device has something it is needed
+// for: a submitted test, a mark, or a question in a list. A new student fetches
+// nothing.
 //
 // No auth code is imported here: until sign-in is switched on this page must
 // not carry any, so Sign in loads auth.js (and through it supabase-js) when it
 // is pressed, and the state of the session is read off the masthead control.
 
+// The exam this page reports on. Every address and rule below comes from it.
+const EXAM = 'upsc';
+const RULES = examRules(EXAM);
+const PATHS = {
+  tests: `/${EXAM}/test`,
+  analytics: `/${EXAM}/analytics`,
+  catalogue: `/${EXAM}/catalogue.json`,
+  take: (id) => `/${EXAM}/test/take?attempt=${encodeURIComponent(id)}`,
+  result: (id) => `/${EXAM}/test/result?attempt=${encodeURIComponent(id)}`,
+  review: '/revise?review',
+  list: (id) => `/revise?list=${encodeURIComponent(id)}`,
+};
+// A question key names its exam first (questionKey in lib/accounts/qkey.js).
+const ofExam = (key) => key.startsWith(`${EXAM}-`);
+
 const NOT_SAVED = 'Your browser would not save that. Check that it lets this site store data.';
 const SIGN_IN_FAILED = 'Could not reach the sign-in service. Your progress on this device is safe.';
-// How long one year's index may take. Past this the year counts as failed (its
-// subjects are left out) rather than leaving "Loading subjects." up for ever on
-// a connection that has stalled.
-const INDEX_TIMEOUT_MS = 15000;
+// How long the catalogue may take. Past this it counts as failed rather than
+// leaving "Loading" up, and the colophon out, for ever on a stalled connection.
+const FILE_TIMEOUT_MS = 15000;
 
 // The line the server writes is the dark-launch one, "Kept on this device.".
 const WHERE = {
@@ -41,11 +73,12 @@ const WHERE = {
 
 const $ = (selector) => document.querySelector(selector);
 const acct = $('.acct');
-const summaryBox = $('[data-summary]');
+const pickBox = $('[data-pick]');
+const testsBox = $('[data-tests]');
+const coverageBox = $('[data-coverage]');
 const listsBox = $('[data-lists]');
 const listsNote = $('[data-lists-note]');
 const whereNote = $('[data-where-note]');
-const testsLine = $('[data-tests-line]');
 
 const el = (tag, className, ...children) => {
   const node = document.createElement(tag);
@@ -53,10 +86,24 @@ const el = (tag, className, ...children) => {
   node.append(...children);
   return node;
 };
-// Everything below is built with textContent, never an HTML string: a list name
-// is the student's text, and markup in it must stay inert.
+// Everything below is built with textContent or text nodes, never an HTML
+// string: a list name is the student's text, a topic is the catalogue's, and
+// markup in either must stay inert.
 const text = (tag, className, value) => el(tag, className, value);
+const link = (className, href, ...children) => {
+  const a = el('a', className, ...children);
+  a.href = href;
+  return a;
+};
+const unseen = (value) => text('span', 'visually-hidden', value);
 const plural = (n, one, many) => `${n} ${n === 1 ? one : many}`;
+
+// Set only when it differs. A test running in another tab saves its clock every
+// 5 s and each save lands here: writing the same words again would still be a
+// change to the page.
+const setText = (node, value) => {
+  if (node.textContent !== value) node.textContent = value;
+};
 
 // A live region that is always in the page. A failure is shown as well as
 // announced (see .acct-note).
@@ -65,31 +112,314 @@ function say(note, message, { error = false } = {}) {
   note.toggleAttribute('data-error', error && Boolean(message));
 }
 
-// --- The question indexes. ---
+// --- What this device holds. ---
 
-const index = {}; // every key loaded so far -> [path, subject, title]
-const requests = new Map(); // index path -> 'loading' | 'loaded' | 'failed'
-
-async function load(path) {
-  requests.set(path, 'loading');
-  try {
-    // The signal covers reading the body as well as the first byte.
-    const signal = typeof AbortSignal.timeout === 'function' ? AbortSignal.timeout(INDEX_TIMEOUT_MS) : undefined;
-    const response = await fetch(path, { signal });
-    if (!response.ok) throw new Error(String(response.status));
-    Object.assign(index, await response.json());
-    requests.set(path, 'loaded');
-  } catch {
-    // Offline, too slow, or a year that is not there. Those keys get no subject.
-    requests.set(path, 'failed');
-  }
+function read() {
+  const tests = loadTests();
+  const state = loadState();
+  const attempts = submittedFor(tests, EXAM);
+  const marked = Object.keys(state.entries).some(ofExam);
+  const listed = Object.values(state.lists).some((l) => l.keys.some(ofExam));
+  return { tests, state, attempts, marked, wants: attempts.length > 0 || marked || listed };
 }
 
-// --- Drawing. ---
+// --- The catalogue (as /upsc/analytics loads it: a time limit, and again when
+// the connection comes back). ---
+
+const catalogue = { status: 'idle', data: null, subjectOf: null }; // idle | loading | loaded | failed
+
+async function loadCatalogue() {
+  catalogue.status = 'loading';
+  // A controller and a timer rather than AbortSignal.timeout, which older
+  // Safari lacks.
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), FILE_TIMEOUT_MS);
+  try {
+    const response = await fetch(PATHS.catalogue, { signal: controller.signal });
+    if (!response.ok) throw new Error(String(response.status));
+    const parsed = parseCatalogue(await response.json(), EXAM);
+    if (!parsed) throw new Error('not a catalogue');
+    const subjects = new Map(parsed.entries.map((e) => [e.key, e.subject]));
+    catalogue.data = parsed;
+    catalogue.subjectOf = (key) => subjects.get(key) ?? null;
+    catalogue.status = 'loaded';
+  } catch {
+    // Offline, too slow, or not a catalogue: the parts that need it say so.
+    catalogue.status = 'failed';
+  } finally {
+    clearTimeout(timer);
+  }
+  render();
+}
+
+const needsCatalogue = (view) => view.wants && (catalogue.status === 'idle' || catalogue.status === 'loading');
+
+// breakdown() walks every attempt and the whole catalogue. Its inputs are the
+// submitted attempts (which never change once submitted) and the marks, so it
+// is worked out again only when one of those has.
+let memo = { key: null, value: null };
+function breakdownOf(view) {
+  const marks = Object.entries(view.state.entries)
+    .filter(([key]) => ofExam(key))
+    .map(([key, m]) => [key, m.status, m.updatedAt]);
+  const key = JSON.stringify([view.attempts.map((a) => a.id), marks]);
+  if (memo.key !== key) memo = { key, value: breakdown(view.attempts, view.state.entries, catalogue.data, RULES, EXAM) };
+  return memo.value;
+}
+
+// --- Drawing the parts above and below the lists. Each is drawn again only
+// when what it shows has changed: its signature is the JSON of what it shows.
+// A test running in another tab changes only the Resume card's time left,
+// which is written into its line where it stands. ---
+
+const drawn = new Map();
+function part(name, value, draw) {
+  const signature = JSON.stringify(value);
+  if (drawn.get(name) === signature) return;
+  drawn.set(name, signature);
+  draw(value);
+}
+
+// Rebuilding a part under a keyboard user would drop their focus: it goes back
+// to the control with the same data-focus in the rebuilt part, or to the
+// section's heading.
+function keepFocus(container, rebuild) {
+  const active = document.activeElement;
+  const had = container.contains(active);
+  const key = had ? active.dataset?.focus : undefined;
+  rebuild();
+  if (!had) return;
+  const again = key && [...container.querySelectorAll('[data-focus]')].find((n) => n.dataset.focus === key);
+  (again ?? container.closest('section')?.querySelector('h2'))?.focus();
+}
+
+// A link drawn as a button: the page's one filled-green action, or outlined.
+function action(label, href, { primary, focus, aria }) {
+  const a = link(primary ? 'acct-primary' : 'acct-btn', href, label);
+  a.dataset.focus = focus;
+  if (aria) a.setAttribute('aria-label', aria);
+  return a;
+}
+
+// --- Pick up where you left off. ---
+
+// One card: its heading, a name (up to two lines), a detail line, and an
+// action at its foot. The weak card keeps this shape in every state, so its
+// height never depends on what it says (see .acct-pick-weak).
+function pickCard(kind, heading, name, detail, act) {
+  const card = el(
+    'article',
+    `acct-pick-card acct-pick-${kind}`,
+    text('h3', '', heading),
+    el('p', 'acct-pick-name', ...name),
+    el('p', 'acct-pick-detail', ...detail),
+    el('p', 'acct-pick-actions', act)
+  );
+  card.dataset.card = kind;
+  return card;
+}
+
+function drawPick({ plan, resume, review }) {
+  const cards = [];
+  if (resume) {
+    const resumeLink = action('Resume', PATHS.take(resume.id), {
+      primary: plan.primary === 'resume',
+      focus: 'resume',
+      aria: `Resume ${resume.name}`,
+    });
+    // The detail line is written by drawResumeDetail, here and on every change.
+    cards.push(pickCard('resume', 'Resume test', [resume.name], [], resumeLink));
+  }
+  if (review) {
+    const count = el('span', 'acct-figure', String(review.count));
+    cards.push(
+      pickCard(
+        'review',
+        'Needs review',
+        [count, ` ${review.count === 1 ? 'question' : 'questions'} to revise`],
+        [oldestLine(review.days) ?? ''],
+        action('Revise them', PATHS.review, { focus: 'review', aria: 'Revise your Needs review questions' })
+      )
+    );
+  }
+  if (plan.cards.includes('weak')) {
+    const practise = action('Practise it', PATHS.tests, { focus: 'weak' });
+    cards.push(pickCard('weak', 'Your weakest topic', [], [], practise));
+  }
+  if (plan.starter) {
+    cards.push(
+      pickCard(
+        'starter',
+        'Your first test',
+        ['Sit a past paper against the clock, or build a short practice set.'],
+        [],
+        action('Take your first test', PATHS.tests, { primary: plan.primary === 'starter', focus: 'starter' })
+      )
+    );
+  }
+  const row = el('div', 'acct-pick-cards', ...cards);
+  const hint = plan.hint
+    ? text('p', 'acct-after', "Mark questions Done or Needs review as you read, and they'll show up here.")
+    : null;
+  keepFocus(pickBox, () => pickBox.replaceChildren(...[row, hint].filter(Boolean)));
+  // The rebuilt cards have none of the lines written into them.
+  drawn.delete('weak');
+}
+
+function drawResumeDetail(resume) {
+  const line = pickBox.querySelector('[data-card="resume"] .acct-pick-detail');
+  if (line) setText(line, resume.detail);
+}
+
+// The weak card's states. Its place is held from the first draw (pickPlan), and
+// what goes in it is clipped to the lines the card always has, so it filling in
+// when the catalogue lands moves nothing.
+const WEAK_TEXT = {
+  loading: 'Working out your weakest topic…',
+  none: `Answer ${MIN_ANSWERED} questions in a topic to see your weakest here.`,
+  failed: "Couldn't load your topics. Check your connection.",
+};
+
+function drawWeak(weak) {
+  const card = pickBox.querySelector('[data-card="weak"]');
+  if (!card) return;
+  const name = card.querySelector('.acct-pick-name');
+  const detail = card.querySelector('.acct-pick-detail');
+  const practise = card.querySelector('[data-focus="weak"]');
+  if (weak.state !== 'topic') {
+    name.replaceChildren(WEAK_TEXT[weak.state]);
+    name.removeAttribute('title');
+    detail.replaceChildren('');
+    // Kept in the card for its height, out of sight and out of reach.
+    practise.toggleAttribute('data-off', true);
+    practise.setAttribute('aria-hidden', 'true');
+    practise.tabIndex = -1;
+    return;
+  }
+  name.replaceChildren(weak.topic, el('span', 'acct-pick-sub', ' · ', weak.subject));
+  name.title = `${weak.topic}, ${weak.subject}`;
+  detail.replaceChildren(weak.line);
+  practise.href = weak.href;
+  practise.setAttribute('aria-label', `Practise ${weak.topic}`);
+  practise.removeAttribute('data-off');
+  practise.removeAttribute('aria-hidden');
+  practise.removeAttribute('tabindex');
+}
+
+function weakOf(view) {
+  if (!view.attempts.length) return null;
+  if (catalogue.status === 'failed') return { state: 'failed' };
+  if (catalogue.status !== 'loaded') return { state: 'loading' };
+  const weak = weakestOf(breakdownOf(view).topics[0], EXAM);
+  return weak ? { state: 'topic', ...weak } : { state: 'none' };
+}
+
+// --- Your tests and analytics. ---
+
+// "/ 200", read by a screen reader as "out of 200".
+function ofMax(max) {
+  const slash = text('span', '', ' / ');
+  slash.setAttribute('aria-hidden', 'true');
+  return el('span', 'acct-of', slash, unseen(' out of '), String(max));
+}
+
+function figureCell({ label, value, max, detail }) {
+  const figure = el('dd', 'acct-cell-value', value);
+  if (max !== null) figure.append(ofMax(max));
+  return el('div', 'acct-cell', text('dt', 'field-label', label), figure, text('dd', 'acct-cell-detail', detail));
+}
+
+function recentRow(r) {
+  return el(
+    'li',
+    'acct-recent-row',
+    link('acct-recent-name', PATHS.result(r.id), r.name),
+    ' ',
+    text('span', 'acct-recent-date', r.date),
+    ' ',
+    el('span', 'serial acct-recent-score', r.score, ofMax(r.max))
+  );
+}
+
+function drawTests({ figures: cells, recent, primary }) {
+  const tests = action('Practice tests', PATHS.tests, { primary: primary === 'tests', focus: 'tests' });
+  if (!cells) {
+    keepFocus(testsBox, () =>
+      testsBox.replaceChildren(
+        text('p', 'acct-lede', "You haven't taken a practice test yet. Every past paper is here, timed and scored as UPSC scores it."),
+        el('p', 'acct-tests-actions', tests)
+      )
+    );
+    return;
+  }
+  const analytics = action('Your analytics', PATHS.analytics, { primary: primary === 'analytics', focus: 'analytics' });
+  const list = el('ul', 'acct-recent', ...recent.map(recentRow));
+  list.setAttribute('aria-labelledby', 'acct-recent-h');
+  const heading = text('h3', 'acct-recent-h', 'Latest results');
+  heading.id = 'acct-recent-h';
+  keepFocus(testsBox, () =>
+    testsBox.replaceChildren(
+      el('dl', 'acct-cells', ...cells.map(figureCell)),
+      el('p', 'acct-tests-actions', analytics, ' ', tests),
+      heading,
+      list
+    )
+  );
+}
+
+// --- Coverage by subject. ---
+
+const COVERAGE_TEXT = {
+  nothing: 'Nothing covered yet. Mark questions Done or Needs review as you read, or take a practice test.',
+  loading: 'Loading your subjects…',
+  failed: "Couldn't load your subjects. Check your connection; this fills in when you're back online.",
+};
+
+function coverageRow({ subject, covered, total }) {
+  const fill = el('span', 'acct-bar-fill');
+  // At least a sliver for anything covered, so one question in a large subject
+  // is not drawn as none. The words beside it give the exact count.
+  fill.style.width = `${Math.max(1, Math.round((1000 * covered) / total) / 10)}%`;
+  const bar = el('span', 'acct-bar', fill);
+  bar.setAttribute('aria-hidden', 'true');
+  return el(
+    'li',
+    'acct-cov-row',
+    text('span', 'acct-cov-name', subject),
+    ' ',
+    bar,
+    ' ',
+    el('span', 'acct-cov-count', text('span', 'serial', String(covered)), ' of ', text('span', 'serial', String(total)))
+  );
+}
+
+function drawCoverage(value) {
+  if (value.state !== 'rows') {
+    coverageBox.replaceChildren(text('p', 'acct-empty', COVERAGE_TEXT[value.state]));
+    return;
+  }
+  const rows = el('ol', 'acct-cov', ...value.rows.map(coverageRow));
+  rows.setAttribute('aria-labelledby', 'acct-cov-h');
+  coverageBox.replaceChildren(
+    text('p', 'acct-lede', "Questions you've marked Done or Needs review, or answered in a test, out of each subject's total."),
+    rows
+  );
+  if (value.more) coverageBox.append(text('p', 'acct-after', `+ ${plural(value.more, 'more subject', 'more subjects')}`));
+}
+
+function coverageValue(view) {
+  if (!view.wants) return { state: 'nothing' };
+  if (catalogue.status === 'failed') return { state: 'failed' };
+  if (catalogue.status !== 'loaded') return { state: 'loading' };
+  const c = coverageOf(breakdownOf(view).bySubject);
+  return c.rows.length ? { state: 'rows', ...c } : { state: 'nothing' };
+}
+
+// --- Your revision lists. ---
 
 // What the person has open on a card. Drawing replaces the cards wholesale (a
-// sync or a year arriving redraws them), so it is kept here and not on the
-// nodes: the name being typed, and the list waiting on a Delete confirmation.
+// sync or the catalogue arriving redraws them), so it is kept here and not on
+// the nodes: the name being typed, and the list waiting on a Delete confirmation.
 const ui = {
   // { id, value, error }: the list being renamed, the name as typed so far, and
   // what is wrong with it ('' for nothing). The error stays until the next edit.
@@ -97,8 +427,6 @@ const ui = {
   confirm: null, // the id of the list whose Delete is waiting for a yes
 };
 
-// The Needs review card's id for focus: not a list's, whatever a list is called.
-const REVIEW_ID = '__review__';
 const EDIT_INPUT = 'acct-edit-input';
 const EDIT_ERROR = 'acct-edit-error';
 const CONFIRM_TEXT = 'acct-confirm-text';
@@ -216,13 +544,13 @@ function confirmBox({ id, name, keys }) {
   return box;
 }
 
-// "Indian Polity · Indian Economy · +2 more". Empty while the years this card's questions are
-// in are still on their way (the line is there, so the card does not grow when
-// it fills), and for questions the index does not know.
+// "Indian Polity · Indian Economy · +2 more", from the catalogue. Empty while
+// it is on its way (the line is there, so the card does not grow when it
+// fills), if it did not load, and for questions it does not know.
 function subjectsLine(keys) {
   const line = el('p', 'acct-subjects');
-  if (pendingForKeys(keys, requests).length) return line;
-  const { top, more } = subjectsCovered(keys, index);
+  if (catalogue.status !== 'loaded') return line;
+  const { top, more } = subjectsCoveredBy(keys, catalogue.subjectOf);
   if (!top.length) return line;
   // Two parts so a long subject gives way with an ellipsis and "+k more" stays.
   line.append(text('span', 'acct-subjects-top', top.join(' · ')));
@@ -231,11 +559,12 @@ function subjectsLine(keys) {
   return line;
 }
 
-// One card. `list` is false for Needs review, which has no Rename or Delete.
-function drawCard({ id, name, keys }, { list, revise }) {
+// One list's card: its name and count, the subjects it covers, then Revise,
+// Rename and Delete (or the rename form, or the Delete question).
+function drawCard({ id, name, keys }) {
   const n = keys.length;
-  const editing = list && ui.edit?.id === id;
-  const confirming = list && !editing && ui.confirm === id;
+  const editing = ui.edit?.id === id;
+  const confirming = !editing && ui.confirm === id;
 
   const head = el('div', 'acct-card-head');
   const count = text('p', 'acct-count', plural(n, 'question', 'questions'));
@@ -251,13 +580,7 @@ function drawCard({ id, name, keys }, { list, revise }) {
 
   const card = el('article', 'acct-card', head);
   card.dataset.scope = id;
-  if (n) {
-    card.append(subjectsLine(keys));
-  } else {
-    card.append(
-      text('p', 'acct-empty', list ? 'No questions yet: use Save to list on any question.' : 'Nothing marked for review.')
-    );
-  }
+  card.append(n ? subjectsLine(keys) : text('p', 'acct-empty', 'No questions yet: use Save to list on any question.'));
 
   if (editing) return card;
   if (confirming) {
@@ -266,36 +589,33 @@ function drawCard({ id, name, keys }, { list, revise }) {
   }
   const actions = el('div', 'acct-actions');
   if (n) {
-    const link = control('a', 'acct-btn', 'Revise', { id, fid: 'revise', aria: `Revise "${name}"` });
-    link.href = revise;
-    actions.append(link);
+    const revise = control('a', 'acct-btn', 'Revise', { id, fid: 'revise', aria: `Revise "${name}"` });
+    revise.href = PATHS.list(id);
+    actions.append(revise);
   }
-  if (list) {
-    actions.append(
-      control('button', 'acct-text-btn', 'Rename', { act: 'rename', id, fid: 'rename', aria: `Rename "${name}"` }),
-      control('button', 'acct-text-btn', 'Delete', { act: 'delete', id, fid: 'delete', aria: `Delete "${name}"` })
-    );
-  }
-  if (actions.childElementCount) card.append(actions);
+  actions.append(
+    control('button', 'acct-text-btn', 'Rename', { act: 'rename', id, fid: 'rename', aria: `Rename "${name}"` }),
+    control('button', 'acct-text-btn', 'Delete', { act: 'delete', id, fid: 'delete', aria: `Delete "${name}"` })
+  );
+  card.append(actions);
   return card;
 }
 
-// The Needs review card, then the lists A to Z. The Revise links are built
-// here and nowhere in the server's HTML, so the build never sees them.
-function drawLists(view) {
-  const cards = [
-    drawCard({ id: REVIEW_ID, name: 'Needs review', keys: view.review }, { list: false, revise: '/revise?review' }),
-    ...view.lists.map((l) => drawCard(l, { list: true, revise: `/revise?list=${encodeURIComponent(l.id)}` })),
-  ];
-  if (!view.lists.length) cards.push(text('p', 'acct-empty', 'No lists yet: use Save to list on any question.'));
+// The lists A to Z. The Revise links are built here and nowhere in the server's
+// HTML, so the build never sees them. (Needs review has its card at the top of
+// the page.)
+function drawLists(lists) {
+  const cards = lists.map(drawCard);
+  if (!lists.length) cards.push(text('p', 'acct-empty', 'No lists yet: use Save to list on any question.'));
 
   // The card being renamed, while the person is in its form: a redraw (a sync,
-  // a year arriving) must leave it in the page, or the field loses the focus and
-  // a phone's keyboard closes mid-word. Everything around it is replaced; its
-  // count and subjects are refreshed in place. Only while that form is still
-  // the one being edited: Rename activated on another card (without the focus
-  // leaving the field) makes ui.edit point there, and keeping this form would
-  // leave a dead one beside the new one, and a second #EDIT_INPUT.
+  // the catalogue arriving) must leave it in the page, or the field loses the
+  // focus and a phone's keyboard closes mid-word. Everything around it is
+  // replaced; its count and subjects are refreshed in place. Only while that
+  // form is still the one being edited: Rename activated on another card
+  // (without the focus leaving the field) makes ui.edit point there, and keeping
+  // this form would leave a dead one beside the new one, and a second
+  // #EDIT_INPUT.
   const form = ui.edit ? document.querySelector('.acct-edit') : null;
   const keep =
     form && form.dataset.list === ui.edit.id && form.contains(document.activeElement)
@@ -315,89 +635,44 @@ function drawLists(view) {
   keep.after(...cards.slice(at + 1));
 }
 
-function drawSummary(view, settled) {
-  const { totals, subjects, unplaced } = view;
-  const marked = totals.done + totals.review;
-  if (!marked) {
-    const link = text('a', '', 'any question');
-    link.href = '/upsc';
-    summaryBox.replaceChildren(el('p', 'acct-empty', 'Nothing marked yet: use Mark done or Needs review on ', link, '.'));
-    return;
-  }
-  // Subjects need the indexes. Counting by subject before they have arrived
-  // would put every question in a made-up bucket, so wait for them.
-  if (!settled) {
-    summaryBox.replaceChildren(text('p', 'acct-empty', 'Loading subjects.'));
-    return;
-  }
-  if (!subjects.length) {
-    summaryBox.replaceChildren(
-      text(
-        'p',
-        'acct-empty',
-        `The subjects of your ${plural(marked, 'marked question', 'marked questions')} did not load. If you were offline, reload to try again.`
-      )
-    );
-    return;
-  }
-
-  const cell = (tag, className, value, scope) => {
-    const c = text(tag, className, String(value));
-    if (scope) c.scope = scope;
-    return c;
-  };
-  const row = (name, done, review) =>
-    el('tr', '', cell('th', '', name, 'row'), cell('td', 'acct-num', done), cell('td', 'acct-num', review));
-  const head = el(
-    'tr',
-    '',
-    cell('th', '', 'Subject', 'col'),
-    cell('th', 'acct-num', 'Done', 'col'),
-    cell('th', 'acct-num', 'Needs review', 'col')
-  );
-  const table = el(
-    'table',
-    'acct-table',
-    el('thead', '', head),
-    el('tbody', '', ...subjects.map((s) => row(s.subject, s.done, s.review))),
-    el('tfoot', '', row('Total', totals.done, totals.review))
-  );
-  table.setAttribute('aria-labelledby', 'acct-sum-h');
-  summaryBox.replaceChildren(table);
-  if (unplaced) {
-    summaryBox.append(
-      text(
-        'p',
-        'acct-after',
-        `${plural(unplaced, 'marked question', 'marked questions')} could not be matched to a subject, so ${
-          unplaced === 1 ? 'it is' : 'they are'
-        } in the total only. If you were offline, reload to try again.`
-      )
-    );
-  }
-}
+// --- Showing the page. ---
 
 // The page's body is hidden (account.astro) until its first draw, and the
-// colophon until the question indexes have settled as well: By subject is the
-// one part whose height nothing can predict, and it is the last thing before
-// the colophon. Only the first load is held back. Later draws (a sync, another
-// tab) change what is on screen anyway, and must not hide the footer.
+// colophon is out of the page until the catalogue has settled as well:
+// Coverage by subject is the one part whose height nothing can predict, and it
+// is the last thing before the colophon. Only the first load holds the
+// colophon back. Later draws (a sync, another tab) change what is on screen
+// anyway, and must not take the footer away.
 //
-// A signed-in visitor on a device that has never held their account's data (see
-// firstSyncHere) is about to have lists and marks arrive from the first sync,
-// which would push down whatever is already showing. So the first reveal waits
-// for that sync to end (sawaalbox:sync-done, whatever the outcome), for at most
-// FIRST_SYNC_HOLD_MS: a slow sync shows the page as it is rather than nothing.
-// A returning device has its data already, and is not held.
+// The first reveal waits for:
+//   - the faces. The figures are set in Courier Prime and the cards in Archivo
+//     and Literata; shown before a face is ready, a line rewraps when it swaps
+//     in. So it waits for them, briefly, as /upsc/test and /upsc/analytics do.
+//   - the first sync. A signed-in visitor on a device that has never held their
+//     account's data (see firstSyncHere) is about to have lists, marks and
+//     tests arrive, which would push down whatever is already showing. So the
+//     first reveal waits for that sync to end (sawaalbox:sync-done, whatever
+//     the outcome), for at most FIRST_SYNC_HOLD_MS: a slow sync shows the page
+//     as it is rather than nothing. A returning device has its data already,
+//     and is not held.
 const FIRST_SYNC_HOLD_MS = 2500;
-let firstLoad = true;
-let held = false;
-let lastSettled = false;
+const FONT_WAIT_MS = 3000;
+const FACES = ['400 1em "Courier Prime"', '700 1em "Courier Prime"', '400 1em Literata', '700 1em "Archivo Variable"'];
+const holds = new Set(['fonts']);
+let shown = false; // the first reveal is done
+let framed = false; // and has been on screen for a frame (see settle)
+let colophonHeld = true; // until the first load has settled
 let landed = false;
+
+function fontsReady() {
+  if (!document.fonts?.load) return Promise.resolve();
+  const faces = Promise.all(FACES.map((font) => document.fonts.load(font)));
+  return Promise.race([faces, new Promise((resolve) => setTimeout(resolve, FONT_WAIT_MS))]).catch(() => {});
+}
 
 // /account#lists (the account menu's "My lists", a bookmark): the browser
 // scrolls to the section but puts no focus there, so a keyboard or screen
-// reader user would start again from the top of the page. The Revision heading
+// reader user would start again from the top of the page. The lists heading
 // takes focus instead (tabindex=-1). It cannot while the body is hidden
 // (data-pending), so the first reveal does it, and only if the person has not
 // already moved on to something else; a hash change after that is a deliberate
@@ -419,60 +694,93 @@ function landOnListsAfterLoad() {
   else window.addEventListener('load', () => setTimeout(landOnLists), { once: true });
 }
 
-function reveal(settled) {
-  lastSettled = settled;
-  if (held) return;
+// The colophon comes back once the catalogue this device needs has settled,
+// and no sooner than a frame after the first reveal: while the page was
+// pending it was laid out, unseen, where the unfilled page ended, and shown
+// straight from there Chrome would count its move to the foot of the drawn page
+// as a shift. display: none (data-settling) has no old place to move from.
+function settle(view) {
+  if (!shown || !colophonHeld) return;
+  if (!framed || needsCatalogue(view)) {
+    acct.toggleAttribute('data-settling', true);
+    return;
+  }
+  acct.removeAttribute('data-settling');
+  colophonHeld = false;
+}
+
+function reveal() {
+  if (shown || holds.size) return;
+  shown = true;
+  // The browser scrolled to #lists while the page was hidden, before the parts
+  // above the lists were drawn. A browser with scroll anchoring kept the lists
+  // in place; one without (Safari) is left short of them. So the section is put
+  // in view, at once, before the page shows, as /upsc/test does for #practice.
+  if (location.hash === '#lists') document.getElementById('lists')?.scrollIntoView();
+  acct.toggleAttribute('data-settling', true);
   acct.removeAttribute('data-pending');
   if (!landed) {
     landed = true;
     landOnListsAfterLoad();
   }
-  if (!firstLoad) return;
-  acct.toggleAttribute('data-settling', !settled);
-  if (settled) firstLoad = false;
+  requestAnimationFrame(() =>
+    requestAnimationFrame(() => {
+      framed = true;
+      settle(read());
+    })
+  );
 }
 
-function releaseHold() {
-  if (!held) return;
-  held = false;
-  reveal(lastSettled);
+function release(name) {
+  if (!holds.delete(name)) return;
+  // Drawn again first: a sync that has just landed changed what there is.
+  render();
 }
 
 const GONE_ELSEWHERE = 'That list was deleted on another device.';
 
+// Every part, from storage. Parts above the lists are drawn only when what they
+// show has changed (part). `lists: false` leaves the lists as they are: a
+// change to the tests alone cannot change them.
 // `restore: false` for a change the person just made (opening Rename, closing
 // Delete): focus is put where those rules say straight after, and restoring
-// the old control first would fall back to the Revision heading and scroll.
-function render({ state = loadState(), restore = true } = {}) {
-  const before = restore ? captureFocus() : null;
-  // A list another tab or a sync removed cannot still be open here. Say so: the
-  // editor or the question the person was in has gone from under them.
-  if ((ui.edit && !state.lists[ui.edit.id]) || (ui.confirm && !state.lists[ui.confirm])) {
-    ui.edit = ui.edit && state.lists[ui.edit.id] ? ui.edit : null;
-    ui.confirm = ui.confirm && state.lists[ui.confirm] ? ui.confirm : null;
-    say(listsNote, GONE_ELSEWHERE);
-  }
-  const view = summarise(state, index);
-  // Settled once no index this state needs is still on its way (summary.js).
-  const settled = pendingPaths(state, requests).length === 0;
-  drawLists(view);
-  // The latest practice test, from this device's attempts (a sync keeps them
-  // in step with the account). Drawn with the cards, so it is in the first draw.
-  testsLine.textContent = latestLine(loadTests());
-  drawSummary(view, settled);
-  restoreFocus(before);
-  reveal(settled);
-}
+// the old control first would fall back to the lists heading and scroll.
+function render({ lists = true, restore = true } = {}) {
+  const view = read();
+  if (needsCatalogue(view) && catalogue.status === 'idle') loadCatalogue();
 
-// Draw now with what is known, fetch the years not yet asked for, draw again.
-// A student who has marked nothing fetches nothing.
-async function refresh() {
-  const state = loadState();
-  const fresh = indexPathsFor(state).filter((p) => !requests.has(p));
-  render({ state });
-  if (!fresh.length) return;
-  await Promise.all(fresh.map(load));
-  render();
+  const resume = resumeOf(view.tests, EXAM);
+  const review = reviewOf(view.state, Date.now());
+  const plan = pickPlan({ resume, review, tests: view.attempts.length, marked: Object.keys(view.state.entries).length > 0 });
+  part('pick', { plan, resume: resume && { id: resume.id, name: resume.name }, review }, drawPick);
+  if (resume) drawResumeDetail(resume);
+  const weak = weakOf(view);
+  if (weak) part('weak', weak, drawWeak);
+
+  const h = view.attempts.length ? headline(view.attempts, RULES) : null;
+  part(
+    'tests',
+    { figures: h && figures(h), recent: h ? recentTests(view.tests, EXAM) : [], primary: plan.primary },
+    drawTests
+  );
+
+  if (lists) {
+    const state = view.state;
+    const before = restore ? captureFocus() : null;
+    // A list another tab or a sync removed cannot still be open here. Say so:
+    // the editor or the question the person was in has gone from under them.
+    if ((ui.edit && !state.lists[ui.edit.id]) || (ui.confirm && !state.lists[ui.confirm])) {
+      ui.edit = ui.edit && state.lists[ui.edit.id] ? ui.edit : null;
+      ui.confirm = ui.confirm && state.lists[ui.confirm] ? ui.confirm : null;
+      say(listsNote, GONE_ELSEWHERE);
+    }
+    drawLists(summarise(state, {}).lists);
+    restoreFocus(before);
+  }
+
+  part('coverage', coverageValue(view), drawCoverage);
+  reveal();
+  settle(view);
 }
 
 // --- Rename and Delete. ---
@@ -538,7 +846,7 @@ function saveRename(id) {
   ui.edit = null;
   announce(id);
   say(listsNote, `Renamed "${old.name}" to "${next.lists[id].name}".`);
-  render({ state: next, restore: false });
+  render({ restore: false });
   focusFid(`rename|${id}`);
 }
 
@@ -570,7 +878,7 @@ function confirmDelete(id) {
   ui.confirm = null;
   announce(id);
   say(listsNote, `Deleted "${old.name}".`);
-  render({ state: next, restore: false });
+  render({ restore: false });
   document.getElementById(LISTS_HEADING)?.focus();
 }
 
@@ -653,7 +961,7 @@ if (authEnabled) {
   document.addEventListener('sawaalbox:signed-in', () => showWhere('in'));
   document.addEventListener('sawaalbox:signed-out', () => {
     showWhere('out');
-    releaseHold(); // no account, so no first sync to wait for
+    release('sync'); // no account, so no first sync to wait for
   });
 
   // The masthead control (account.js) settles the question of who is signed
@@ -668,7 +976,7 @@ if (authEnabled) {
     if (control?.dataset.auth === 'in') showWhere('in');
     else if (control?.dataset.auth === 'out') {
       showWhere('out');
-      releaseHold();
+      release('sync');
     }
   };
 
@@ -690,11 +998,11 @@ if (authEnabled) {
   if (control?.dataset.auth) follow();
   else showWhere(hinted ? 'in' : 'out');
 
-  // The first sync here is on its way: hold the first draw until it ends.
-  held = hinted && control?.dataset.auth !== 'out' && firstSyncHere(deviceOwner.read(), userId);
-  if (held) {
-    document.addEventListener('sawaalbox:sync-done', releaseHold);
-    setTimeout(releaseHold, FIRST_SYNC_HOLD_MS);
+  // The first sync here is on its way: hold the first reveal until it ends.
+  if (hinted && control?.dataset.auth !== 'out' && firstSyncHere(deviceOwner.read(), userId)) {
+    holds.add('sync');
+    document.addEventListener('sawaalbox:sync-done', () => release('sync'));
+    setTimeout(() => release('sync'), FIRST_SYNC_HOLD_MS);
   }
   if (control) new MutationObserver(follow).observe(control, { attributes: true, attributeFilter: ['data-auth'] });
 }
@@ -704,40 +1012,32 @@ if (authEnabled) {
 // nothing changes at all (the click).
 window.addEventListener('hashchange', () => landOnLists(true));
 document.addEventListener('click', (event) => {
-  const link = event.target.closest?.('a[href]');
-  if (link && link.pathname === location.pathname && link.hash === '#lists') setTimeout(() => landOnLists(true));
+  const anchor = event.target.closest?.('a[href]');
+  if (anchor && anchor.pathname === location.pathname && anchor.hash === '#lists') setTimeout(() => landOnLists(true));
 });
 
-// A sync that lands brings the account's marks, lists and test attempts, and
-// possibly years this page has not fetched. Other tabs (a test submitted in
-// one) and a restored page change storage too.
+// A sync that lands brings the account's marks, lists and test attempts. Other
+// tabs (a test submitted in one) and a restored page change storage too.
 //
-// The attempts touch only the tests line. A test running in another tab saves
-// its clock every 5 s, and each save lands here: a full render each time would
-// rebuild every card and table under a keyboard or screen-reader user and drop
-// their selection. So a change to the attempts alone rewrites that one line,
-// and only when its words change (a clock save leaves them as they were).
-document.addEventListener('sawaalbox:synced', refresh);
+// A change to the attempts alone leaves the lists as they are, and the other
+// parts are drawn again only where their numbers changed: a test running in
+// another tab saves its clock every 5 s, and that rewrites the Resume card's
+// "time left" and nothing else.
+document.addEventListener('sawaalbox:synced', () => render());
 window.addEventListener('storage', (event) => {
-  if (event.key === TESTS_KEY) {
-    const line = latestLine(loadTests());
-    if (testsLine.textContent !== line) testsLine.textContent = line;
-  } else if (event.key === STORAGE_KEY || event.key === null) refresh();
+  if (event.key === TESTS_KEY) render({ lists: false });
+  else if (event.key === STORAGE_KEY || event.key === null) render();
 });
 window.addEventListener('pageshow', (event) => {
-  if (event.persisted) refresh();
+  if (event.persisted) render();
 });
-// A year that failed because the connection was down is asked for again when
-// it comes back.
+// A catalogue that failed because the connection was down is asked for again
+// when it comes back.
 window.addEventListener('online', () => {
-  let retry = false;
-  for (const [path, status] of requests) {
-    if (status === 'failed') {
-      requests.delete(path);
-      retry = true;
-    }
-  }
-  if (retry) refresh();
+  if (catalogue.status !== 'failed') return;
+  catalogue.status = 'idle';
+  render();
 });
 
-refresh();
+render();
+fontsReady().then(() => release('fonts'));

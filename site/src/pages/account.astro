@@ -6,7 +6,7 @@ import { LEGAL } from '../lib/legal.js';
 
 <Listing
   title="Your Progress"
-  description="Questions you have marked and your revision lists."
+  description="Your practice tests, your analytics, your revision lists and how much of each subject you have covered."
   heading="Your progress"
   noindex={true}
 >
@@ -41,28 +41,33 @@ import { LEGAL } from '../lib/legal.js';
       data-pending: nothing in here is on screen until progress-page.js has drawn
       it (see the gate in the styles), so what it draws never pushes anything
       the reader can already see.
-      Revision comes first: its cards are the part that can be drawn from this
-      device alone. Practice tests comes next, for the same reason: its line is
-      the latest result in this device's storage, drawn with the cards in the
-      first draw. By subject needs the question indexes, so it grows after
-      they arrive, and it goes last so that growth moves nothing but the
-      colophon, which is held back until then. */}
+      The order is the order of what can be drawn from this device alone. Pick
+      up, Your tests and analytics, and the lists are all in the first draw; the
+      one card that needs the question catalogue (the weakest topic) has its
+      place held from then. Coverage by subject needs the catalogue to know its
+      rows at all, so it grows once the catalogue arrives, and it goes last so
+      that growth moves nothing but the colophon, which is out of the page until
+      then. */}
   <div class="acct" data-pending data-sync-full={authEnabled ? '' : undefined}>
+    <section class="acct-section" aria-labelledby="acct-pick-h">
+      <h2 id="acct-pick-h" tabindex="-1">Pick up where you left off</h2>
+      <div data-pick></div>
+    </section>
+
+    <section class="acct-section" aria-labelledby="acct-tests-h">
+      <h2 id="acct-tests-h" tabindex="-1">Your tests and analytics</h2>
+      <div class="acct-tests" data-tests></div>
+    </section>
+
     <section class="acct-section" id="lists" aria-labelledby="acct-lists-h">
-      <h2 id="acct-lists-h" tabindex="-1">Revision</h2>
+      <h2 id="acct-lists-h" tabindex="-1">Your revision lists</h2>
       <p class="acct-note" role="status" data-lists-note></p>
       <div data-lists></div>
     </section>
 
-    <section class="acct-section" aria-labelledby="acct-tests-h">
-      <h2 id="acct-tests-h">Practice tests</h2>
-      <p class="acct-tests-line" data-tests-line></p>
-      <p class="acct-tests-link"><a href="/upsc/test">Practice tests</a> <a href="/upsc/analytics">Your analytics</a></p>
-    </section>
-
-    <section class="acct-section" aria-labelledby="acct-sum-h">
-      <h2 id="acct-sum-h">By subject</h2>
-      <div data-summary></div>
+    <section class="acct-section" aria-labelledby="acct-cov-h">
+      <h2 id="acct-cov-h" tabindex="-1">Coverage by subject</h2>
+      <div data-coverage></div>
     </section>
   </div>
 </Listing>
@@ -75,8 +80,12 @@ import { LEGAL } from '../lib/legal.js';
   /* Global, not scoped: most of this page is drawn by progress-page.js, and
      Astro's scoped styles never reach markup a script creates. Every class is
      prefixed acct- so nothing here can leak. */
+  /* One column as wide as the sheet. Left to size itself, the column took the
+     widest thing inside it, and the grids below that fill up to a max-width
+     (the cards, the figures) asked for all of it: 992px at a 390px phone. */
   .acct {
     display: grid;
+    grid-template-columns: minmax(0, 1fr);
     gap: clamp(1.75rem, 4vw, 2.5rem);
   }
 
@@ -136,10 +145,8 @@ import { LEGAL } from '../lib/legal.js';
   /* One live region per place something can happen. It is always in the page
      (a region that is created together with its text may not be announced).
      While it holds nothing, or a success only a screen reader needs, it takes
-     no room; a failure is shown. The Practice tests line is set as one of
-     these notes is, but always shown. */
-  .acct-note,
-  .acct-tests-line {
+     no room; a failure is shown. */
+  .acct-note {
     margin: 0;
     max-width: var(--measure);
     font-size: 0.9rem;
@@ -162,13 +169,21 @@ import { LEGAL } from '../lib/legal.js';
     border: var(--rule-heavy) solid var(--rule-strong);
   }
 
-  /* Sign in is a secondary action, drawn as "Open the booklet" is: outlined on
-     paper with a green label. This page's job is to show the student their own
-     work, so nothing on it is the filled-green primary. */
-  .acct-btn {
+  /* Buttons. Sign in, and every action but one, is the secondary: outlined on
+     paper with a green label, as "Open the booklet" is. The page's one
+     filled-green action (progress-page.js picks it) is Resume when there is a
+     test to resume, else Your analytics, else the way to a first test. The line
+     height is set, not left at normal, so a button keeps its height when
+     Archivo replaces the fallback. */
+  .acct-btn,
+  .acct-primary {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
     padding: 0.7rem 1.25rem;
-    font: 700 0.95rem var(--font-structure);
+    font: 700 0.95rem / 1.2 var(--font-structure);
     color: var(--field-text);
+    text-decoration: none;
     background: var(--paper);
     border: var(--rule-heavy) solid var(--rule-strong);
     border-radius: 0;
@@ -180,77 +195,281 @@ import { LEGAL } from '../lib/legal.js';
   .acct-btn[hidden] {
     display: none;
   }
-
-  /* --- practice tests: the latest result, and the way to the tests --- */
-
-  /* The structural links, as "Back to your progress" on /revise: the tests,
-     and the analytics worked out from them. */
-  .acct-tests-link {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem 1.25rem;
-    margin: 0.6rem 0 0;
-    font: 600 0.88rem var(--font-structure);
+  .acct-primary {
+    color: var(--field-ink);
+    background: var(--field);
+  }
+  .acct-primary:hover {
+    background: var(--field-deep);
   }
 
-  /* --- by subject --- */
-
-  .acct-table {
-    width: 100%;
-    max-width: 38rem;
-    border-collapse: collapse;
-    background: var(--paper);
-    border: var(--rule-hair) solid var(--rule-strong);
-  }
-  .acct-table th,
-  .acct-table td {
-    padding: 0.5rem 0.9rem;
-    text-align: left;
-    border-bottom: var(--rule-hair) solid var(--rule);
-  }
-  .acct-table th[scope='row'] {
-    font: 600 0.95rem var(--font-structure);
-    overflow-wrap: anywhere;
-  }
-  .acct-table thead th {
-    font: 600 0.68rem var(--font-structure);
-    letter-spacing: 0.13em;
-    text-transform: uppercase;
+  .acct-lede {
+    margin: 0 0 0.9rem;
+    font-size: 0.95rem;
     color: var(--ink-soft);
-    border-bottom: var(--rule-heavy) solid var(--rule-strong);
-  }
-  .acct-table .acct-num {
-    text-align: right;
-  }
-  .acct-table td.acct-num {
-    font-family: var(--font-serial);
-    font-weight: 700;
-  }
-  .acct-table tfoot th,
-  .acct-table tfoot td {
-    border-top: var(--rule-heavy) solid var(--rule-strong);
-    border-bottom: 0;
   }
   .acct-after {
     margin: 0.7rem 0 0;
     color: var(--ink-soft);
     font-size: 0.92rem;
   }
+  /* A count set as a number, in a line of words. */
+  .acct-figure {
+    font: 700 1.05rem var(--font-serial);
+    letter-spacing: 0.02em;
+  }
 
-  /* --- revision: a card for Needs review, then one per list --- */
+  /* --- pick up where you left off: up to three ruled cards --- */
+
+  .acct-pick-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 17rem), 1fr));
+    gap: 1.25rem;
+    max-width: 62rem;
+  }
+  .acct-pick-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.9rem 1.1rem 1rem;
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .acct-pick-card h3 {
+    padding-bottom: 0.45rem;
+    margin-bottom: 0.2rem;
+    border-bottom: var(--rule-hair) solid var(--rule);
+  }
+  .acct-pick-name,
+  .acct-pick-detail {
+    margin: 0;
+    overflow-wrap: anywhere;
+  }
+  .acct-pick-name {
+    line-height: 1.4;
+  }
+  .acct-pick-detail {
+    font-size: 0.92rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  .acct-pick-detail:empty {
+    display: none;
+  }
+  .acct-pick-sub {
+    color: var(--ink-soft);
+  }
+  .acct-pick-actions {
+    margin: auto 0 0;
+    padding-top: 0.5rem;
+  }
+
+  /* The weakest topic arrives with the question catalogue, after the first
+     draw. Its card is drawn at once, in the same shape whatever it says: the
+     heading, two lines for the topic (clipped to two), one for the detail
+     (kept even when empty), and Practise it, kept in the card for its height
+     while there is nothing to practise. So the card is as tall waiting as
+     filled, and its filling in moves nothing. */
+  .acct-pick-weak .acct-pick-name {
+    display: -webkit-box;
+    height: 2.8em;
+    overflow: hidden;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+  }
+  .acct-pick-weak .acct-pick-detail,
+  .acct-pick-weak .acct-pick-detail:empty {
+    display: block;
+    height: 1.45em;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .acct-pick-weak [data-off] {
+    visibility: hidden;
+  }
+
+  /* --- your tests and analytics --- */
+
+  .acct-tests {
+    max-width: 62rem;
+  }
+
+  /* The headline figures: three fields of one ruled box, hairlines between
+     them (the gap shows the rule colour behind), as on /upsc/analytics. On a
+     phone the latest paper takes the full width under the other two. */
+  .acct-cells {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--rule-hair);
+    margin: 0;
+    background: var(--rule);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .acct-cell:last-child {
+    grid-column: 1 / -1;
+  }
+  @media (min-width: 40rem) {
+    .acct-cells {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .acct-cell:last-child {
+      grid-column: auto;
+    }
+  }
+  .acct-cell {
+    display: grid;
+    align-content: start;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.8rem 1rem 0.95rem;
+    background: var(--paper);
+  }
+  .acct-cell dt,
+  .acct-cell dd {
+    margin: 0;
+  }
+  .acct-cell-value {
+    font: 700 clamp(1.3rem, 1rem + 1.2vw, 1.9rem) / 1.15 var(--font-serial);
+    letter-spacing: 0.02em;
+    overflow-wrap: anywhere;
+  }
+  .acct-of {
+    font-size: 0.6em;
+    font-weight: 400;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .acct-cell-detail {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  @media (max-width: 30rem) {
+    .acct-cell {
+      padding: 0.7rem 0.75rem 0.85rem;
+    }
+  }
+
+  .acct-tests-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+    margin: 1.1rem 0 0;
+  }
+
+  /* The latest results: one row each, hairline rules between, as /upsc/test's
+     Past results. */
+  .acct-recent-h {
+    margin: 1.5rem 0 0.5rem;
+  }
+  .acct-recent {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: var(--rule-hair) solid var(--rule);
+  }
+  .acct-recent-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 1rem;
+    padding: 0.6rem 0;
+    border-top: var(--rule-hair) solid var(--rule);
+  }
+  .acct-recent-name {
+    font: 700 1rem var(--font-structure);
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+  .acct-recent-date {
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+  .acct-recent-score {
+    margin-left: auto;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .acct-recent-score .acct-of {
+    font-size: 0.85em;
+  }
+
+  /* --- coverage by subject: a bar and "covered of total" per subject --- */
+
+  .acct-cov {
+    max-width: 50rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: var(--rule-hair) solid var(--rule);
+  }
+  .acct-cov-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name count'
+      'bar bar';
+    align-items: baseline;
+    gap: 0.35rem 1rem;
+    padding: 0.6rem 0;
+    border-top: var(--rule-hair) solid var(--rule);
+  }
+  .acct-cov-name {
+    grid-area: name;
+    font: 600 0.95rem var(--font-structure);
+    overflow-wrap: anywhere;
+  }
+  .acct-cov-count {
+    grid-area: count;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .acct-cov-count .serial {
+    font-weight: 700;
+    color: var(--ink);
+  }
+  /* The bar shows the share; the words beside it give the count, so it is never
+     the length alone. */
+  .acct-bar {
+    grid-area: bar;
+    display: block;
+    height: 0.7rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
+  }
+  .acct-bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--ink);
+  }
+  @media (min-width: 44rem) {
+    .acct-cov-row {
+      grid-template-columns: minmax(0, 14rem) minmax(0, 1fr) 8.5rem;
+      grid-template-areas: 'name bar count';
+      align-items: center;
+    }
+    .acct-cov-count {
+      text-align: right;
+    }
+  }
+
+  /* --- your revision lists: one compact card per list --- */
 
   .acct-cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(100%, 19rem), 1fr));
-    gap: 1.25rem;
+    grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+    gap: 0.75rem;
     align-items: stretch;
   }
   .acct-card {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 0.35rem;
     min-width: 0;
-    padding: 0.9rem 1.1rem 1rem;
+    padding: 0.7rem 0.9rem 0.75rem;
     background: var(--paper);
     border: var(--rule-hair) solid var(--rule);
   }
@@ -260,8 +479,8 @@ import { LEGAL } from '../lib/legal.js';
     align-items: baseline;
     justify-content: space-between;
     gap: 0.2rem 1rem;
-    padding-bottom: 0.45rem;
-    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+    padding-bottom: 0.35rem;
+    border-bottom: var(--rule-hair) solid var(--rule-strong);
   }
   .acct-card-head h3 {
     min-width: 0;
@@ -310,13 +529,11 @@ import { LEGAL } from '../lib/legal.js';
     align-items: center;
     gap: 0.35rem 0.9rem;
     margin-top: auto;
-    padding-top: 0.35rem;
+    padding-top: 0.2rem;
   }
   .acct-card .acct-btn {
-    display: inline-block;
-    padding: 0.5rem 1.1rem;
+    padding: 0.45rem 1rem;
     font-size: 0.9rem;
-    text-decoration: none;
   }
   /* A text button: quiet, underlined so it still reads as pressable. Delete is
      not drawn in red; red is stamp ink, never an action. */
@@ -401,17 +618,22 @@ import { LEGAL } from '../lib/legal.js';
 
   /* --- nothing moves what the reader can already see --- */
 
-  /* progress-page.js draws everything in .acct, and the part that depends on the
-     question indexes (the By subject table) only once they arrive. How tall
+  /* progress-page.js draws everything in .acct, and the part that depends on
+     the question catalogue (Coverage by subject) only once it arrives. How tall
      that is depends on what this browser has stored, which no stylesheet can
      know, so no height is reserved. Instead nothing is on screen to be pushed:
-     what is visibility: hidden is not painted, and moves nothing the reader
-     can see when it appears.
-       - .acct stays hidden until the first draw (data-pending).
-       - The colophon, the only thing below By subject, stays hidden until the
-         indexes have settled as well (data-settling).
-     progress-page.js clears both. The animations are the way out if it never
-     runs: each reveals its element after a few seconds on its own. */
+       - .acct stays hidden until the first draw (data-pending). What is
+         visibility: hidden is not painted, and moves nothing the reader can see
+         when it appears.
+       - The colophon, the only thing below Coverage by subject, is out of the
+         page (data-settling, display: none) from the first reveal until the
+         catalogue has settled. Not visibility: Chrome keeps the last place a
+         hidden box was laid out, and counts the move when it shows again
+         elsewhere; a box that was not there has no old place. That ends by
+         itself: the catalogue loads or fails within the script's 15 s limit.
+     The animations are the way out if the script never runs: the page and the
+     colophon show after a few seconds on their own (data-settling is only
+     ever set by the script). */
   @keyframes acct-reveal {
     to {
       visibility: visible;
@@ -422,16 +644,24 @@ import { LEGAL } from '../lib/legal.js';
       visibility: hidden;
       animation: acct-reveal 0s 4s forwards;
     }
-    body:has(.acct[data-pending], .acct[data-settling]) .colophon {
+    body:has(.acct[data-pending]) .colophon {
       visibility: hidden;
       animation: acct-reveal 0s 6s forwards;
+    }
+    body:has(.acct[data-settling]) .colophon {
+      display: none;
     }
   }
 
   @media (pointer: coarse) {
     .acct-btn,
+    .acct-primary,
     .acct-text-btn {
       min-height: 2.75rem;
+    }
+    .acct-recent-name {
+      display: inline-block;
+      padding-block: 0.3rem;
     }
   }
 </style>

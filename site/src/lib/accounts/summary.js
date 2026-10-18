@@ -196,10 +196,19 @@ const byText = (a, b) => a.localeCompare(b, 'en');
  * there are. A key the index does not know is in no subject, and is ignored.
  */
 export function subjectsCovered(keys, index) {
+  return subjectsCoveredBy(keys, (key) => lookup(index, key)?.subject ?? null);
+}
+
+/**
+ * The same, with the subject of each key from `subjectOf` (key -> subject, or
+ * null for a key it does not know). /account reads subjects from the question
+ * catalogue, which it fetches for coverage anyway, rather than the year indexes.
+ */
+export function subjectsCoveredBy(keys, subjectOf) {
   const counts = new Map();
   for (const key of keys) {
-    const found = lookup(index, key);
-    if (found) counts.set(found.subject, (counts.get(found.subject) ?? 0) + 1);
+    const subject = subjectOf(key);
+    if (typeof subject === 'string') counts.set(subject, (counts.get(subject) ?? 0) + 1);
   }
   const ranked = [...counts].sort((a, b) => b[1] - a[1] || byText(a[0], b[0])).map(([subject]) => subject);
   return { top: ranked.slice(0, 2), more: Math.max(0, ranked.length - 2) };
