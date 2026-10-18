@@ -37,8 +37,19 @@ export function submittedFor(tests, exam) {
 }
 
 /**
+ * Two papers are of a size to compare when their maximum marks are within 10% of
+ * each other. Recent UPSC papers score 97 to 100 questions (maximum 194 to 200)
+ * and are compared; a 150-question paper (maximum about 300) and a 100-question
+ * one (about 200) are not. Written as 10·|a − b| ≤ max(a, b), the same rule as
+ * |a − b| ≤ 0.1·max(a, b) but exact: 0.1 times 194 is 19.400000000000002.
+ */
+const similarSize = (a, b) => 10 * Math.abs(a - b) <= Math.max(a, b);
+
+/**
  * The headline numbers, read from each attempt's stored `result`: they need no
- * catalogue, so they stand when the catalogue cannot be fetched.
+ * catalogue, so they stand when the catalogue cannot be fetched. `latestPaper.change`
+ * is its score minus the previous paper's, to 2 dp, when the two are of a similar
+ * size (similarSize); otherwise null, as it is with a single paper.
  */
 export function headline(attempts, rules) {
   const submitted = attempts.filter(isSubmitted);
@@ -58,8 +69,10 @@ export function headline(attempts, rules) {
   const before = papers.at(-2);
   let latestPaper = null;
   if (latest) {
-    // A change in marks means something only between papers marked out of the same total.
-    const comparable = before && before.result.max === latest.result.max;
+    // A change in marks means something only between papers marked out of a similar
+    // total: within 10%, so a 97-question paper and a 100-question one compare, a
+    // 150-question one and a 100-question one do not.
+    const comparable = before && similarSize(before.result.max, latest.result.max);
     latestPaper = {
       year: latest.spec.year,
       score: latest.result.score,

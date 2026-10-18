@@ -372,6 +372,21 @@ test('headline from stored results', () => {
   assert.equal(headline([C1], UPSC).latestPaper, null);
 });
 
+test('headline: papers of a similar size show the change', () => {
+  // 97 scored questions (max 194) then 100 (max 200): recent UPSC papers differ like this.
+  const small = withResult('p1', { kind: 'paper', year: 2024, right: 50, wrong: 30, blank: 17, score: 80, max: 194, submittedAt: at(9) });
+  assert.deepEqual(headline([small, P2], UPSC).latestPaper, { year: 2023, score: 106.67, max: 200, change: 26.67 });
+});
+
+test('headline: the change needs maxima within 10% of each other', () => {
+  // Exactly 10% apart still compares; a mark further does not. Only `max` is read
+  // here, so 179 need not be a whole number of questions.
+  const at180 = withResult('p1', { kind: 'paper', year: 2022, right: 50, wrong: 30, blank: 10, score: 80, max: 180, submittedAt: at(9) });
+  const at179 = withResult('p1', { kind: 'paper', year: 2022, right: 50, wrong: 30, blank: 10, score: 80, max: 179, submittedAt: at(9) });
+  assert.equal(headline([at180, P2], UPSC).latestPaper.change, 26.67);
+  assert.equal(headline([at179, P2], UPSC).latestPaper.change, null);
+});
+
 test('headline: the latest paper is the last one submitted, not the highest year', () => {
   const retake = withResult('p3', { kind: 'paper', year: 2022, right: 70, wrong: 10, blank: 20, score: 133.33, max: 200, submittedAt: at(12) });
   const { latestPaper } = headline([P1, P2, C1, retake], UPSC);
