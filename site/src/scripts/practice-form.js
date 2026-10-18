@@ -11,7 +11,7 @@ import { newListId as newId } from '../lib/accounts/lists.js';
 // The practice-set form on /upsc/test (spec, "Build a practice set"). The
 // form is the page's markup; this enables it, counts what matches as the
 // student chooses, and starts the set. The catalogue (/upsc/catalogue.json,
-// 17 KB gzipped) is fetched only once the form is used.
+// about 20.9 KB gzipped) is fetched only once the form is used.
 
 const CATALOGUE_PATH = '/upsc/catalogue.json';
 const FILE_TIMEOUT_MS = 15000;

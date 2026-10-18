@@ -201,7 +201,7 @@ function loadPile() {
     try {
       const response = await fetch(`/${target.exam}/catalogue.json`, { signal: controller.signal });
       if (!response.ok) throw new Error(String(response.status));
-      const parsed = parseCatalogue(await response.json());
+      const parsed = parseCatalogue(await response.json(), target.exam);
       if (!parsed) throw new Error('not a catalogue');
       pile.data = parsed;
       pile.status = 'loaded';
@@ -223,9 +223,24 @@ function loadPile() {
 // and marks as stored now, read together, so following Revise them from that
 // count lists what it counted. A Done marked after the wrong answer's test
 // clears it, so a question marked Done here is gone on the next visit.
+//
+// breakdown walks every attempt and the whole catalogue, and this runs on every
+// storage event, including the 5 s clock saves of a test running in another tab.
+// Its inputs are the submitted attempts (which never change once submitted), this
+// exam's marks and the catalogue, so it is worked out again only when one of
+// those has (the same rule as analytics-page.js's breakdownOf).
+let wrongMemo = { key: null, catalogue: null, value: [] };
 function wrongKeys(state) {
   if (!rules || pile.status !== 'loaded') return [];
-  return breakdown(submittedFor(loadTests(), target.exam), state.entries, pile.data, rules, target.exam).wrong;
+  const attempts = submittedFor(loadTests(), target.exam);
+  const marks = Object.entries(state.entries)
+    .filter(([key]) => key.startsWith(`${target.exam}-`))
+    .map(([key, m]) => [key, m.status, m.updatedAt]);
+  const key = JSON.stringify([attempts.map((a) => a.id), marks]);
+  if (wrongMemo.key !== key || wrongMemo.catalogue !== pile.data) {
+    wrongMemo = { key, catalogue: pile.data, value: breakdown(attempts, state.entries, pile.data, rules, target.exam).wrong };
+  }
+  return wrongMemo.value;
 }
 
 // A list keeps the order its questions were saved in; Needs review starts with

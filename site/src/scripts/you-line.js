@@ -47,7 +47,7 @@ if (line && rules) {
       const timer = setTimeout(() => controller.abort(), FILE_TIMEOUT_MS);
       try {
         const response = await fetch(`/${exam}/catalogue.json`, { signal: controller.signal });
-        return response.ok ? parseCatalogue(await response.json()) : null;
+        return response.ok ? parseCatalogue(await response.json(), exam) : null;
       } catch {
         return null;
       } finally {

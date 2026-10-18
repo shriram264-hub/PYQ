@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { gzipSync } from 'node:zlib';
 import { GET } from '../src/pages/upsc/catalogue.json.js';
 import { ALL_QUESTIONS } from '../src/lib/corpus.js';
+import { makeRules } from '../src/lib/exam-rules.js';
 import { FLAG, buildCatalogue, flagOf, parseCatalogue } from '../src/lib/tests/catalogue.js';
 
 // Built exactly as the build builds it.
@@ -104,4 +105,37 @@ test('a catalogue from before answers still parses', () => {
     bad.entries.map((e) => [e.key, e.answer]),
     [['upsc-2019-6', null], ['upsc-2019-7', 'd']]
   );
+});
+
+// A made-up exam. The shared rules table is private to exam-rules.js (adding to it
+// would mean mutating state every other test reads), so parseCatalogue takes the
+// rules as an optional third argument and these tests hand it makeRules' output:
+// the same code path as a real second exam, with nothing shared touched.
+const FIVE_OPTIONS = makeRules({ options: ['a', 'b', 'c', 'd', 'e'], right: 1, wrong: { numerator: 1, denominator: 4 } });
+const MADE_UP = {
+  subjects: ['Maths'],
+  topics: [[0, 'Algebra']],
+  questions: {
+    'xyz-2021-1': [0, 0, 2021, 0, 4], // option e: only a five-option exam has it
+    'xyz-2021-2': [0, 0, 2021, 0, -1],
+    'upsc-2021-3': [0, 0, 2021, 0, 0], // another exam's key
+  },
+};
+
+test('a made-up exam parses with its own rules: its keys, its options', () => {
+  const cat = parseCatalogue(MADE_UP, 'xyz', FIVE_OPTIONS);
+  assert.deepEqual(
+    cat.entries.map((e) => [e.key, e.answer]),
+    [['xyz-2021-1', 'e'], ['xyz-2021-2', null]]
+  );
+});
+
+test('an exam with no rules has no catalogue, and the default is still UPSC', () => {
+  assert.equal(parseCatalogue(MADE_UP, 'xyz'), null);
+  for (const bad of ['', 'UPSC', 'up-sc', 'upsc.*', 7, null]) {
+    assert.equal(parseCatalogue(MADE_UP, bad, FIVE_OPTIONS), null, String(bad));
+  }
+  // UPSC's four options: answer index 4 is out of range, and xyz keys are not its keys.
+  assert.deepEqual(parseCatalogue(MADE_UP).entries.map((e) => e.key), ['upsc-2021-3']);
+  assert.deepEqual(parseCatalogue(MADE_UP, 'upsc').entries.map((e) => e.key), ['upsc-2021-3']);
 });

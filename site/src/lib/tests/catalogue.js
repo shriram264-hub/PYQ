@@ -7,7 +7,7 @@ import { examRules } from '../exam-rules.js';
 // and fetched when a student builds a set, and by analytics, which tells a right
 // answer from a wrong one without fetching the year files. Names are listed once
 // and referred to by position: spelled out on every question the file is 26 KB
-// gzipped, indexed it is 17 KB.
+// gzipped, indexed it is about 20.9 KB.
 //   { subjects: [name], topics: [[subjectIndex, name]],
 //     questions: { key: [subjectIndex, topicIndex, year, flag, answerIndex] } }
 // answerIndex is the official answer's position in the exam's options (0 is 'a',
@@ -59,7 +59,8 @@ export function buildCatalogue(questions) {
   return { subjects, topics, questions: entries };
 }
 
-const KEY = /^upsc-(\d{4})-(\d{1,3})$/;
+// An exam's name as the database's question_key check allows it (accounts/qkey.js).
+const EXAM_NAME = /^[a-z]+$/;
 const isIndex = (v, length) => Number.isInteger(v) && v >= 0 && v < length;
 
 /**
@@ -69,9 +70,18 @@ const isIndex = (v, length) => Number.isInteger(v) && v >= 0 && v < length;
  * unknown flag, an answer that is neither -1 nor an option's position) is
  * dropped. Entries come back ordered by year, then number, each with its
  * `answer`: 'a'..'d', or null (not scored, or a file from before answers).
+ *
+ * `exam` says whose catalogue it is: its options decide which answers are
+ * valid and its name which keys belong. Null for an exam with no rules (or a
+ * name that is not a valid exam name). `rules` is for tests, which pass a
+ * made-up exam's rules instead of adding it to the shared table.
  */
-export function parseCatalogue(data) {
+export function parseCatalogue(data, exam = 'upsc', rules = examRules(exam)) {
+  if (typeof exam !== 'string' || !EXAM_NAME.test(exam) || !rules) return null;
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
+  const { options } = rules;
+  // `exam` is letters only (checked above), so it cannot add regex syntax.
+  const key = new RegExp(`^${exam}-(\\d{4})-(\\d{1,3})$`);
   const { subjects, topics, questions } = data;
   if (!Array.isArray(subjects) || !subjects.every((s) => typeof s === 'string')) return null;
   if (!Array.isArray(topics) || !questions || typeof questions !== 'object' || Array.isArray(questions)) return null;
@@ -81,16 +91,16 @@ export function parseCatalogue(data) {
       : null
   );
   const entries = [];
-  for (const [key, value] of Object.entries(questions)) {
-    const m = KEY.exec(key);
-    if (!m || !isQuestionKey(key) || !Array.isArray(value) || (value.length !== 4 && value.length !== 5)) continue;
+  for (const [k, value] of Object.entries(questions)) {
+    const m = key.exec(k);
+    if (!m || !isQuestionKey(k) || !Array.isArray(value) || (value.length !== 4 && value.length !== 5)) continue;
     // A four-element entry is from before answers existed: it parses as having none.
     const [s, t, year, flag, answerIndex = NO_ANSWER] = value;
     if (!isIndex(s, subjects.length) || !isIndex(t, topicList.length) || !topicList[t]) continue;
     if (topicList[t].subject !== subjects[s] || year !== Number(m[1]) || !Object.values(FLAG).includes(flag)) continue;
-    if (answerIndex !== NO_ANSWER && !isIndex(answerIndex, OPTIONS.length)) continue;
-    const answer = answerIndex === NO_ANSWER ? null : OPTIONS[answerIndex];
-    entries.push({ key, subject: subjects[s], topic: topicList[t].name, year, flag, answer, n: Number(m[2]) });
+    if (answerIndex !== NO_ANSWER && !isIndex(answerIndex, options.length)) continue;
+    const answer = answerIndex === NO_ANSWER ? null : options[answerIndex];
+    entries.push({ key: k, subject: subjects[s], topic: topicList[t].name, year, flag, answer, n: Number(m[2]) });
   }
   entries.sort((a, b) => a.year - b.year || a.n - b.n);
   return {

@@ -141,7 +141,7 @@ function loadCatalogue() {
     try {
       const response = await fetch(PATHS.catalogue, { signal: controller.signal });
       if (!response.ok) throw new Error(String(response.status));
-      const parsed = parseCatalogue(await response.json());
+      const parsed = parseCatalogue(await response.json(), exam);
       if (!parsed) throw new Error('not a catalogue');
       catalogue.data = parsed;
       catalogue.status = 'loaded';
