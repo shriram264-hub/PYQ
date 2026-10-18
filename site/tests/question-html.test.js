@@ -1,8 +1,8 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { esc, questionHTML } from '../src/lib/question-html.js';
-import { ALL_QUESTIONS } from '../src/lib/corpus.js';
+import { esc, questionHTML, slugify } from '../src/lib/question-html.js';
+import { ALL_QUESTIONS, slugify as corpusSlugify } from '../src/lib/corpus.js';
 
 // The question file as the search API serves it. The labels in it are the
 // approved ones already (data/taxonomy.json), and the corpus and the renderer
@@ -252,6 +252,11 @@ test('links match the static pages, for every question as the search API sends i
     assert.ok(html.includes(`href="/upsc/topic/${q.subjectSlug}/${q.subtopicSlug}"`), label);
     assert.ok(html.includes(`>${esc(q.subject)}</a>`), label);
   });
+});
+
+test('the exported slugify is the corpus rule, on every subject and topic and on awkward text', () => {
+  const labels = [...ALL_QUESTIONS.flatMap((q) => [q.subject, q.subtopic]), 'Art & Culture', '  --x__Y--  ', '', 'A&B'];
+  for (const label of labels) assert.equal(slugify(label), corpusSlugify(label), label);
 });
 
 test('links match the static pages the corpus generates, for every question', () => {

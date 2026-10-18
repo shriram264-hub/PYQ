@@ -13,8 +13,9 @@ export const esc = (s) =>
 
 // Same rule as slugify in lib/corpus.js. Duplicated, not imported: corpus.js
 // reads the question file from disk at build time and cannot run in a browser.
-// tests/question-html.test.js checks the two have not drifted apart.
-const slugify = (v) =>
+// tests/question-html.test.js checks the two have not drifted apart. Exported so
+// other browser code builds subject and topic addresses by the same rule.
+export const slugify = (v) =>
   String(v).toLowerCase().replace(/&/g, ' and ').replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
 
 // The question's own page. Year and number are made numbers first: whatever

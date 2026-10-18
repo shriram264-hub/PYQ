@@ -11,7 +11,7 @@ import {
   resultLine,
   scoreAttempt,
 } from '../src/lib/tests/score.js';
-import { canStartTest } from '../src/lib/tests/access.js';
+import { canSeeAnalytics, canStartTest } from '../src/lib/tests/access.js';
 
 test('marks: +2 right, minus two-thirds wrong, to two decimals', () => {
   assert.equal(marks(62, 17), 112.67);
@@ -81,4 +81,8 @@ test('by subject: right, wrong and blank per subject, A to Z, scored questions o
 
 test('during the beta anyone can start a test', async () => {
   assert.equal(await canStartTest('upsc'), true);
+});
+
+test('during the beta anyone can see analytics', async () => {
+  assert.equal(await canSeeAnalytics('upsc'), true);
 });

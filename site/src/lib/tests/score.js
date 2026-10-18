@@ -1,7 +1,10 @@
-// Scoring a test by today's UPSC rules (spec, Decisions): +2 for a right
-// answer, minus two-thirds of a mark for a wrong one, 0 for a blank. A question
-// with no official answer (cancelled, or disputed with none recorded) is not
-// scored: it counts in none of the numbers. Pure, so the rules are tested here.
+// Scoring a test by an exam's marking rules (lib/exam-rules.js; today UPSC's, spec,
+// Decisions): +2 for a right answer, minus two-thirds of a mark for a wrong one,
+// 0 for a blank. A question with no official answer (cancelled, or disputed with
+// none recorded) is not scored: it counts in none of the numbers. Pure, so the
+// rules are tested here.
+
+import { examRules } from '../exam-rules.js';
 
 const OPTION = /^[abcd]$/;
 
@@ -11,17 +14,17 @@ export function officialAnswer(entry) {
   return OPTION.test(entry.answer) ? entry.answer : null;
 }
 
-// (6r − 2w) / 3 is 2r − ⅔w without adding up thirds in floating point. Its
-// hundredths are whole or a third or two-thirds off, never a half, so
-// Math.round has no tie to break.
-export const marks = (right, wrong) => Math.round(((6 * right - 2 * wrong) / 3) * 100) / 100;
+// UPSC's marks, kept under this name for the callers and tests that predate
+// exam-rules.js. (Why the arithmetic is written as it is: see makeRules.)
+export const marks = examRules('upsc').marks;
 
 /**
  * @param keys       the test's questions, in order
  * @param answers    { [key]: 'a'..'d' } as the student left them
  * @param officialOf key -> 'a'..'d' | null (null: not scored)
+ * @param rules      the exam's marking rules (lib/exam-rules.js); UPSC's when left out
  */
-export function scoreAttempt(keys, answers, officialOf) {
+export function scoreAttempt(keys, answers, officialOf, rules = examRules('upsc')) {
   let scored = 0;
   let right = 0;
   let wrong = 0;
@@ -34,7 +37,7 @@ export function scoreAttempt(keys, answers, officialOf) {
     if (mine === official) right += 1;
     else wrong += 1;
   }
-  return { scored, right, wrong, blank: scored - right - wrong, score: marks(right, wrong), max: 2 * scored };
+  return { scored, right, wrong, blank: scored - right - wrong, score: rules.marks(right, wrong), max: rules.max(scored) };
 }
 
 export const formatScore = (n) => n.toFixed(2);

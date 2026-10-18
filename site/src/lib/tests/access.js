@@ -7,3 +7,12 @@ export async function canStartTest(exam) {
   void exam;
   return true;
 }
+
+// The same for analytics: the analytics page, and the subject and topic line on
+// the subject and topic pages, ask this before showing anything. Free during the
+// beta; payments replace this body with the per-exam pass check, and no other
+// code may decide who can see analytics.
+export async function canSeeAnalytics(exam) {
+  void exam;
+  return true;
+}

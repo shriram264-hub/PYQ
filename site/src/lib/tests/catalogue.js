@@ -1,11 +1,19 @@
 import { isQuestionKey, questionKey } from '../accounts/qkey.js';
+import { examRules } from '../exam-rules.js';
 
 // The practice-set form's index of every question: which subject and topic it
-// is filed under, its year, and whether it can be scored. Built into
-// /upsc/catalogue.json (pages/upsc/catalogue.json.js) and fetched only when a
-// student builds a set. Names are listed once and referred to by position:
-// spelled out on every question the file is 26 KB gzipped, indexed it is 17 KB.
-//   { subjects: [name], topics: [[subjectIndex, name]], questions: { key: [subjectIndex, topicIndex, year, flag] } }
+// is filed under, its year, whether it can be scored, and the official answer it
+// is scored against. Built into /upsc/catalogue.json (pages/upsc/catalogue.json.js)
+// and fetched when a student builds a set, and by analytics, which tells a right
+// answer from a wrong one without fetching the year files. Names are listed once
+// and referred to by position: spelled out on every question the file is 26 KB
+// gzipped, indexed it is 17 KB.
+//   { subjects: [name], topics: [[subjectIndex, name]],
+//     questions: { key: [subjectIndex, topicIndex, year, flag, answerIndex] } }
+// answerIndex is the official answer's position in the exam's options (0 is 'a',
+// 3 is 'd'), or -1 for a question with no scored answer (cancelled, or none
+// recorded). A file from before answers existed has entries of four elements
+// (a copy still in a browser's cache): they parse, with no answer.
 
 export const FLAG = { ok: 0, disputed: 1, unanswered: 2, cancelled: 3 };
 
@@ -19,6 +27,14 @@ export function flagOf(q) {
 }
 
 const byText = (a, b) => a.localeCompare(b, 'en');
+const OPTIONS = examRules('upsc').options;
+const NO_ANSWER = -1;
+
+/** The answer's position in the options, or -1 when the question is not scored (the same cases as flagOf). */
+function answerIndexOf(q) {
+  const flag = flagOf(q);
+  return flag === FLAG.cancelled || flag === FLAG.unanswered ? NO_ANSWER : OPTIONS.indexOf(q.answer);
+}
 
 /** Build time: from corpus questions ({ year, q_no, subject, subtopic, status, answer }). */
 export function buildCatalogue(questions) {
@@ -37,6 +53,7 @@ export function buildCatalogue(questions) {
       topicIndex.get(`${q.subject}\u0000${q.subtopic}`),
       q.year,
       flagOf(q),
+      answerIndexOf(q),
     ];
   }
   return { subjects, topics, questions: entries };
@@ -49,7 +66,9 @@ const isIndex = (v, length) => Number.isInteger(v) && v >= 0 && v < length;
  * In the browser: the fetched file, checked before the form trusts it. Null
  * when it is not a catalogue at all; an entry that does not add up (an index
  * out of range, a topic of another subject, a year that is not the key's, an
- * unknown flag) is dropped. Entries come back ordered by year, then number.
+ * unknown flag, an answer that is neither -1 nor an option's position) is
+ * dropped. Entries come back ordered by year, then number, each with its
+ * `answer`: 'a'..'d', or null (not scored, or a file from before answers).
  */
 export function parseCatalogue(data) {
   if (!data || typeof data !== 'object' || Array.isArray(data)) return null;
@@ -64,11 +83,14 @@ export function parseCatalogue(data) {
   const entries = [];
   for (const [key, value] of Object.entries(questions)) {
     const m = KEY.exec(key);
-    if (!m || !isQuestionKey(key) || !Array.isArray(value) || value.length !== 4) continue;
-    const [s, t, year, flag] = value;
+    if (!m || !isQuestionKey(key) || !Array.isArray(value) || (value.length !== 4 && value.length !== 5)) continue;
+    // A four-element entry is from before answers existed: it parses as having none.
+    const [s, t, year, flag, answerIndex = NO_ANSWER] = value;
     if (!isIndex(s, subjects.length) || !isIndex(t, topicList.length) || !topicList[t]) continue;
     if (topicList[t].subject !== subjects[s] || year !== Number(m[1]) || !Object.values(FLAG).includes(flag)) continue;
-    entries.push({ key, subject: subjects[s], topic: topicList[t].name, year, flag, n: Number(m[2]) });
+    if (answerIndex !== NO_ANSWER && !isIndex(answerIndex, OPTIONS.length)) continue;
+    const answer = answerIndex === NO_ANSWER ? null : OPTIONS[answerIndex];
+    entries.push({ key, subject: subjects[s], topic: topicList[t].name, year, flag, answer, n: Number(m[2]) });
   }
   entries.sort((a, b) => a.year - b.year || a.n - b.n);
   return {

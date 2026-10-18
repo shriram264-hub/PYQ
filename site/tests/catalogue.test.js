@@ -64,5 +64,44 @@ test('a catalogue that is not one is refused, and bad entries are dropped', () =
       'upsc-2019-5': 'x',
     },
   });
-  assert.deepEqual(cat.entries, [{ key: 'upsc-2019-1', subject: 'Geography', topic: 'Rivers', year: 2019, flag: 0 }]);
+  assert.deepEqual(cat.entries, [{ key: 'upsc-2019-1', subject: 'Geography', topic: 'Rivers', year: 2019, flag: 0, answer: null }]);
+});
+
+test('every scored question carries its official answer', () => {
+  const cat = parseCatalogue(data);
+  const byKey = new Map(cat.entries.map((e) => [e.key, e]));
+  let withAnswer = 0;
+  for (const q of ALL_QUESTIONS) {
+    const scored = q.status !== 'cancelled' && /^[abcd]$/.test(q.answer);
+    assert.equal(byKey.get(q.qkey).answer, scored ? q.answer : null, q.qkey);
+    if (scored) withAnswer += 1;
+  }
+  // Not vacuous: nearly every question has one (cancelled and unanswered ones do not).
+  assert.ok(withAnswer > ALL_QUESTIONS.length - 20, `${withAnswer} of ${ALL_QUESTIONS.length}`);
+});
+
+test('a catalogue from before answers still parses', () => {
+  const cat = parseCatalogue({
+    subjects: ['Geography'],
+    topics: [[0, 'Rivers']],
+    questions: { 'upsc-2019-1': [0, 0, 2019, 0] },
+  });
+  assert.deepEqual(cat.entries, [{ key: 'upsc-2019-1', subject: 'Geography', topic: 'Rivers', year: 2019, flag: 0, answer: null }]);
+  const bad = parseCatalogue({
+    subjects: ['Geography'],
+    topics: [[0, 'Rivers']],
+    questions: {
+      'upsc-2019-1': [0, 0, 2019, 0, 7], // an answer index out of range
+      'upsc-2019-2': [0, 0, 2019, 0, 'a'], // not an index
+      'upsc-2019-3': [0, 0, 2019, 0, 1.5],
+      'upsc-2019-4': [0, 0, 2019, 0, -2],
+      'upsc-2019-5': [0, 0, 2019, 0, 0, 0], // too long
+      'upsc-2019-6': [0, 0, 2019, 0, -1], // no scored answer
+      'upsc-2019-7': [0, 0, 2019, 0, 3],
+    },
+  });
+  assert.deepEqual(
+    bad.entries.map((e) => [e.key, e.answer]),
+    [['upsc-2019-6', null], ['upsc-2019-7', 'd']]
+  );
 });
