@@ -31,6 +31,10 @@ const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
   standfirst="Every past paper, timed and scored the way UPSC scores it today: +2 for a right answer, minus two-thirds of a mark for a wrong one. Free during the beta."
   crumbs={[{ name: 'Tests', href: '/upsc/test' }]}
 >
+  {/* In the intro, server-rendered and outside the gate below: it is there from
+      the first paint, whatever this device holds. */}
+  <p slot="meta" class="tp-analytics"><a href="/upsc/analytics">Your analytics</a></p>
+
   {/* data-sync-full: this page lists every attempt the account holds, so a sync
       started here reads all of it (startSync in scripts/sync.js). data-pending:
       nothing in here is on screen until tests-page.js has drawn, so Carry on
@@ -191,6 +195,13 @@ const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
 
   .tp h2 {
     outline-offset: 4px;
+  }
+
+  /* Your analytics, under the standfirst: set as the subject pages' Practise
+     line, a structural link. */
+  .tp-analytics {
+    margin: 0.6rem 0 0;
+    font: 600 0.9rem var(--font-structure);
   }
 
   /* The live region: "Abandoned. Its answers are kept." Always one line tall,

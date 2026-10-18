@@ -57,7 +57,7 @@ import { LEGAL } from '../lib/legal.js';
     <section class="acct-section" aria-labelledby="acct-tests-h">
       <h2 id="acct-tests-h">Practice tests</h2>
       <p class="acct-tests-line" data-tests-line></p>
-      <p class="acct-tests-link"><a href="/upsc/test">Practice tests</a></p>
+      <p class="acct-tests-link"><a href="/upsc/test">Practice tests</a> <a href="/upsc/analytics">Your analytics</a></p>
     </section>
 
     <section class="acct-section" aria-labelledby="acct-sum-h">
@@ -183,8 +183,12 @@ import { LEGAL } from '../lib/legal.js';
 
   /* --- practice tests: the latest result, and the way to the tests --- */
 
-  /* The structural link, as "Back to your progress" on /revise. */
+  /* The structural links, as "Back to your progress" on /revise: the tests,
+     and the analytics worked out from them. */
   .acct-tests-link {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 1.25rem;
     margin: 0.6rem 0 0;
     font: 600 0.88rem var(--font-structure);
   }

@@ -158,6 +158,7 @@ function drawHead(stored) {
   if (stored && stored.status !== 'in_progress' && stored.kind === 'paper') {
     links.push(link('Sit this paper again', `/upsc/test/take?paper=${stored.spec.year}`));
   }
+  links.push(link('Your analytics', '/upsc/analytics'));
   linksEl.replaceChildren(...links);
 
   if (stored?.status !== 'submitted') return;

@@ -1,0 +1,507 @@
+---
+import Document from '../../layouts/Document.astro';
+import Masthead from '../../components/Masthead.astro';
+import Colophon from '../../components/Colophon.astro';
+import { authEnabled } from '../../lib/accounts/config.js';
+import { MIN_ANSWERED } from '../../lib/tests/analytics.js';
+
+// "Your analytics" (spec 2026-10-18-analytics-design.md, section 1): this
+// device's submitted tests and marks, worked out in the browser by
+// analytics-page.js. An app page, like /account: it shows one student's data,
+// so it is not indexed and not in the sitemap (sitemap.xml.js lists pages by
+// hand). Everything below the heading is drawn by the script: the head numbers
+// and the papers chart at once from storage, then By subject, Topics to work on
+// and Questions you got wrong once the question catalogue is in. The script
+// reads its exam from data-exam and builds every address from it.
+const crumbs = [{ name: 'Your analytics', href: '/upsc/analytics' }];
+---
+
+<Document
+  title="Your Analytics"
+  description="Your UPSC Prelims practice test scores, accuracy, and the subjects and topics to work on, worked out in your browser."
+  noindex={true}
+  breadcrumbs={crumbs}
+>
+  <Masthead crumbs={crumbs} />
+
+  {/* data-sync-full: this page counts every attempt and mark the account
+      holds, so a sync started here reads all of it (startSync in
+      scripts/sync.js). data-pending: nothing in here is on screen until the
+      script's first draw (see the gate in the styles). data-settling, set by
+      the script while the catalogue is on its way, takes out the colophon, the
+      only thing below the sections that arrive with it. */}
+  <main class="sheet an" data-exam="upsc" data-pending data-sync-full={authEnabled ? '' : undefined}>
+    <div class="an-head">
+      <h1 id="an-title" tabindex="-1">Your analytics</h1>
+      <p class="an-standfirst" data-from hidden></p>
+      <p class="an-standfirst" data-capped hidden></p>
+    </div>
+
+    <noscript>
+      <p class="an-lede">Your analytics is worked out in your browser from the tests you take, so it needs JavaScript.</p>
+    </noscript>
+
+    <p class="an-lede an-first" data-locked hidden>Your analytics needs a pass for this exam.</p>
+
+    <div class="an-first" data-empty hidden>
+      <p class="an-lede" data-empty-text></p>
+      <p class="an-actions"><a class="an-btn" data-tests-link>Take a practice test</a></p>
+    </div>
+
+    <section class="an-first" data-headline-section hidden aria-labelledby="an-sum-h">
+      <h2 id="an-sum-h" class="visually-hidden">Your numbers</h2>
+      <dl class="an-cells" data-cells></dl>
+    </section>
+
+    <section class="an-section" data-papers-section hidden aria-labelledby="an-papers-h">
+      <h2 id="an-papers-h">Full papers over time</h2>
+      <p class="an-lede an-small">Each paper's score as a share of its maximum, labelled with the score itself.</p>
+      {/* The picture only; the table after it says the same to a screen reader.
+          The table is hidden by a wrapper, not by its own class: a table is as
+          wide as its cells whatever width it is given, and overflow does not
+          clip it, so on a phone it widened the page (measured: 519px at 360). */}
+      <div class="an-chart" data-chart></div>
+      <p class="an-chart-note" data-chart-note hidden></p>
+      <div class="visually-hidden">
+        <table>
+          <caption>Full papers, oldest first</caption>
+          <thead>
+            <tr>
+              <th scope="col">Paper</th>
+              <th scope="col">Submitted</th>
+              <th scope="col">Score</th>
+              <th scope="col">Share of the maximum</th>
+            </tr>
+          </thead>
+          <tbody data-papers-rows></tbody>
+        </table>
+      </div>
+    </section>
+
+    {/* The catalogue's live region and its Try again. They sit above the
+        sections the catalogue brings, so those arriving move neither. */}
+    <p class="an-note" role="status" data-note hidden></p>
+    <p class="an-retry" data-retry-row hidden><button type="button" class="an-btn" data-retry>Try again</button></p>
+
+    <section class="an-section an-after-note" data-subjects-section hidden aria-labelledby="an-subjects-h">
+      <h2 id="an-subjects-h" tabindex="-1" data-subjects-title>By subject, weakest first</h2>
+      <p class="an-lede an-small" data-subjects-lede></p>
+      <ol class="an-rows" data-subjects></ol>
+    </section>
+
+    <section class="an-section" data-topics-section hidden aria-labelledby="an-topics-h">
+      <h2 id="an-topics-h" tabindex="-1">Topics to work on</h2>
+      <p class="an-lede an-small" data-topics-lede>
+        Your lowest accuracy, among topics where you've answered at least {MIN_ANSWERED} questions.
+      </p>
+      <ol class="an-rows" data-topics></ol>
+    </section>
+
+    <section class="an-section" data-wrong-section hidden aria-labelledby="an-wrong-h">
+      <h2 id="an-wrong-h" tabindex="-1">Questions you got wrong</h2>
+      <div class="an-wrong" data-wrong></div>
+    </section>
+  </main>
+
+  <Colophon />
+</Document>
+
+<script>
+  import '../../scripts/analytics-page.js';
+</script>
+
+<style is:global>
+  /* Global, not scoped: nearly all of this page is drawn by analytics-page.js,
+     and Astro's scoped styles never reach markup a script creates. Every class
+     is prefixed an- so nothing here can leak. */
+  .an {
+    padding-block: clamp(1.5rem, 4vw, 2.75rem);
+  }
+
+  /* A part the script has not chosen to show is not shown, whatever display
+     its own rule gives it. */
+  .an [hidden] {
+    display: none;
+  }
+
+  .an h1,
+  .an h2 {
+    outline-offset: 4px;
+  }
+
+  .an .visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+
+  /* --- the head: set as a listing page's (Listing.astro) --- */
+
+  .an-head {
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .an-standfirst {
+    margin: 0.6rem 0 0;
+    color: var(--ink-soft);
+    font-size: 1.02rem;
+  }
+  .an-standfirst + .an-standfirst {
+    margin-top: 0.15rem;
+  }
+
+  .an-lede {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+  .an-small {
+    margin-bottom: 0.9rem;
+    font-size: 0.95rem;
+  }
+  .an-actions {
+    margin: 1.1rem 0 0;
+  }
+
+  /* Sections are spaced as /account's are. The first thing under the head
+     (the headline numbers, or the empty state) takes no space above it. */
+  .an-section {
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  }
+  .an-section h2 {
+    margin-bottom: 0.8rem;
+  }
+
+  /* Everything stops short of the sheet's full width, as the tests page's
+     lists do: across all of it, a number sat a screen's width from its name. */
+  .an-cells,
+  .an-chart,
+  .an-rows,
+  .an-wrong {
+    max-width: 62rem;
+  }
+
+  /* --- the headline numbers: four fields of one ruled box, hairlines between
+     them (the gap shows the rule colour behind), as the registration grid. --- */
+
+  .an-cells {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--rule-hair);
+    margin: 0;
+    background: var(--rule);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  @media (min-width: 56rem) {
+    .an-cells {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  .an-cell {
+    display: grid;
+    align-content: start;
+    gap: 0.35rem;
+    min-width: 0;
+    padding: 0.8rem 1rem 0.95rem;
+    background: var(--paper);
+  }
+  .an-cell dt,
+  .an-cell dd {
+    margin: 0;
+  }
+  .an-value {
+    font: 700 clamp(1.3rem, 1rem + 1.2vw, 1.9rem) / 1.15 var(--font-serial);
+    letter-spacing: 0.02em;
+    overflow-wrap: anywhere;
+  }
+  .an-of {
+    font-size: 0.6em;
+    font-weight: 400;
+    color: var(--ink-soft);
+    white-space: nowrap;
+  }
+  .an-detail {
+    font-size: 0.88rem;
+    line-height: 1.45;
+    color: var(--ink-soft);
+  }
+  .an-detail a {
+    font: 600 0.88rem var(--font-structure);
+    color: var(--ink);
+  }
+  @media (max-width: 30rem) {
+    .an-cell {
+      padding: 0.7rem 0.75rem 0.85rem;
+    }
+  }
+
+  /* --- the papers chart: a paper plate holding the drawing. Its height is the
+     drawing's, fixed by the script, so drawing it again (another width, another
+     paper) moves nothing under it. With more papers than fit, it scrolls
+     sideways rather than squeezing the scores into each other. --- */
+
+  .an-chart {
+    overflow-x: auto;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule);
+  }
+  .an-chart svg {
+    display: block;
+  }
+  .an-grid {
+    stroke: var(--rule);
+    stroke-width: 1;
+  }
+  .an-base {
+    stroke: var(--rule-strong);
+    stroke-width: 1;
+  }
+  .an-line {
+    fill: none;
+    stroke: var(--ink);
+    stroke-width: 2;
+  }
+  .an-point {
+    fill: var(--ink);
+  }
+  .an-score {
+    fill: var(--ink);
+    font: 700 0.78rem var(--font-serial);
+  }
+  .an-tick,
+  .an-year {
+    fill: var(--ink-soft);
+    font: 400 0.72rem var(--font-serial);
+  }
+  .an-chart-note {
+    margin: 0.6rem 0 0;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+
+  /* --- the catalogue's status line: always one line tall, said or not, so a
+     message coming or going moves nothing. Framed while it reports a failure,
+     and while Try again is fetching, so the frame never comes and goes under
+     the reader without a press. --- */
+
+  .an-note {
+    min-height: 1.6em;
+    margin: 0.6rem 0 0;
+    font-size: 0.95rem;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+  .an-note[data-boxed] {
+    max-width: 62rem;
+    padding: 0.5rem 0.75rem;
+    color: var(--ink);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .an-retry {
+    margin: 0.8rem 0 0;
+  }
+  .an-section.an-after-note {
+    margin-top: 0.6rem;
+  }
+
+  /* --- rows: by subject, and topics to work on. Hairline rules between, as
+     the tests page's rows. --- */
+
+  .an-rows {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    border-bottom: var(--rule-hair) solid var(--rule);
+  }
+  .an-row {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      'name link'
+      'meter meter'
+      'facts facts';
+    align-items: baseline;
+    gap: 0.3rem 1rem;
+    padding: 0.75rem 0;
+    border-top: var(--rule-hair) solid var(--rule);
+  }
+  /* A subject with coverage only, before any test: no accuracy line. */
+  .an-row-bare {
+    grid-template-areas:
+      'name link'
+      'facts facts';
+  }
+  .an-row-name {
+    grid-area: name;
+    font: 700 1.02rem var(--font-structure);
+    letter-spacing: -0.01em;
+    overflow-wrap: anywhere;
+  }
+  .an-row-sub {
+    display: block;
+    margin-top: 0.1rem;
+    font: 400 0.88rem var(--font-read);
+    letter-spacing: 0;
+    color: var(--ink-soft);
+  }
+  .an-meter {
+    grid-area: meter;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    min-width: 0;
+  }
+  /* The bar shows accuracy; the words beside it say the same, so it is never
+     the colour or the length alone. */
+  .an-bar {
+    flex: 0 1 12rem;
+    height: 0.8rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
+  }
+  .an-bar-fill {
+    display: block;
+    height: 100%;
+    background: var(--ink);
+  }
+  .an-pct {
+    font: 700 0.95rem var(--font-serial);
+    white-space: nowrap;
+  }
+  .an-few {
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+  .an-none {
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+  .an-facts {
+    grid-area: facts;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+    font-variant-numeric: tabular-nums;
+  }
+  /* Practise and Practise this topic: plain structural links, as the subject
+     pages' Practise line. The page has no filled-green action: it is for
+     reading, as /account is. */
+  .an-link {
+    grid-area: link;
+    justify-self: end;
+    font: 600 0.9rem var(--font-structure);
+    white-space: nowrap;
+  }
+  .an-topic {
+    grid-template-areas:
+      'name name'
+      'meter link';
+  }
+  @media (min-width: 52rem) {
+    .an-subject {
+      grid-template-columns: minmax(0, 14rem) minmax(0, 16rem) minmax(0, 1fr) auto;
+      grid-template-areas: 'name meter facts link';
+      align-items: center;
+    }
+    .an-topic {
+      grid-template-columns: minmax(0, 1fr) 9rem auto;
+      grid-template-areas: 'name meter link';
+      align-items: center;
+    }
+  }
+
+  /* --- questions you got wrong: one ruled box, the count and Revise them --- */
+
+  .an-wrong {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem 1.5rem;
+    padding: 0.9rem 1.1rem;
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+  }
+  .an-wrong p {
+    margin: 0;
+  }
+  .an-wrong-hint {
+    margin-top: 0.2rem;
+    font-size: 0.9rem;
+    color: var(--ink-soft);
+  }
+  .an-count {
+    font: 700 1.05rem var(--font-serial);
+  }
+
+  /* Outlined slabs in a heavy frame: Take a practice test, Revise them, Try
+     again. The line height is set, not left at normal, so a button does not
+     change height when Archivo replaces the fallback. */
+  .an-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.25rem;
+    font: 700 0.95rem / 1.2 var(--font-structure);
+    color: var(--field-text);
+    text-decoration: none;
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .an-btn:hover {
+    background: var(--ground);
+  }
+  .an-btn[aria-disabled='true'] {
+    cursor: progress;
+  }
+
+  @media (pointer: coarse) {
+    .an-btn {
+      min-height: 2.75rem;
+    }
+    .an-link,
+    .an-detail a {
+      display: inline-block;
+      padding-block: 0.45rem;
+    }
+  }
+
+  /* --- nothing moves what the reader can already see --- */
+
+  /* Hidden is not painted, and moves nothing anyone can see when it appears.
+       - .an stays hidden until the script has drawn it (data-pending), and the
+         colophon with it.
+       - While the catalogue is on its way (data-settling), the colophon, the
+         only thing below the sections it brings, is taken out (display: none).
+         Not visibility: Chrome keeps the last place a hidden box was laid out,
+         and counts the move when it shows again elsewhere; a box that was not
+         there has no old place. That ends by itself: the catalogue loads or
+         fails within the script's 15 s limit.
+     The animations are the way out if the script never runs: the page and the
+     colophon show after a few seconds on their own (data-settling is only ever
+     set by the script). */
+  @keyframes an-reveal {
+    to {
+      visibility: visible;
+    }
+  }
+  @media (scripting: enabled) {
+    .an[data-pending] {
+      visibility: hidden;
+      animation: an-reveal 0s 4s forwards;
+    }
+    body:has(.an[data-pending]) .colophon {
+      visibility: hidden;
+      animation: an-reveal 0s 6s forwards;
+    }
+    body:has(.an[data-settling]) .colophon {
+      display: none;
+    }
+  }
+</style>
