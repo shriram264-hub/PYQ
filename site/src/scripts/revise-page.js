@@ -10,15 +10,25 @@ import {
   subjectsCovered,
 } from '../lib/accounts/summary.js';
 import { questionHTML, questionPath } from '../lib/question-html.js';
+import { examRules } from '../lib/exam-rules.js';
+import { canSeeAnalytics } from '../lib/tests/access.js';
+import { breakdown, submittedFor } from '../lib/tests/analytics.js';
+import { parseCatalogue } from '../lib/tests/catalogue.js';
+import { TESTS_KEY, loadTests } from '../lib/tests/store.js';
 
-// The /revise page: one revision list (?list=<id>) or the Needs review pile
-// (?review), every question in full, 20 at a time. The keys come from this
+// The /revise page: one revision list (?list=<id>), the Needs review pile
+// (?review) or the questions last answered wrong in practice tests
+// (?wrong=<exam>), every question in full, 20 at a time. The keys come from this
 // device's storage (a sync, when signed in, keeps it in step with the account);
 // the questions come from the per-year full files, fetched only for the years
 // those keys are in. Each question is the same block the search page renders
 // (lib/question-html.js), and marks.js, loaded by the page beside this script,
 // fills its marks slot as it lands, so Mark done, Needs review and Save to list
 // work here exactly as they do everywhere else.
+//
+// Which answers were wrong takes the official answers, which are in the exam's
+// question catalogue: the wrong-answers mode fetches that first (see "The
+// catalogue"), and its keys are the analytics page's wrong pile.
 //
 // Nothing moves under the reader. The questions are drawn in order, and one is
 // drawn only once every question before it can be: until then it holds a
@@ -38,12 +48,19 @@ const NOT_HERE = "This list isn't on this device.";
 // words /account uses (progress-page.js), where the same thing happens. The
 // page itself then shows NOT_HERE, which is what is true from here on.
 const GONE_ELSEWHERE = 'That list was deleted on another device.';
+const WRONG_TITLE = 'Questions you got wrong';
+const PILE_LOADING = 'Loading the questions you got wrong…';
+// What failed goes in the note (the live region, so it is heard); what to do
+// about it goes in the row, beside Try again, rather than the same words twice.
+const PILE_FAILED = "Couldn't load the questions you got wrong.";
+const PILE_RETRY = 'Check your connection, then try again.';
 
 const $ = (selector) => document.querySelector(selector);
 const sheet = $('.revise');
 const titleEl = $('[data-title]');
 const countEl = $('[data-count]');
 const subjectsEl = $('[data-subjects]');
+const back = $('[data-back]');
 const note = $('[data-note]');
 const items = document.getElementById('revise-items');
 const more = $('[data-more]');
@@ -82,12 +99,17 @@ const target = reviseTarget(location.search);
 // Own properties only: ?list=constructor is not a list.
 const listOf = (state) =>
   target.mode === 'list' && Object.hasOwn(state.lists, target.id) ? state.lists[target.id] : null;
+// The wrong-answers mode's marking (lib/exam-rules.js). Null in the other modes,
+// and for an exam that has no tests, whose pile is empty.
+const rules = target.mode === 'wrong' ? examRules(target.exam) : null;
 
 let missing = false; // the list asked for is not on this device (or nothing was asked for)
+let locked = false; // the access check said no to the wrong answers
+let revealed = false; // the page is on screen (data-pending is gone)
 let name = ''; // the list's name as last drawn
 // The keys being revised, captured when the page opens: a question marked Done
-// while revising Needs review stays on the page until the next visit, and a
-// sync does not reorder what the student is part way through.
+// while revising Needs review or the wrong answers stays on the page until the
+// next visit, and a sync does not reorder what the student is part way through.
 let order = [];
 let shown = 0; // how many of `order` have a place on the page
 let slots = []; // { key, el, state } for order[0 .. shown), in order
@@ -162,6 +184,57 @@ const unsettledPaths = (keys) =>
     const status = files.get(path)?.status;
     return status !== 'loaded' && status !== 'failed';
   });
+
+// --- The catalogue (the wrong answers only). ---
+
+// Fetched as a year file is: the same time limit, and Try again when it fails.
+// Until it settles the page has no questions to place, so it holds its own
+// line, the colophon stays back (see settle), and a failure is drawn as a row.
+const pile = { status: 'idle', data: null, promise: null }; // idle | loading | loaded | failed
+
+function loadPile() {
+  if (pile.status === 'loading' || pile.status === 'loaded') return pile.promise;
+  pile.status = 'loading';
+  pile.promise = (async () => {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), FILE_TIMEOUT_MS);
+    try {
+      const response = await fetch(`/${target.exam}/catalogue.json`, { signal: controller.signal });
+      if (!response.ok) throw new Error(String(response.status));
+      const parsed = parseCatalogue(await response.json());
+      if (!parsed) throw new Error('not a catalogue');
+      pile.data = parsed;
+      pile.status = 'loaded';
+    } catch {
+      // Offline, too slow, or not a catalogue: the row says so, with Try again.
+      pile.status = 'failed';
+    } finally {
+      clearTimeout(timer);
+    }
+    if (locked) return;
+    if (pile.status === 'loaded') start();
+    else drawPileWait();
+  })();
+  return pile.promise;
+}
+
+// The questions last answered wrong, newest first: breakdown's pile, the rule
+// the analytics page counts by (analytics-page.js), worked out from the attempts
+// and marks as stored now, read together, so following Revise them from that
+// count lists what it counted. A Done marked after the wrong answer's test
+// clears it, so a question marked Done here is gone on the next visit.
+function wrongKeys(state) {
+  if (!rules || pile.status !== 'loaded') return [];
+  return breakdown(submittedFor(loadTests(), target.exam), state.entries, pile.data, rules, target.exam).wrong;
+}
+
+// A list keeps the order its questions were saved in; Needs review starts with
+// the mark that has waited longest; the wrong answers with the newest.
+function keysOf(state, list) {
+  if (target.mode === 'review') return reviewOldestFirst(state);
+  if (target.mode === 'wrong') return wrongKeys(state);
+  return list.keys;
+}
 
 // --- One question's place on the page. ---
 
@@ -289,7 +362,7 @@ function draw() {
     else if (want.state === 'failed') setBusy(slot, want.path);
     if (slot.state === 'wait') open = false;
   }
-  sheet.toggleAttribute('data-settling', slots.some((slot) => slot.state === 'wait'));
+  settle();
 
   // The years of the questions on the page have settled: now ask for the rest
   // (for Show more and the subjects line).
@@ -306,6 +379,13 @@ function draw() {
   }
 }
 
+// Show more and the colophon stay back (data-settling) while anything above
+// them is still to come: a question waiting for its year, or the wrong answers
+// waiting for the catalogue.
+function settle() {
+  sheet.toggleAttribute('data-settling', pile.status === 'loading' || slots.some((slot) => slot.state === 'wait'));
+}
+
 function failedSummary() {
   const failed = fullPathsFor(order).filter((path) => files.get(path)?.status === 'failed');
   if (!failed.length) return '';
@@ -314,11 +394,15 @@ function failedSummary() {
     : `Couldn't load questions from ${failed.length} years.`;
 }
 
+// The wrong answers are not known until the catalogue is in: their count line
+// stays empty until then, holding its room.
+const pileKnown = () => target.mode !== 'wrong' || !rules || pile.status === 'loaded';
+
 function drawHead() {
-  const title = target.mode === 'review' ? 'Needs review' : name;
+  const title = target.mode === 'review' ? 'Needs review' : target.mode === 'wrong' ? WRONG_TITLE : name;
   titleEl.textContent = title;
   document.title = `${title} | SawaalBox`;
-  countEl.textContent = plural(order.length, 'question', 'questions');
+  countEl.textContent = pileKnown() ? plural(order.length, 'question', 'questions') : '';
 }
 
 // "Indian Polity · Geography · +2 more", from the entries that loaded. The line
@@ -345,10 +429,24 @@ function drawSubjects() {
 function drawEmpty() {
   items.querySelector(':scope > .rv-empty')?.remove();
   // No questions, no subjects: the line's reserved room goes (revise.astro).
-  sheet.toggleAttribute('data-empty', !order.length);
+  // The wrong answers can be known only after the page is on screen (a slow
+  // catalogue, or a sync that brings a first test): from then on the line keeps
+  // the room it had, rather than move the lines under it.
+  if (!(target.mode === 'wrong' && revealed)) sheet.toggleAttribute('data-empty', !order.length);
   if (order.length) return;
   if (target.mode === 'review') {
     items.append(text('p', 'rv-empty', 'Nothing marked for review.'));
+    return;
+  }
+  if (target.mode === 'wrong') {
+    let tests = 'practice tests';
+    if (rules) {
+      tests = text('a', '', tests);
+      tests.href = `/${target.exam}/test`;
+    }
+    items.append(
+      el('p', 'rv-empty', 'No wrong answers to revise. Questions you answer wrongly in ', tests, ' appear here.')
+    );
     return;
   }
   const link = text('a', '', 'any question');
@@ -380,16 +478,62 @@ function showMissing() {
   sheet.removeAttribute('data-settling');
 }
 
+// The access check said no (see openWrong): one line, and nothing fetched.
+function showLocked() {
+  locked = true;
+  missing = true;
+  sheet.toggleAttribute('data-missing', true);
+  titleEl.textContent = WRONG_TITLE;
+  document.title = `${WRONG_TITLE} | SawaalBox`;
+  items.replaceChildren(text('p', 'rv-empty', 'Revising the questions you got wrong needs a pass for this exam.'));
+}
+
+// The wrong answers before the catalogue is in. While it loads: the head with
+// no count yet, the loading line, nothing in the list, and the colophon held
+// back. Once it has failed: a row saying so, with Try again, which stays while
+// Try again is fetching (the button says it is busy), so the row the person
+// pressed does not vanish under them.
+function awaitPile() {
+  order = [];
+  shown = 0;
+  slots = [];
+  loadingNote = false;
+  drawHead();
+  drawMore();
+  loadPile();
+  drawPileWait();
+}
+
+function drawPileWait() {
+  let row = items.querySelector(':scope > [data-pile]');
+  if (pile.status === 'failed' && !row) {
+    const retryEl = button('rv-text-btn', 'Try again');
+    retryEl.dataset.retryPile = '';
+    row = el('div', 'rv-row', text('span', 'rv-row-text', PILE_RETRY), ' ', retryEl);
+    row.dataset.pile = '';
+    items.replaceChildren(row);
+  }
+  const retryEl = row?.querySelector('[data-retry-pile]');
+  if (retryEl) {
+    const busy = pile.status === 'loading';
+    retryEl.textContent = busy ? 'Loading…' : 'Try again';
+    if (busy) retryEl.setAttribute('aria-disabled', 'true');
+    else retryEl.removeAttribute('aria-disabled');
+  }
+  say(pile.status === 'failed' ? PILE_FAILED : PILE_LOADING);
+  settle();
+}
+
 function start() {
   const state = loadState();
   missing = false;
   sheet.removeAttribute('data-missing');
   const list = listOf(state);
   if (target.mode === 'none' || (target.mode === 'list' && !list)) return showMissing();
+  if (!pileKnown()) return awaitPile();
   name = list?.name ?? '';
-  // A list keeps the order its questions were saved in; Needs review starts
-  // with the mark that has waited longest. Once each, whatever storage holds.
-  order = [...new Set(target.mode === 'review' ? reviewOldestFirst(state) : list.keys)];
+  // Once each, whatever storage holds (keysOf says in what order).
+  order = [...new Set(keysOf(state, list))];
   shown = 0;
   slots = [];
   items.replaceChildren();
@@ -478,6 +622,20 @@ async function retry(path) {
   say(file.status === 'loaded' ? `Loaded the questions from ${year}.` : `Couldn't load questions from ${year}.`);
 }
 
+// Try again on the catalogue. Once it is in, the questions take the failed
+// row's place (loadPile starts the page), and focus, if it was on the row, goes
+// to the page's heading: the first question may still be on its way.
+async function retryPile() {
+  if (pile.status !== 'failed' || locked) return;
+  const hadFocus = items.contains(document.activeElement);
+  const loading = loadPile();
+  drawPileWait();
+  await loading;
+  if (pile.status !== 'loaded') return; // drawPileWait has said so
+  if (!note.textContent) say('Loaded the questions you got wrong.');
+  if (hadFocus && !items.contains(document.activeElement)) titleEl.focus();
+}
+
 // The list went while the page was open: deleted on another device (a sync
 // brought that) or in another tab.
 function gone() {
@@ -490,8 +648,10 @@ function gone() {
 // Storage changed under the page: a sync landed, or another tab wrote. The
 // questions on the page stay as they are (see `order`); what can change is the
 // list's name, whether it is still here at all, and an empty page filling.
+// (The wrong answers fill only once the catalogue is in: before that, the page
+// reads storage afresh when it arrives.)
 function reread() {
-  if (target.mode === 'none') return;
+  if (target.mode === 'none' || locked) return;
   const state = loadState();
   const list = listOf(state);
   if (target.mode === 'list') {
@@ -507,7 +667,7 @@ function reread() {
   }
   // Nothing was there when the page opened (a first sync on a new device, say),
   // and now there is: open it properly.
-  if (!order.length && (target.mode === 'review' ? reviewOldestFirst(state) : list.keys).length) start();
+  if (!order.length && pileKnown() && keysOf(state, list).length) start();
 }
 
 document.addEventListener('click', (event) => {
@@ -519,6 +679,8 @@ document.addEventListener('click', (event) => {
   }
   const retryButtonEl = event.target.closest?.('[data-retry]');
   if (retryButtonEl && retryButtonEl.getAttribute('aria-disabled') !== 'true') retry(retryButtonEl.dataset.retry);
+  const retryPileEl = event.target.closest?.('[data-retry-pile]');
+  if (retryPileEl && retryPileEl.getAttribute('aria-disabled') !== 'true') retryPile();
 });
 moreButton.addEventListener('click', () => {
   if (moreButton.getAttribute('aria-disabled') !== 'true') showMore();
@@ -526,19 +688,71 @@ moreButton.addEventListener('click', () => {
 
 document.addEventListener('sawaalbox:synced', reread);
 window.addEventListener('storage', (event) => {
-  if (event.key === STORAGE_KEY || event.key === null) reread();
+  // The wrong answers also change with the tests: one submitted in another tab.
+  const tests = target.mode === 'wrong' && event.key === TESTS_KEY;
+  if (event.key === STORAGE_KEY || event.key === null || tests) reread();
 });
 // A page restored from the back/forward cache ran nothing while it was away.
 window.addEventListener('pageshow', (event) => {
   if (event.persisted) reread();
 });
-// A year that failed because the connection was down is asked for again when
-// it comes back.
+// A year, or the catalogue, that failed because the connection was down is
+// asked for again when it comes back.
 window.addEventListener('online', () => {
   for (const [path, file] of files) if (file.status === 'failed') retry(path);
+  if (pile.status === 'failed') retryPile();
 });
 
-start();
 // Drawn: show it (revise.astro keeps it hidden until now, so nothing it holds
 // moves when the script fills it in).
-sheet.removeAttribute('data-pending');
+function reveal() {
+  revealed = true;
+  sheet.removeAttribute('data-pending');
+}
+
+// The wrong answers come from the same numbers as the analytics page, so they
+// are shown only once analytics' one access check (canSeeAnalytics) says yes:
+// free during the beta. A check that fails says no. The page is shown once the
+// catalogue has settled, so the count, the first questions' room or the empty
+// line are in place at first sight; or after PILE_WAIT_MS, saying it is still
+// loading, rather than hold the page for it (under revise.astro's 4 s way out).
+//
+// And once the faces the masthead and the head are set in (Archivo, Literata)
+// are in, or FONT_WAIT_MS has passed, as on the analytics page: the masthead's
+// height changes by a pixel or so when they swap in, and a page shown before
+// that moves, all of it, under the reader. Shown at once, a catalogue that
+// fails straight away (offline) put the page on screen before them.
+const PILE_WAIT_MS = 3000;
+const HEAD_FACES = ['700 1em "Archivo Variable"', '400 1em Literata'];
+const waitMs = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+async function openWrong() {
+  // The way back is to the count this page lists (an exam with no tests has no
+  // analytics page, and keeps the way back to your progress).
+  if (rules) {
+    back.href = `/${target.exam}/analytics`;
+    back.textContent = 'Back to your analytics';
+  }
+  const faces = document.fonts?.load
+    ? Promise.race([Promise.all(HEAD_FACES.map((font) => document.fonts.load(font))), waitMs(FONT_WAIT_MS)]).catch(() => {})
+    : null;
+  const ok = await canSeeAnalytics(target.exam).then(
+    (yes) => yes === true,
+    () => false
+  );
+  if (!ok) {
+    showLocked();
+    await faces;
+    reveal();
+    return;
+  }
+  start();
+  const settled = pile.status === 'loading' ? Promise.race([pile.promise, waitMs(PILE_WAIT_MS)]) : null;
+  await Promise.all([faces, settled]);
+  reveal();
+}
+
+if (target.mode === 'wrong') openWrong();
+else {
+  start();
+  reveal();
+}

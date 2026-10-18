@@ -440,3 +440,23 @@ test('reviseTarget: review if it is asked for, else the list named, else nothing
     assert.deepEqual(reviseTarget(search), { mode: 'none' }, search);
   }
 });
+
+test('reviseTarget: the wrong answers of an exam, UPSC when none is named', () => {
+  assert.deepEqual(reviseTarget('?wrong'), { mode: 'wrong', exam: 'upsc' });
+  assert.deepEqual(reviseTarget('?wrong=upsc'), { mode: 'wrong', exam: 'upsc' });
+  assert.deepEqual(reviseTarget('?wrong='), { mode: 'wrong', exam: 'upsc' });
+  assert.deepEqual(reviseTarget('?wrong=ssc'), { mode: 'wrong', exam: 'ssc' });
+});
+
+test('reviseTarget: an exam that is not lowercase letters opens nothing', () => {
+  for (const search of ['?wrong=UPSC!', '?wrong=UPSC', '?wrong=up-sc', '?wrong=upsc2', '?wrong=%2Fupsc']) {
+    assert.deepEqual(reviseTarget(search), { mode: 'none' }, search);
+  }
+});
+
+test('reviseTarget: review before wrong answers, wrong answers before a list', () => {
+  assert.deepEqual(reviseTarget('?review&wrong'), { mode: 'review' });
+  assert.deepEqual(reviseTarget('?wrong=upsc&review'), { mode: 'review' });
+  assert.deepEqual(reviseTarget('?wrong&list=abc'), { mode: 'wrong', exam: 'upsc' });
+  assert.deepEqual(reviseTarget('?list=abc&wrong'), { mode: 'wrong', exam: 'upsc' });
+});

@@ -129,14 +129,27 @@ export function fullEntry(file, key) {
   return filedHere ? { status: 'ok', q } : { status: 'malformed' };
 }
 
+// An exam as it appears in a path (`/upsc/…`): lowercase letters only, so the
+// name can go into the catalogue's address and the way back as it is.
+const EXAM = /^[a-z]+$/;
+
 /**
- * What /revise was asked to open: `?review` is the Needs review pile (it wins
- * if a list is named too), `?list=<id>` a list, anything else nothing. Whether
- * the list is on this device is for the page to find out.
+ * What /revise was asked to open, first match wins:
+ *   `?review`          the Needs review pile
+ *   `?wrong[=<exam>]`  the questions last answered wrong in that exam's
+ *                      practice tests (UPSC when none is named; an exam that
+ *                      is not lowercase letters opens nothing)
+ *   `?list=<id>`       a list
+ * Anything else is nothing. Whether the list is on this device, or the exam has
+ * tests, is for the page to find out.
  */
 export function reviseTarget(search) {
   const params = new URLSearchParams(search);
   if (params.has('review')) return { mode: 'review' };
+  if (params.has('wrong')) {
+    const exam = params.get('wrong') || 'upsc';
+    return EXAM.test(exam) ? { mode: 'wrong', exam } : { mode: 'none' };
+  }
   const id = params.get('list');
   return id ? { mode: 'list', id } : { mode: 'none' };
 }

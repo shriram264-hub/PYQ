@@ -3,29 +3,30 @@ import Document from '../layouts/Document.astro';
 import Masthead from '../components/Masthead.astro';
 import Colophon from '../components/Colophon.astro';
 
-// An app page, like /account: what it shows is this device's own lists and
-// marks, so it is not indexed, and it is not in the sitemap (pages/sitemap.xml.js
-// lists its pages one by one, and this is not one of them).
+// An app page, like /account: what it shows is this device's own lists, marks
+// and tests, so it is not indexed, and it is not in the sitemap
+// (pages/sitemap.xml.js lists its pages one by one, and this is not one of them).
 ---
 
 <Document
   title="Revise"
-  description="Revise a list of saved questions, or the ones marked Needs review, in full."
+  description="Revise a list of saved questions, the ones marked Needs review, or the ones you got wrong in practice tests, in full."
   noindex={true}
 >
   <Masthead />
 
   {/* data-pending: nothing in here is on screen until revise-page.js has drawn
       it (see the gate below), so the list's name and count arriving move
-      nothing. data-settling, set by the script while a question's year is still
-      on its way, holds back Show more and the colophon, the only things below
-      the questions. */}
+      nothing. data-settling, set by the script while a question's year (or, for
+      the wrong answers, the catalogue) is still on its way, holds back Show
+      more and the colophon, the only things below the questions. */}
   <main class="sheet revise" data-pending>
     <div class="rv-head">
       <h1 data-title tabindex="-1">Revise</h1>
       <p class="rv-count" data-count></p>
       <p class="rv-subjects" data-subjects></p>
-      <p class="rv-back"><a href="/account#lists">Back to your progress</a></p>
+      {/* The wrong answers lead back to the analytics page (revise-page.js). */}
+      <p class="rv-back"><a href="/account#lists" data-back>Back to your progress</a></p>
     </div>
 
     <p class="rv-note" role="status" data-note></p>
@@ -253,8 +254,9 @@ import Colophon from '../components/Colophon.astro';
   /* Hidden is not painted, and moves nothing anyone can see when it appears.
        - .revise stays hidden until the script's first draw (data-pending).
        - Show more and the colophon stay hidden while a question is still
-         waiting for its year (data-settling). That ends by itself: every year
-         either loads or fails within the script's 15 s limit.
+         waiting for its year, or the wrong answers for the catalogue
+         (data-settling). That ends by itself: every file either loads or
+         fails within the script's 15 s limit.
      The animation is the way out if the script never runs: the page and the
      colophon show after a few seconds on their own. */
   @keyframes rv-reveal {
