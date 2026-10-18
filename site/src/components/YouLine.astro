@@ -1,0 +1,95 @@
+---
+// One line about this student on a subject or topic page, under its Practise
+// link: "Your accuracy here: 48% (25 answered) · Covered 60 of 422", or
+// "Covered 12 of 422", or nothing (spec 2026-10-18-analytics-design.md,
+// section 2). you-line.js fills it from this device's tests and marks and the
+// exam's catalogue; this component only places it and holds its room.
+//
+// exam     the exam the page belongs to ('upsc'); the catalogue is /{exam}/catalogue.json
+// subject  the subject's name as the catalogue files it
+// topic    on a topic page, the topic's name within that subject
+//
+// Once per page: you-line.js is one module instance and fills the page's line.
+const { exam, subject, topic } = Astro.props;
+---
+
+<p class="you-line" data-you-line data-exam={exam} data-subject={subject} data-topic={topic}></p>
+{/*
+  Runs while the page is parsed, before first paint. The line only learns what
+  to say once the catalogue is in, so drawn into no room it would push the
+  page down. Room is held (data-hold) when this device holds any test attempt
+  or any mark. A visitor with neither, most search visitors, gets the page
+  laid out as it was, and neither the line's code nor the catalogue is
+  fetched. Blocked or unreadable storage holds nothing.
+
+  An inline script cannot import, so the keys are written out here. They are
+    'sawaalbox-tests-v1'     TESTS_KEY in src/lib/tests/store.js: { attempts: { [id]: attempt } }
+    'sawaalbox-progress-v1'  STORAGE_KEY in src/lib/accounts/progress-store.js: { entries: { [key]: { status } } }
+  and the shapes are checked only as far as "an attempt filed under its own id"
+  and "a Done or Needs review mark"; you-line.js reads them in full.
+*/}
+<script is:inline>
+  (() => {
+    const line = document.currentScript.previousElementSibling;
+    const some = (key, field, ok) => {
+      try {
+        const map = JSON.parse(localStorage.getItem(key))?.[field];
+        return Boolean(map) && typeof map === 'object' && Object.entries(map).some(ok);
+      } catch {
+        return false;
+      }
+    };
+    if (
+      some('sawaalbox-tests-v1', 'attempts', ([id, a]) => a?.id === id) ||
+      some('sawaalbox-progress-v1', 'entries', ([, m]) => m?.status === 'done' || m?.status === 'review')
+    ) {
+      line.setAttribute('data-hold', '');
+    }
+  })();
+</script>
+
+<script>
+  // The line's code, and the catalogue it may fetch, load only where its room
+  // was held: this stub is all an un-held page loads. A load that fails
+  // (offline) leaves the room empty.
+  if (document.querySelector('[data-you-line][data-hold]')) import('../scripts/you-line.js').catch(() => {});
+</script>
+
+<style>
+  /* Un-held, the line is an empty paragraph with no margin: 0 px tall, so the
+     page is laid out exactly as it was without it. */
+  .you-line {
+    margin: 0;
+    font-family: var(--font-structure);
+    font-size: 0.9rem;
+    font-weight: 600;
+    line-height: 1.6;
+    color: var(--ink-soft);
+  }
+
+  /* Held, it keeps its room whether or not anything is written in it, so the
+     text arriving later moves nothing. It is set in the Practise line's type,
+     and the room is one of its lines, 1.6 × 0.9rem = 1.44rem, rounded up to
+     1.5rem: laid out, a line of text comes to a fraction of a pixel over
+     1.44rem, and room of exactly 1.44rem would grow by that fraction when the
+     text arrives. */
+  .you-line[data-hold] {
+    margin-top: 0.35rem;
+    min-height: 1.5rem;
+  }
+
+  /* Below 40rem the longest line ("Your accuracy here: 100% (1234 answered) ·
+     Covered 1234 of 1234", about 450px) wraps once, so the room is two lines
+     there. Above it the line has its full 68ch (about 560px) and fits on one. */
+  @media (max-width: 40rem) {
+    .you-line[data-hold] {
+      min-height: 3rem;
+    }
+  }
+
+  /* "Covered 11 of 422" stays on one line (about 140px at its longest), so a
+     line that wraps breaks after the "·" before it. you-line.js makes the span. */
+  .you-line :global(.you-line-last) {
+    white-space: nowrap;
+  }
+</style>

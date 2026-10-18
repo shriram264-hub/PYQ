@@ -15,9 +15,13 @@ export const MIN_ANSWERED = 5;
 
 const TOPICS_SHOWN = 3;
 
-const byText = (a, b) => a.localeCompare(b, 'en');
+// One collator each, made once. `a.localeCompare(b, 'en', options)` gives the same
+// order but builds a collator on every call, and the wrong pile's tie-break sort makes
+// thousands of calls: in a 200-test worst case that was most of breakdown's time, and
+// breakdown now runs on every subject and topic page a student with data opens.
+const byText = new Intl.Collator('en').compare;
 // numeric: question 9 before question 10, which a plain text compare gets the wrong way round.
-const byKey = (a, b) => a.localeCompare(b, 'en', { numeric: true });
+const byKey = new Intl.Collator('en', { numeric: true }).compare;
 const byId = (x, y) => (x.id < y.id ? -1 : x.id > y.id ? 1 : 0);
 // `|| 0` turns a -0 into 0, so a change that rounds to nothing is not shown as "-0".
 const toTwoDecimals = (n) => Math.round(n * 100) / 100 || 0;

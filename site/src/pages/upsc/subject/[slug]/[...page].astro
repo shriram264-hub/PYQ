@@ -2,6 +2,7 @@
 import Listing from '../../../../layouts/Listing.astro';
 import QuestionBlock from '../../../../components/QuestionBlock.astro';
 import Pager from '../../../../components/Pager.astro';
+import YouLine from '../../../../components/YouLine.astro';
 import { SUBJECTS, SUBTOPICS, questionsForSubject } from '../../../../lib/corpus.js';
 
 export const PAGE_SIZE = 25;
@@ -45,6 +46,7 @@ const description = `All ${subject.count.toLocaleString('en-IN')} ${subject.name
   ]}
 >
   <p slot="meta" class="practise-line"><a href={`/upsc/test?subject=${subject.slug}#practice`}>Practise this subject</a></p>
+  <YouLine slot="meta" exam="upsc" subject={subject.name} />
 
   {
     topics.length > 0 && (

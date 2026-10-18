@@ -2,6 +2,7 @@
 import Listing from '../../../../../layouts/Listing.astro';
 import QuestionBlock from '../../../../../components/QuestionBlock.astro';
 import Pager from '../../../../../components/Pager.astro';
+import YouLine from '../../../../../components/YouLine.astro';
 import { SUBTOPICS, questionsForSubtopic } from '../../../../../lib/corpus.js';
 
 // Every subtopic gets a page, including the thin ones: each question links to
@@ -49,6 +50,7 @@ const description = `${topic.count} UPSC Prelims questions on ${topic.subtopic} 
   <p slot="meta" class="practise-line">
     <a href={`/upsc/test?subject=${topic.subjectSlug}&topic=${topic.slug}#practice`}>Practise this topic</a>
   </p>
+  <YouLine slot="meta" exam="upsc" subject={topic.subject} topic={topic.subtopic} />
 
   <div class="qlist">
     {page.data.map((q) => <QuestionBlock q={q} />)}
