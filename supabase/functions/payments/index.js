@@ -5,14 +5,23 @@
 // dashboard's "deploy via editor" takes a single file, so it can be pasted there
 // as index.ts unchanged. That means plain modern JavaScript only (no TypeScript
 // syntax) and only globals both Deno and Node 22 provide: fetch, crypto.subtle,
-// TextEncoder, Request, Response. The same code therefore runs in production
-// (Deno) and under the site's Node test runner, which imports it directly.
+// TextEncoder, Request, Response, Headers, URL, btoa. The same code therefore
+// runs in production (Deno) and under the site's Node test runner, which
+// imports it directly.
 //
 // The Deno.serve call at the bottom is guarded, so importing this file under
 // Node starts nothing.
 //
 // Nothing here may hold a secret. The Razorpay key secret and webhook secret are
 // read from the function's environment at request time and never written down.
+//
+// Environment (see envFrom near the bottom): Supabase injects SUPABASE_URL and
+// the keys (SUPABASE_PUBLISHABLE_KEYS / SUPABASE_SECRET_KEYS, falling back to
+// the legacy SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY). The owner sets
+// only RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET and RAZORPAY_WEBHOOK_SECRET.
+// The function must be deployed with JWT verification off: Razorpay's webhook
+// carries no Supabase token, and the browser routes check the caller
+// themselves through /auth/v1/user.
 
 // The pass as it is sold. This is a copy of site/src/lib/passes.js (the function
 // cannot import it), kept honest by a test that compares the two. Amounts are
@@ -111,19 +120,466 @@ export function corsHeaders(origin, mode) {
   return headers;
 }
 
-/** Placeholder until the routes land: every request is a 404. */
-export async function handle(req, deps) {
-  return new Response(JSON.stringify({ error: 'not_found' }), {
-    status: 404,
-    headers: { 'content-type': 'application/json' },
+// ---------------------------------------------------------------------------
+// Routes
+//
+// HTTP contract (the browser code depends on it):
+//   POST /create-order  Bearer <user token>, { exam }
+//     200 { orderId, amount, currency, keyId, name, validUntil }
+//     401 not_signed_in | 400 unknown_exam | 410 sales_closed
+//     409 { error: 'already_active', validUntil } | 502 razorpay
+//   POST /confirm       Bearer <user token>, { exam, orderId, paymentId, signature }
+//     200 { pass: { exam, validUntil, status } } | 200 { duplicate: true }
+//     400 bad_signature | 403 not_your_order | 422 payment_mismatch
+//     409 not_captured | 401 | 502 razorpay | 500 server
+//   POST /webhook       X-Razorpay-Signature over the raw body
+//     400 bad signature; otherwise 200 { ok: true } (ignored events too, so
+//     Razorpay does not retry them), or 500 on an upstream failure so it does.
+//   OPTIONS anything → 204 with CORS. Every JSON reply carries CORS headers.
+//
+// The one rule all of this protects: a passes row is inserted only by
+// settlePayment, only after a verified signature (Checkout's or the
+// webhook's), and only for a payment fetched from Razorpay that is captured,
+// belongs to the signed order, whose order notes name the user and exam, and
+// whose payment and order amounts and currency equal PASS_FACTS. Amounts never
+// come from the browser or from the webhook payload.
+// ---------------------------------------------------------------------------
+
+// Razorpay REST API, Basic auth with key id and key secret.
+// Orders:   https://razorpay.com/docs/api/orders/create/ , /fetch-with-id/
+// Payments: https://razorpay.com/docs/api/payments/fetch-with-id/ , /capture/
+// Refunds:  https://razorpay.com/docs/api/refunds/create-normal/
+const RAZORPAY_API = 'https://api.razorpay.com/v1';
+
+// Razorpay ids are short alphanumerics with a prefix. Checking the shape keeps
+// anything odd (slashes, dots) out of the URL paths we build from them.
+const PAYMENT_ID = /^pay_[A-Za-z0-9]{1,40}$/;
+const ORDER_ID = /^order_[A-Za-z0-9]{1,40}$/;
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * A failed call to Razorpay, PostgREST or Supabase Auth. It carries only the
+ * service name and HTTP status (0 for a network error): never a body, header
+ * or URL, so nothing upstream can leak into a reply or a log.
+ */
+class UpstreamError extends Error {
+  constructor(service, status) {
+    super(`${service} ${status}`);
+    this.service = service;
+    this.status = status;
+  }
+}
+
+const hasOwn = (obj, key) => typeof key === 'string' && Object.prototype.hasOwnProperty.call(obj, key);
+
+function json(status, body, cors) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...cors, 'content-type': 'application/json' },
   });
+}
+
+async function send(deps, service, url, init) {
+  try {
+    return await deps.fetch(url, init);
+  } catch {
+    throw new UpstreamError(service, 0);
+  }
+}
+
+async function razorpay(deps, method, path, body) {
+  const { RAZORPAY_KEY_ID: id, RAZORPAY_KEY_SECRET: secret } = deps.env;
+  const headers = { Authorization: `Basic ${btoa(`${id}:${secret}`)}` };
+  if (body !== undefined) headers['content-type'] = 'application/json';
+  const res = await send(deps, 'razorpay', `${RAZORPAY_API}${path}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+  if (!res.ok) throw new UpstreamError('razorpay', res.status);
+  return res.json();
+}
+
+/**
+ * PostgREST headers for the service key. The new sb_secret_ keys are not JWTs
+ * and go on `apikey` only ("Send publishable and secret keys on the apikey
+ * header, not on Authorization: Bearer",
+ * https://supabase.com/docs/guides/api/api-keys); the gateway maps them to the
+ * service_role. A legacy service_role key is a JWT and also goes on
+ * Authorization, which is what sets the role for legacy keys.
+ */
+function serviceHeaders(env) {
+  const key = env.SUPABASE_SERVICE_ROLE_KEY;
+  const headers = { apikey: key };
+  if (!key.startsWith('sb_')) headers.Authorization = `Bearer ${key}`;
+  return headers;
+}
+
+async function passesApi(deps, method, query, { body, prefer } = {}) {
+  const headers = serviceHeaders(deps.env);
+  if (body !== undefined) headers['content-type'] = 'application/json';
+  if (prefer) headers.Prefer = prefer;
+  return send(deps, 'postgrest', `${deps.env.SUPABASE_URL}/rest/v1/passes${query}`, {
+    method,
+    headers,
+    body: body === undefined ? undefined : JSON.stringify(body),
+  });
+}
+
+async function selectPasses(deps, query) {
+  const res = await passesApi(deps, 'GET', query);
+  if (!res.ok) throw new UpstreamError('postgrest', res.status);
+  return res.json();
+}
+
+const eq = (v) => `eq.${encodeURIComponent(v)}`;
+
+/**
+ * The signed-in caller, from Supabase Auth: GET /auth/v1/user with the
+ * publishable (or legacy anon) key as apikey and the caller's own access token
+ * as the bearer. Null when there is no token or Auth rejects it.
+ */
+async function userFrom(req, deps) {
+  const m = /^Bearer (\S+)$/.exec(req.headers.get('authorization') ?? '');
+  if (!m) return null;
+  const res = await send(deps, 'auth', `${deps.env.SUPABASE_URL}/auth/v1/user`, {
+    headers: { apikey: deps.env.SUPABASE_ANON_KEY, Authorization: `Bearer ${m[1]}` },
+  });
+  if (res.status === 400 || res.status === 401 || res.status === 403) return null;
+  if (!res.ok) throw new UpstreamError('auth', res.status);
+  const user = await res.json();
+  return user && typeof user.id === 'string' && UUID.test(user.id)
+    ? { id: user.id, email: typeof user.email === 'string' ? user.email : null }
+    : null;
+}
+
+/** An active pass of this mode that is still valid today (IST), or null. */
+async function activePass(deps, userId, exam, mode) {
+  const rows = await selectPasses(
+    deps,
+    `?select=valid_until,status&user_id=${eq(userId)}&exam=${eq(exam)}&mode=${eq(mode)}` +
+      `&status=eq.active&valid_until=gte.${istDate(deps.now())}&order=valid_until.desc&limit=1`,
+  );
+  return rows[0] ?? null;
+}
+
+async function passByPayment(deps, paymentId) {
+  const rows = await selectPasses(deps, `?select=*&payment_id=${eq(paymentId)}&limit=1`);
+  return rows[0] ?? null;
+}
+
+/** What settlePayment returns for a row it found or wrote. */
+const settled = (row) => (row.note === 'duplicate' ? { duplicate: true } : { pass: row });
+
+/**
+ * Turns a Razorpay payment into a pass row, exactly once. Shared by /confirm
+ * (expectUserId and exam set) and /webhook (both null). The caller has already
+ * verified a signature over (orderId, paymentId) or over the webhook body.
+ *
+ * Returns { pass: row } | { duplicate: true } | { error: code }; throws
+ * UpstreamError when Razorpay or the database fails.
+ *
+ * The order of checks differs from the plan's sketch in one place: the order
+ * notes and amounts are checked BEFORE an authorized payment is captured, so we
+ * never take money for a payment we are about to reject.
+ */
+async function settlePayment(deps, { paymentId, orderId, expectUserId, exam }) {
+  // 1. The payment, from Razorpay, must belong to the signed order.
+  const payment = await razorpay(deps, 'GET', `/payments/${paymentId}`);
+  if (payment.order_id !== orderId) return { error: 'payment_mismatch' };
+
+  // 2. The order's notes, which only create-order writes, name the user and
+  //    exam. Razorpay returns an empty notes as [], hence the array check.
+  const order = await razorpay(deps, 'GET', `/orders/${orderId}`);
+  const notes = order.notes && typeof order.notes === 'object' && !Array.isArray(order.notes) ? order.notes : {};
+  const userId = notes.user_id;
+  const noteExam = notes.exam;
+  if (typeof userId !== 'string' || !UUID.test(userId) || !hasOwn(PASS_FACTS, noteExam)) {
+    return { error: 'not_your_order' };
+  }
+  if (expectUserId !== null && userId !== expectUserId) return { error: 'not_your_order' };
+  if (exam !== null && noteExam !== exam) return { error: 'not_your_order' };
+
+  // 3. Amount and currency of both payment and order are the server's.
+  const facts = PASS_FACTS[noteExam];
+  if (
+    payment.amount !== facts.amountPaise ||
+    payment.currency !== facts.currency ||
+    order.amount !== facts.amountPaise ||
+    order.currency !== facts.currency
+  ) {
+    return { error: 'payment_mismatch' };
+  }
+
+  // 4. Captured, capturing an authorized payment ourselves (POST
+  //    /payments/:id/capture {amount, currency}). If the capture call fails,
+  //    a parallel request may have captured it first: re-read before failing.
+  let status = payment.status;
+  if (status === 'authorized') {
+    try {
+      status = (
+        await razorpay(deps, 'POST', `/payments/${paymentId}/capture`, {
+          amount: facts.amountPaise,
+          currency: facts.currency,
+        })
+      ).status;
+    } catch (e) {
+      if (!(e instanceof UpstreamError)) throw e;
+      const again = await razorpay(deps, 'GET', `/payments/${paymentId}`);
+      if (again.status !== 'captured') throw e;
+      status = 'captured';
+    }
+  }
+  if (status !== 'captured') {
+    // Already settled earlier and since refunded (by us as a duplicate, or by
+    // the owner): report what was recorded rather than "not captured".
+    const existing = await passByPayment(deps, paymentId);
+    return existing ? settled(existing) : { error: 'not_captured' };
+  }
+
+  // 5. Insert. The database decides races: payment_id is unique, and
+  //    passes_one_active allows one active row per user, exam and mode.
+  const row = {
+    user_id: userId,
+    exam: noteExam,
+    mode: modeOf(deps.env.RAZORPAY_KEY_ID),
+    valid_until: facts.validUntil,
+    payment_id: paymentId,
+    order_id: orderId,
+    amount_paise: facts.amountPaise,
+    status: 'active',
+  };
+  const res = await passesApi(deps, 'POST', '', { body: row, prefer: 'return=representation' });
+  if (res.ok) {
+    const [saved] = await res.json();
+    return { pass: saved };
+  }
+  // PostgREST maps a unique violation (23505) to HTTP 409
+  // (https://docs.postgrest.org/en/v12/references/errors.html). Anything else
+  // is a failure.
+  const err = res.status === 409 ? await res.json().catch(() => null) : null;
+  if (!err || err.code !== '23505') throw new UpstreamError('postgrest', res.status);
+
+  // 6a. This payment is already recorded: idempotent.
+  const existing = await passByPayment(deps, paymentId);
+  if (existing) return settled(existing);
+
+  // 6b. Otherwise the user already holds an active pass: refund this payment
+  //     in full and record it. If the refund call fails because a parallel
+  //     request already refunded it, carry on to record it.
+  try {
+    await razorpay(deps, 'POST', `/payments/${paymentId}/refund`, {
+      amount: facts.amountPaise,
+      notes: { reason: 'duplicate' },
+    });
+  } catch (e) {
+    if (!(e instanceof UpstreamError)) throw e;
+    const again = await razorpay(deps, 'GET', `/payments/${paymentId}`);
+    if (again.status !== 'refunded') throw e;
+  }
+  const dup = await passesApi(deps, 'POST', '?on_conflict=payment_id', {
+    body: { ...row, status: 'refunded', note: 'duplicate', refunded_at: deps.now().toISOString() },
+    prefer: 'resolution=ignore-duplicates,return=minimal',
+  });
+  if (!dup.ok) throw new UpstreamError('postgrest', dup.status);
+  return { duplicate: true };
+}
+
+async function readJson(req) {
+  try {
+    const body = await req.json();
+    return body && typeof body === 'object' && !Array.isArray(body) ? body : {};
+  } catch {
+    return {};
+  }
+}
+
+function logUpstream(where, e) {
+  // Only the service name and HTTP status: never a header, body or secret.
+  console.error(`payments: ${where} failed: ${e.service} ${e.status}`);
+}
+
+/** Maps an upstream failure on a browser route to its reply. */
+function upstreamReply(where, e, cors) {
+  if (!(e instanceof UpstreamError)) throw e;
+  logUpstream(where, e);
+  return e.service === 'razorpay' ? json(502, { error: 'razorpay' }, cors) : json(500, { error: 'server' }, cors);
+}
+
+async function createOrder(req, deps, cors) {
+  try {
+    const user = await userFrom(req, deps);
+    if (!user) return json(401, { error: 'not_signed_in' }, cors);
+    // Only the exam is read from the body; any amount sent is ignored.
+    const { exam } = await readJson(req);
+    if (!hasOwn(PASS_FACTS, exam)) return json(400, { error: 'unknown_exam' }, cors);
+    const facts = PASS_FACTS[exam];
+    // Sales are open through the whole of the salesClose day, India time.
+    if (istDate(deps.now()) > facts.salesClose) return json(410, { error: 'sales_closed' }, cors);
+    const mode = modeOf(deps.env.RAZORPAY_KEY_ID);
+    const active = await activePass(deps, user.id, exam, mode);
+    if (active) return json(409, { error: 'already_active', validUntil: active.valid_until }, cors);
+    // receipt: at most 40 chars and unique per account (Razorpay orders docs);
+    // 'upsc-' + 8 + '-' + 13 ms digits is 27.
+    const order = await razorpay(deps, 'POST', '/orders', {
+      amount: facts.amountPaise,
+      currency: facts.currency,
+      receipt: `${exam}-${user.id.slice(0, 8)}-${deps.now().getTime()}`,
+      notes: { user_id: user.id, exam },
+    });
+    return json(
+      200,
+      {
+        orderId: order.id,
+        amount: facts.amountPaise,
+        currency: facts.currency,
+        keyId: deps.env.RAZORPAY_KEY_ID,
+        name: facts.name,
+        validUntil: facts.validUntil,
+      },
+      cors,
+    );
+  } catch (e) {
+    return upstreamReply('create-order', e, cors);
+  }
+}
+
+const CONFIRM_ERRORS = { not_your_order: 403, payment_mismatch: 422, not_captured: 409 };
+
+async function confirm(req, deps, cors) {
+  try {
+    const user = await userFrom(req, deps);
+    if (!user) return json(401, { error: 'not_signed_in' }, cors);
+    const { exam, orderId, paymentId, signature } = await readJson(req);
+    if (!hasOwn(PASS_FACTS, exam)) return json(400, { error: 'unknown_exam' }, cors);
+    const signed =
+      typeof orderId === 'string' &&
+      typeof paymentId === 'string' &&
+      typeof signature === 'string' &&
+      ORDER_ID.test(orderId) &&
+      PAYMENT_ID.test(paymentId) &&
+      (await verifyCheckoutSignature({ orderId, paymentId, signature }, deps.env.RAZORPAY_KEY_SECRET));
+    if (!signed) return json(400, { error: 'bad_signature' }, cors);
+    const out = await settlePayment(deps, { paymentId, orderId, expectUserId: user.id, exam });
+    if (out.error) return json(CONFIRM_ERRORS[out.error], { error: out.error }, cors);
+    if (out.duplicate) return json(200, { duplicate: true }, cors);
+    const { exam: e, valid_until: validUntil, status } = out.pass;
+    return json(200, { pass: { exam: e, validUntil, status } }, cors);
+  } catch (e) {
+    return upstreamReply('confirm', e, cors);
+  }
+}
+
+/**
+ * Razorpay webhooks (https://razorpay.com/docs/webhooks/payments/ and
+ * /docs/webhooks/refunds/): payment.captured carries payload.payment.entity,
+ * refund.created carries payload.refund.entity. Delivery is at-least-once and
+ * any non-2xx is retried with backoff for 24 hours, after which the webhook is
+ * disabled (https://razorpay.com/docs/webhooks/faqs/), so only real upstream
+ * failures return non-2xx. The payload is only a pointer: settlePayment
+ * re-fetches the payment and order from Razorpay.
+ */
+async function webhook(req, deps, cors) {
+  const raw = await req.text();
+  const ok = await verifyWebhookSignature(raw, req.headers.get('x-razorpay-signature'), deps.env.RAZORPAY_WEBHOOK_SECRET);
+  if (!ok) return json(400, { error: 'bad_signature' }, cors);
+  let event;
+  try {
+    event = JSON.parse(raw);
+  } catch {
+    return json(400, { error: 'bad_request' }, cors);
+  }
+  try {
+    if (event && event.event === 'payment.captured') {
+      const p = event.payload && event.payload.payment && event.payload.payment.entity;
+      if (p && PAYMENT_ID.test(String(p.id)) && ORDER_ID.test(String(p.order_id))) {
+        const out = await settlePayment(deps, { paymentId: p.id, orderId: p.order_id, expectUserId: null, exam: null });
+        if (out.error) console.error(`payments: webhook ignored a payment: ${out.error}`);
+      }
+    } else if (event && event.event === 'refund.created') {
+      const r = event.payload && event.payload.refund && event.payload.refund.entity;
+      if (r && PAYMENT_ID.test(String(r.payment_id))) {
+        const res = await passesApi(deps, 'PATCH', `?payment_id=${eq(r.payment_id)}&status=eq.active`, {
+          body: { status: 'refunded', refunded_at: deps.now().toISOString() },
+          prefer: 'return=minimal',
+        });
+        if (!res.ok) throw new UpstreamError('postgrest', res.status);
+      }
+    }
+  } catch (e) {
+    if (!(e instanceof UpstreamError)) throw e;
+    logUpstream('webhook', e);
+    return json(500, { error: 'server' }, cors);
+  }
+  return json(200, { ok: true }, cors);
+}
+
+const ROUTES = { 'create-order': createOrder, confirm, webhook };
+
+/** The function's entry point, routed on the URL path's last segment. */
+export async function handle(req, deps) {
+  const env = deps.env ?? {};
+  const cors = corsHeaders(req.headers.get('origin'), modeOf(env.RAZORPAY_KEY_ID));
+  if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: cors });
+  const name = new URL(req.url).pathname.split('/').filter(Boolean).pop();
+  if (!hasOwn(ROUTES, name)) return json(404, { error: 'not_found' }, cors);
+  if (req.method !== 'POST') return json(405, { error: 'method_not_allowed' }, cors);
+  try {
+    return await ROUTES[name](req, deps, cors);
+  } catch (e) {
+    // Anything unexpected: a bare 500, logging only the error's type.
+    console.error(`payments: unexpected ${e && e.name}`);
+    return json(500, { error: 'server' }, cors);
+  }
+}
+
+/**
+ * The first key in one of Supabase's key dictionaries: the one named
+ * 'default', or else the first string value. Null when unset or not JSON.
+ */
+function keyFromDict(raw) {
+  try {
+    const dict = JSON.parse(raw ?? '');
+    if (!dict || typeof dict !== 'object') return null;
+    if (typeof dict.default === 'string' && dict.default) return dict.default;
+    return Object.values(dict).find((v) => typeof v === 'string' && v) ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * deps.env from the function's environment (`get` is Deno.env.get).
+ *
+ * Supabase injects these into every Edge Function; the owner sets none of them
+ * (https://supabase.com/docs/guides/functions/secrets):
+ *   SUPABASE_URL
+ *   SUPABASE_PUBLISHABLE_KEYS, SUPABASE_SECRET_KEYS  (JSON dictionaries of the
+ *     new sb_publishable_/sb_secret_ keys; we take 'default')
+ *   SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY     (legacy keys, used only as
+ *     a fallback; Supabase is deprecating them by the end of 2026)
+ * The owner sets these three as Edge Function secrets:
+ *   RAZORPAY_KEY_ID, RAZORPAY_KEY_SECRET, RAZORPAY_WEBHOOK_SECRET
+ *
+ * The slot names SUPABASE_ANON_KEY / SUPABASE_SERVICE_ROLE_KEY inside deps.env
+ * mean "the public key" and "the server key", whichever system supplies them.
+ */
+export function envFrom(get) {
+  return {
+    SUPABASE_URL: get('SUPABASE_URL'),
+    SUPABASE_ANON_KEY: keyFromDict(get('SUPABASE_PUBLISHABLE_KEYS')) ?? get('SUPABASE_ANON_KEY'),
+    SUPABASE_SERVICE_ROLE_KEY: keyFromDict(get('SUPABASE_SECRET_KEYS')) ?? get('SUPABASE_SERVICE_ROLE_KEY'),
+    RAZORPAY_KEY_ID: get('RAZORPAY_KEY_ID'),
+    RAZORPAY_KEY_SECRET: get('RAZORPAY_KEY_SECRET'),
+    RAZORPAY_WEBHOOK_SECRET: get('RAZORPAY_WEBHOOK_SECRET'),
+  };
 }
 
 // The real dependencies, read from the Deno runtime. Handlers take them as an
 // argument so tests can pass fakes instead.
 function denoDeps() {
   return {
-    env: (name) => Deno.env.get(name),
+    env: envFrom((name) => Deno.env.get(name)),
     fetch,
     now: () => new Date(),
   };
