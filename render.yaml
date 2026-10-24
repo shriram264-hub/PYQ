@@ -61,3 +61,11 @@ services:
       # is enabled in Supabase with its OAuth client published to production.
       - key: PUBLIC_AUTH_PROVIDERS
         value: google
+      # Payments (set in the Render dashboard when launching, not here):
+      #   PUBLIC_PAYMENTS_FROM      first day of the paywall, YYYY-MM-DD, India time;
+      #                             before it pages show a "from [date]" notice.
+      #   PUBLIC_RAZORPAY_KEY_ID    the rzp_live_ Key ID (public). Payments stay
+      #                             off while either of these two is unset.
+      #   PUBLIC_PAYMENTS_ALLOW_TEST  NEVER set this here. It lets a rzp_test_ key
+      #                             switch payments on in test mode, for local and
+      #                             preview builds only.

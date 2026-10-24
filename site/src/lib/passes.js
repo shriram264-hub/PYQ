@@ -20,6 +20,10 @@ const upsc = Object.freeze({
   // UPSC's published calendar date for Civil Services Prelims 2027. UPSC says
   // its calendar dates can change.
   prelimsDate: '2027-05-23',
+  // Sales close on Prelims day: the pass can be bought through the whole of
+  // this day (India time). supabase/functions/payments/index.js holds a copy of
+  // this date, so change both together.
+  salesClose: '2027-05-23',
   // The four things the pass unlocks, in the words the pages print.
   unlocks: Object.freeze([
     'Unlimited full past papers and practice sets',

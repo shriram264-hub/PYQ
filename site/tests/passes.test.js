@@ -19,6 +19,10 @@ test('the pass ends the day after the Prelims and prints as the pages expect', (
   assert.equal(longDate(pass.prelimsDate), '23 May 2027');
 });
 
+test('sales close on the Prelims day', () => {
+  assert.equal(passFor('upsc').salesClose, '2027-05-23');
+});
+
 test('the pass cannot be changed at runtime, and an unknown exam has none', () => {
   assert.ok(Object.isFrozen(PASSES) && Object.isFrozen(PASSES.upsc));
   assert.ok(Object.isFrozen(PASSES.upsc.unlocks) && Object.isFrozen(PASSES.upsc.free));
