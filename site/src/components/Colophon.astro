@@ -18,9 +18,11 @@ const links = exam
 const LEGAL_LINKS = [
   { name: 'Privacy', href: '/privacy' },
   { name: 'Terms', href: '/terms' },
+  { name: 'Plans', href: '/plans' },
   { name: 'Pricing', href: '/pricing' },
   { name: 'Refunds', href: '/refunds' },
   { name: 'Delivery', href: '/delivery' },
+  { name: 'About', href: '/about' },
   { name: 'Contact', href: '/contact' },
 ];
 
@@ -30,7 +32,7 @@ const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.
 <footer class="colophon">
   <div class="sheet colophon-inner">
     <p>
-      SawaalBox is free and needs no account. Questions are reproduced from past papers: {sources}.
+      Reading and searching SawaalBox are free and need no account. Questions are reproduced from past papers: {sources}.
     </p>
     <nav aria-label="Footer">
       {links.map((link) => <a href={link.href}>{link.name}</a>)}

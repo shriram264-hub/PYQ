@@ -55,6 +55,7 @@ export async function GET({ site }) {
   add('/privacy', '0.3');
   add('/terms', '0.3');
   add('/contact', '0.3');
+  add('/about', '0.3');
   add('/plans', '0.3');
   add('/pricing', '0.3');
   add('/refunds', '0.3');

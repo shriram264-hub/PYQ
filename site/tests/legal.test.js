@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { LEGAL, longDate } from '../src/lib/legal.js';
 
 test('LEGAL carries every detail the legal pages and /account read', () => {
-  assert.deepEqual(Object.keys(LEGAL).sort(), ['betaTerms', 'email', 'minAge', 'operator', 'place', 'replyDays', 'updated']);
+  assert.deepEqual(Object.keys(LEGAL).sort(), ['betaTerms', 'email', 'minAge', 'operator', 'paymentReplyWorkingDays', 'place', 'replyDays', 'updated']);
   for (const key of ['operator', 'email', 'place', 'betaTerms']) {
     assert.equal(typeof LEGAL[key], 'string');
     assert.ok(LEGAL[key].trim().length > 0, `${key} is empty`);
@@ -12,6 +12,7 @@ test('LEGAL carries every detail the legal pages and /account read', () => {
   assert.match(LEGAL.updated, /^\d{4}-\d{2}-\d{2}$/);
   assert.ok(Number.isInteger(LEGAL.minAge) && LEGAL.minAge >= 18, 'accounts are for adults (DPDP Act: under 18 is a child)');
   assert.ok(Number.isInteger(LEGAL.replyDays) && LEGAL.replyDays > 0);
+  assert.ok(Number.isInteger(LEGAL.paymentReplyWorkingDays) && LEGAL.paymentReplyWorkingDays > 0);
 });
 
 test('the beta terms are the owner’s words, unchanged', () => {

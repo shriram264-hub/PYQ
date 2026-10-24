@@ -8,6 +8,8 @@ import { passFor } from '../lib/passes.js';
 
 const pass = passFor('upsc');
 const until = longDate(pass.validUntil);
+// Stored as a heading-style line; mid-sentence it starts lower case.
+const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
 ---
 
 <Listing
@@ -30,7 +32,7 @@ const until = longDate(pass.validUntil);
       </ul>
 
       <h3 class="field-label">Free taster</h3>
-      <p class="plan-taster">{pass.taster}, before you buy.</p>
+      <p class="plan-taster">Once payments start, a free account can try {taster}, before you buy.</p>
     </div>
 
     <div class="plan-action">

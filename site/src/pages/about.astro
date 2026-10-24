@@ -1,0 +1,51 @@
+---
+// Who and what SawaalBox is. Operator details come from lib/legal.js, the pass
+// from lib/passes.js and the corpus years from lib/exams.js; nothing is typed in
+// by hand, so a change of price or place is one edit.
+import Legal from '../layouts/Legal.astro';
+import { LEGAL } from '../lib/legal.js';
+import { passFor } from '../lib/passes.js';
+import { EXAMS } from '../lib/exams.js';
+
+const pass = passFor('upsc');
+const exam = EXAMS[0];
+const { minYear, maxYear } = exam.corpus;
+---
+
+<Legal
+  title="About us"
+  description={`About SawaalBox: a free, searchable archive of past exam questions, starting with ${exam.name} ${minYear} to ${maxYear}, run by ${LEGAL.operator} in ${LEGAL.place}.`}
+  heading="About us"
+  standfirst="A free, searchable archive of past exam questions."
+>
+  <section aria-labelledby="what">
+    <h2 id="what">What SawaalBox is</h2>
+    <p>
+      SawaalBox is a free, searchable archive of past exam questions, with the answer for each. It starts with the {exam.name} examination, with
+      questions from {minYear} to {maxYear}. You can search by what a question is about, not just by its words, or browse by subject, topic and year.
+    </p>
+    <p>SawaalBox is not connected with UPSC or any government body.</p>
+  </section>
+
+  <section aria-labelledby="offers">
+    <h2 id="offers">What it offers</h2>
+    <ul>
+      <li>Reading and searching past questions, free and with no account needed.</li>
+      <li>Marking questions done or for review, and keeping revision lists.</li>
+      <li>
+        Practice tests and analytics. These are free during the beta, and will later be included in the {pass.name} ({pass.priceLabel}, paid
+        once). See <a href="/pricing">Pricing</a> and <a href="/plans">Plans</a>.
+      </li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="who">
+    <h2 id="who">Who runs it</h2>
+    <p>SawaalBox is run by an individual, {LEGAL.operator}, from {LEGAL.place}. It started in 2026.</p>
+  </section>
+
+  <section aria-labelledby="touch">
+    <h2 id="touch">Get in touch</h2>
+    <p>The <a href="/contact">contact page</a> has our email address and says what to write about.</p>
+  </section>
+</Legal>

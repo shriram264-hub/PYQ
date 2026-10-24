@@ -186,6 +186,8 @@ export const LEGAL = Object.freeze({
   minAge: 18,
   // How long a reply to an email (a data request, a grievance) may take.
   replyDays: 30,
+  // How fast we aim to answer a payment, refund or access email (working days).
+  paymentReplyWorkingDays: 2,
 });
 
 /**
