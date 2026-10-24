@@ -1,0 +1,82 @@
+---
+// Refund and cancellation policy for the UPSC Prelims pass. Facts come from
+// lib/passes.js; the operator's details from lib/legal.js.
+import Legal from '../layouts/Legal.astro';
+import { LEGAL, longDate } from '../lib/legal.js';
+import { passFor } from '../lib/passes.js';
+
+const pass = passFor('upsc');
+const mail = `mailto:${LEGAL.email}`;
+const until = longDate(pass.validUntil);
+// Stored as a heading-style line; mid-sentence it starts lower case.
+const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
+---
+
+<Legal
+  title="Refunds and cancellation"
+  description={`The SawaalBox refund and cancellation policy: a full refund within ${pass.refundDays} days if you have used no more than the free taster, and nothing to cancel.`}
+  heading="Refunds and cancellation"
+  standfirst="A full refund in the first week, and no subscription to cancel."
+>
+  <section class="ruled legal-box" aria-labelledby="summary">
+    <h2 id="summary">In short</h2>
+    <p>
+      You can get a full refund of the {pass.name} ({pass.priceLabel}) within {pass.refundDays} days of buying it, if you
+      have used no more than the free taster. There is nothing to cancel, because the pass is a one-time payment, not a
+      subscription.
+    </p>
+  </section>
+
+  <p class="legal-aside">
+    Payments are not switched on yet, so there is nothing to refund today. This policy applies from the first purchase.
+  </p>
+
+  <section aria-labelledby="who">
+    <h2 id="who">Who can get a refund</h2>
+    <p>
+      Anyone who asks within {pass.refundDays} days of purchase and has used no more than the free taster: {taster}.
+      The refund is the full {pass.priceLabel}.
+    </p>
+  </section>
+
+  <section aria-labelledby="ask">
+    <h2 id="ask">How to ask</h2>
+    <p>
+      Email <a href={mail}>{LEGAL.email}</a> within {pass.refundDays} days of buying, with your payment details: the date and
+      amount you paid, the payment reference your bank or Razorpay shows you, and the email address of the Google account
+      you bought the pass on.
+    </p>
+  </section>
+
+  <section aria-labelledby="paid">
+    <h2 id="paid">How the refund is paid</h2>
+    <p>
+      The refund goes back to the payment method you paid with (your UPI account, card or bank account), {pass.refundTiming}.
+    </p>
+  </section>
+
+  <section aria-labelledby="cancel">
+    <h2 id="cancel">Cancellation</h2>
+    <p>
+      There is nothing to cancel. The pass is paid for once, never renews automatically and is never charged again. It
+      simply ends after {until}.
+    </p>
+  </section>
+
+  <section aria-labelledby="after">
+    <h2 id="after">After {pass.refundDays} days, or after more than the taster</h2>
+    <p>
+      This refund policy covers requests made within {pass.refundDays} days by someone who has used no more than the free
+      taster. If something has gone wrong with your purchase, such as access that never switched on, write to us and we
+      will look into it.
+    </p>
+  </section>
+
+  <section aria-labelledby="more">
+    <h2 id="more">Related pages</h2>
+    <p>
+      <a href="/pricing">Pricing</a> says what the pass costs and includes. <a href="/delivery">Delivery</a> says when
+      access starts. The <a href="/contact">contact page</a> says what to include in an email.
+    </p>
+  </section>
+</Legal>

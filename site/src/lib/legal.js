@@ -177,8 +177,10 @@ export const LEGAL = Object.freeze({
   operator: 'Shriram Agrawal',
   email: 'hello@sawaalbox.in',
   place: 'Bengaluru, Karnataka',
-  // The date on all three pages. Move it whenever their wording changes.
-  updated: '2026-10-17',
+  // The date on every legal page (/privacy, /terms, /contact and the pass
+  // policies /pricing, /refunds, /delivery, whose facts live in lib/passes.js).
+  // Move it whenever their wording changes.
+  updated: '2026-10-24',
   // The owner's words, used verbatim on /terms and /account.
   betaTerms: "Free during the beta. Some features may later need a paid pass; we'll tell you before anything you use changes.",
   minAge: 18,

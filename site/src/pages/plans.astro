@@ -1,0 +1,176 @@
+---
+// The plan card. This is the page an Upgrade prompt will link to once payments
+// are on: the pass facts come from lib/passes.js, and the one thing to change
+// then is the .plan-buy control below. Everything else already reads the data.
+import Listing from '../layouts/Listing.astro';
+import { longDate } from '../lib/legal.js';
+import { passFor } from '../lib/passes.js';
+
+const pass = passFor('upsc');
+const until = longDate(pass.validUntil);
+---
+
+<Listing
+  title="Plans"
+  description={`The SawaalBox ${pass.name}: ${pass.priceLabel} once, valid until ${until}. Payments are not open yet; tests and analytics are free during the beta.`}
+  heading="Plans"
+  standfirst="One pass for the UPSC Prelims. Pay once, no subscription."
+>
+  <section class="ruled plan" aria-labelledby="plan-h">
+    <div class="plan-head">
+      <h2 id="plan-h">{pass.name}</h2>
+      <p class="plan-price"><span class="price serial">{pass.priceLabel}</span></p>
+      <p class="plan-until">One payment, valid until {until}.</p>
+    </div>
+
+    <div class="plan-body">
+      <h3 class="field-label">It unlocks</h3>
+      <ul class="plan-list">
+        {pass.unlocks.map((item) => <li>{item}</li>)}
+      </ul>
+
+      <h3 class="field-label">Free taster</h3>
+      <p class="plan-taster">{pass.taster}, before you buy.</p>
+    </div>
+
+    <div class="plan-action">
+      {/* When payments open, this becomes the Buy control for this pass (a link
+          to checkout, or a button the payment script handles). Keep it the
+          outlined secondary style; /plans carries no filled-green action. */}
+      <button type="button" class="plan-buy" data-pass={pass.exam} disabled>Coming soon</button>
+      <p class="plan-beta">Tests and analytics are free during the beta.</p>
+    </div>
+  </section>
+
+  <section class="free" aria-labelledby="free-h">
+    <h2 id="free-h">Always free</h2>
+    <ul class="plan-list">
+      {pass.free.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <nav class="policies" aria-label="Pass policies">
+    <a href="/pricing">Pricing</a>
+    <a href="/refunds">Refunds</a>
+    <a href="/delivery">Delivery</a>
+  </nav>
+</Listing>
+
+<style>
+  .plan {
+    max-width: 38rem;
+  }
+
+  .plan-head {
+    padding: 1rem 1.1rem 1.1rem;
+    border-bottom: var(--rule-heavy) solid var(--rule-strong);
+  }
+
+  .plan-head h2 {
+    margin: 0;
+  }
+
+  .plan-price {
+    margin: 0.5rem 0 0.2rem;
+  }
+
+  .price {
+    font-size: clamp(1.9rem, 1.2rem + 3vw, 3.4rem);
+    font-weight: 700;
+    line-height: 1.12;
+  }
+
+  .plan-until {
+    margin: 0;
+    color: var(--ink-soft);
+  }
+
+  .plan-body {
+    padding: 1rem 1.1rem 0.4rem;
+  }
+
+  .plan-body .field-label {
+    margin: 0 0 0.5rem;
+  }
+
+  .plan-list {
+    margin: 0 0 1.2rem;
+    padding-left: 1.25rem;
+  }
+
+  .plan-list li {
+    margin-bottom: 0.45rem;
+  }
+
+  .plan-list li::marker {
+    color: var(--ink-faint);
+  }
+
+  .plan-taster {
+    margin: 0 0 1rem;
+  }
+
+  .plan-action {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1.25rem;
+    padding: 1rem 1.1rem 1.1rem;
+    border-top: var(--rule-hair) solid var(--rule-strong);
+  }
+
+  /* DESIGN.md's Secondary: paper, a heavy frame, Archivo 700. It is inert
+     because there is nothing to buy yet, so the frame turns dashed (the
+     system's mark for something provisional) and the label stays in Soft Ink,
+     which reads at 7:1 on paper by day and by night. */
+  .plan-buy {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.25rem;
+    font: 700 0.95rem/1.2 var(--font-structure);
+    color: var(--ink-soft);
+    background: var(--paper);
+    border: var(--rule-heavy) dashed var(--rule-strong);
+    border-radius: 0;
+    cursor: not-allowed;
+  }
+
+  .plan-beta {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+
+  .free {
+    max-width: 38rem;
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+  }
+
+  .free h2 {
+    margin-bottom: 0.7rem;
+  }
+
+  .free .plan-list {
+    margin-bottom: 0;
+  }
+
+  .policies {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+    margin-top: clamp(1.75rem, 4vw, 2.5rem);
+    padding-top: 1rem;
+    border-top: var(--rule-hair) solid var(--rule);
+    font-family: var(--font-structure);
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+
+  @media (pointer: coarse) {
+    .policies a {
+      display: inline-block;
+      padding-block: 0.45rem;
+    }
+  }
+</style>

@@ -1,11 +1,14 @@
 ---
 // Every statement here traces to the facts inventory in lib/legal.js.
 import Legal from '../layouts/Legal.astro';
-import { LEGAL } from '../lib/legal.js';
+import { LEGAL, longDate } from '../lib/legal.js';
+import { passFor } from '../lib/passes.js';
 import { EXAMS } from '../lib/exams.js';
 import { authEnabled } from '../lib/accounts/config.js';
 
 const mail = `mailto:${LEGAL.email}`;
+const pass = passFor('upsc');
+const passUntil = longDate(pass.validUntil);
 // The same credit the footer prints.
 const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.maxYear}`).join('; ');
 ---
@@ -31,6 +34,16 @@ const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.
   <section data-numbered aria-labelledby="beta">
     <h2 id="beta">The beta</h2>
     <p>SawaalBox is in beta. {LEGAL.betaTerms}</p>
+  </section>
+
+  <section data-numbered aria-labelledby="pass">
+    <h2 id="pass">The UPSC Prelims pass</h2>
+    <p>
+      Some features will need a paid pass: the {pass.name}, {pass.priceLabel} once, valid until the end of {passUntil}. It is a
+      one-time payment, not a subscription. What it includes and what stays free is on <a href="/pricing">Pricing</a>; a
+      full refund within {pass.refundDays} days is on <a href="/refunds">Refunds and cancellation</a>; and how access
+      reaches you is on <a href="/delivery">Delivery</a>. Payments are not switched on yet.
+    </p>
   </section>
 
   <section data-numbered aria-labelledby="accounts">

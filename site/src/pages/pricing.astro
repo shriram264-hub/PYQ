@@ -1,0 +1,119 @@
+---
+// What the UPSC Prelims pass costs and includes. Every fact is read from
+// lib/passes.js, and the operator's details from lib/legal.js.
+import Legal from '../layouts/Legal.astro';
+import { LEGAL, longDate } from '../lib/legal.js';
+import { passFor } from '../lib/passes.js';
+
+const pass = passFor('upsc');
+const mail = `mailto:${LEGAL.email}`;
+const until = longDate(pass.validUntil);
+const prelims = longDate(pass.prelimsDate);
+// Stored as a heading-style line; mid-sentence it starts lower case.
+const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
+---
+
+<Legal
+  title="Pricing"
+  description={`What the SawaalBox ${pass.name} costs (${pass.priceLabel}, paid once), what it includes, what stays free, and how long it lasts.`}
+  heading="Pricing"
+  standfirst="One pass, one price, paid once."
+>
+  <section class="ruled legal-box" aria-labelledby="pass-h">
+    <h2 id="pass-h">{pass.name}</h2>
+    <p class="price-line"><span class="price serial">{pass.priceLabel}</span> <span class="price-note">one-time payment</span></p>
+    <p>
+      Valid until the end of {until}. This is the total price: no extra fees or taxes are added at checkout. It is not a
+      subscription and never renews by itself.
+    </p>
+  </section>
+
+  <p class="legal-aside">
+    Payments are not switched on yet. Until they are, tests and analytics are free for everyone, and nobody can buy the
+    pass. This page describes it as it will be sold.
+  </p>
+
+  <section aria-labelledby="includes">
+    <h2 id="includes">What the pass includes</h2>
+    <ul>
+      {pass.unlocks.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section aria-labelledby="free">
+    <h2 id="free">What stays free</h2>
+    <p>These do not need the pass, now or later:</p>
+    <ul>
+      {pass.free.map((item) => <li>{item}</li>)}
+    </ul>
+  </section>
+
+  <section aria-labelledby="taster">
+    <h2 id="taster">The free taster</h2>
+    <p>
+      Once payments start, a free account can try the paid parts before buying: {taster}.
+    </p>
+  </section>
+
+  <section aria-labelledby="validity">
+    <h2 id="validity">How long it lasts</h2>
+    <p>
+      The pass works until the end of {until}, the day after UPSC Civil Services Preliminary Examination 2027. UPSC's
+      published calendar lists that exam for {prelims}, and says its dates can change.
+    </p>
+  </section>
+
+  <section aria-labelledby="buying">
+    <h2 id="buying">How buying works</h2>
+    <ul>
+      <li>
+        You need to be signed in with Google, so the pass belongs to your account and works on every device you sign in
+        on.
+      </li>
+      <li>Payment goes through Razorpay, which accepts UPI, cards and netbanking.</li>
+      <li>You pay {pass.priceLabel} once. Nothing is charged again later.</li>
+      <li>
+        Access switches on as soon as the payment is confirmed. The <a href="/delivery">delivery policy</a> has the
+        details.
+      </li>
+      <li>
+        Changed your mind? The <a href="/refunds">refund and cancellation policy</a> gives a full refund
+        within {pass.refundDays} days if you have used no more than the free taster.
+      </li>
+    </ul>
+    <p>The pass is also shown on the <a href="/plans">plans page</a>.</p>
+  </section>
+
+  <section aria-labelledby="questions">
+    <h2 id="questions">Questions</h2>
+    <p>
+      SawaalBox is run by {LEGAL.operator}, {LEGAL.place}. Write to <a href={mail}>{LEGAL.email}</a>; the <a href="/contact">contact
+      page</a> says what to include.
+    </p>
+  </section>
+</Legal>
+
+<style>
+  /* The price is the one figure on the page: set at the section-title size in
+     the serial face, which numbers things, beside a small plain note. */
+  .price-line {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.2rem 0.8rem;
+    margin-bottom: 0.7rem;
+  }
+
+  .price {
+    font-size: clamp(1.9rem, 1.2rem + 3vw, 3.4rem);
+    font-weight: 700;
+    line-height: 1.12;
+  }
+
+  .price-note {
+    font-family: var(--font-structure);
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--ink-soft);
+  }
+</style>

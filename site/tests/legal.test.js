@@ -28,7 +28,7 @@ test('LEGAL cannot be changed at runtime', () => {
 test('longDate spells a date out the way the pages print it', () => {
   assert.equal(longDate('2026-10-03'), '3 October 2026');
   assert.equal(longDate('2027-01-31'), '31 January 2027');
-  assert.equal(longDate(LEGAL.updated), '17 October 2026');
+  assert.equal(longDate(LEGAL.updated), '24 October 2026');
 });
 
 test('longDate refuses a day the month does not have', () => {

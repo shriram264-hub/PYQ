@@ -55,6 +55,10 @@ export async function GET({ site }) {
   add('/privacy', '0.3');
   add('/terms', '0.3');
   add('/contact', '0.3');
+  add('/plans', '0.3');
+  add('/pricing', '0.3');
+  add('/refunds', '0.3');
+  add('/delivery', '0.3');
 
   const body = `<?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

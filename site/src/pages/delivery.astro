@@ -1,0 +1,57 @@
+---
+// Delivery policy for the UPSC Prelims pass, a digital product. Facts come
+// from lib/passes.js; the operator's details from lib/legal.js.
+import Legal from '../layouts/Legal.astro';
+import { LEGAL, longDate } from '../lib/legal.js';
+import { passFor } from '../lib/passes.js';
+
+const pass = passFor('upsc');
+const mail = `mailto:${LEGAL.email}`;
+const until = longDate(pass.validUntil);
+---
+
+<Legal
+  title="Delivery"
+  description="How the SawaalBox UPSC Prelims pass is delivered: digitally and instantly to your account, with nothing shipped."
+  heading="Delivery"
+  standfirst="Digital and instant. Nothing is shipped."
+>
+  <section class="ruled legal-box" aria-labelledby="summary">
+    <h2 id="summary">In short</h2>
+    <p>
+      The {pass.name} is a digital product. Access switches on as soon as your payment is confirmed, on the account you
+      were signed in with. Nothing is posted to you, so there is no address to give and no delivery charge.
+    </p>
+  </section>
+
+  <p class="legal-aside">
+    Payments are not switched on yet, so no pass can be bought today. Until they are, tests and analytics are free for
+    everyone.
+  </p>
+
+  <section aria-labelledby="how">
+    <h2 id="how">How you get it</h2>
+    <ul>
+      <li>You sign in with Google before you pay, so the pass is attached to that account and works on every device you sign in on.</li>
+      <li>Once Razorpay confirms the payment, the pass switches on for that account. There is nothing to download or install.</li>
+      <li>It stays on until the end of {until}.</li>
+    </ul>
+  </section>
+
+  <section aria-labelledby="late">
+    <h2 id="late">If access has not switched on</h2>
+    <p>
+      If the pass has not switched on within {pass.deliveryWaitHours === 1 ? 'an hour' : `${pass.deliveryWaitHours} hours`} of paying, email <a href={mail}>{LEGAL.email}</a> with
+      your payment details: the date and amount you paid, the payment reference your bank or Razorpay shows you, and the
+      email address of the Google account you were signed in with.
+    </p>
+  </section>
+
+  <section aria-labelledby="more">
+    <h2 id="more">Related pages</h2>
+    <p>
+      <a href="/pricing">Pricing</a> says what the pass costs and includes. <a href="/refunds">Refunds and cancellation</a> covers
+      changing your mind. The <a href="/contact">contact page</a> says what to include in an email.
+    </p>
+  </section>
+</Legal>
