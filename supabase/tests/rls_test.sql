@@ -238,10 +238,10 @@ do $$ begin
   raise exception 'FAIL: B upserted over A''s attempt';
 exception when insufficient_privilege then null; end $$;
 
--- The database refuses a second active pass for the same user, exam and mode
--- (passes_one_active). Run as postgres so this tests the index, not row-level
--- security. A different payment_id and order_id mean only the index can object,
--- and the handler checks which constraint fired.
+-- The database refuses a second active pass for the same user, exam, mode and
+-- valid_until (passes_one_active). Run as postgres so this tests the index, not
+-- row-level security. A different payment_id and order_id mean only the index
+-- can object, and the handler checks which constraint fired.
 reset role;
 do $$ declare c text; begin
   insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
@@ -254,9 +254,11 @@ exception when unique_violation then
   end if;
 end $$;
 
--- Positive controls for the index: it is partial and keyed on mode and exam,
--- so a refunded row, a live-mode pass and another exam's pass are all allowed.
--- Without these, an index that refused everything would pass the check above.
+-- Positive controls for the index: it is partial and keyed on mode, exam and
+-- valid_until, so a refunded row, a live-mode pass, another exam's pass and a
+-- pass with a different valid_until (next cycle's, while an expired one is still
+-- 'active') are all allowed. Without these, an index that refused everything
+-- would pass the check above.
 do $$ declare n int; begin
   insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status, note, refunded_at)
   values ('00000000-0000-0000-0000-0000000000aa', 'upsc', 'test', '2027-05-24', 'pay_rls_a4', 'order_rls_a4', 49900, 'refunded', 'duplicate', now());
@@ -264,8 +266,10 @@ do $$ declare n int; begin
   values ('00000000-0000-0000-0000-0000000000aa', 'upsc', 'live', '2027-05-24', 'pay_rls_a5', 'order_rls_a5', 49900, 'active');
   insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
   values ('00000000-0000-0000-0000-0000000000aa', 'ssc', 'test', '2027-05-24', 'pay_rls_a6', 'order_rls_a6', 49900, 'active');
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+  values ('00000000-0000-0000-0000-0000000000aa', 'upsc', 'test', '2028-05-24', 'pay_rls_a7', 'order_rls_a7', 49900, 'active');
   select count(*) into n from public.passes where user_id = '00000000-0000-0000-0000-0000000000aa';
-  if n <> 4 then raise exception 'FAIL: expected 4 passes for A after controls, saw %', n; end if;
+  if n <> 5 then raise exception 'FAIL: expected 5 passes for A after controls, saw %', n; end if;
 end $$;
 
 -- The same payment can only be recorded once. B has no pass for ssc, so only

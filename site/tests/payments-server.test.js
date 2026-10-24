@@ -162,6 +162,8 @@ const reply = (status, body) =>
 function setup(t, { keyId = KEY_ID_LIVE, now = NOW, serviceKey = SERVICE } = {}) {
   const w = {
     passes: [],
+    // auth.users, for the passes.user_id foreign key.
+    users: new Set([UA, UB]),
     orders: new Map(),
     payments: new Map(),
     refunds: [],
@@ -222,6 +224,10 @@ function setup(t, { keyId = KEY_ID_LIVE, now = NOW, serviceKey = SERVICE } = {})
         typeof body.order_id === 'string' &&
         /^\d{4}-\d{2}-\d{2}$/.test(body.valid_until);
       if (!ok) return reply(400, { code: '23514', message: 'check violation' });
+      // user_id references auth.users (PostgREST maps 23503 to 409).
+      if (body.user_id && !w.users.has(body.user_id)) {
+        return reply(409, { code: '23503', message: 'insert or update violates foreign key constraint' });
+      }
       // payment_id is unique.
       if (w.passes.some((r) => r.payment_id === body.payment_id)) {
         if (url.searchParams.get('on_conflict') === 'payment_id' && prefer.includes('resolution=ignore-duplicates')) {
@@ -229,12 +235,17 @@ function setup(t, { keyId = KEY_ID_LIVE, now = NOW, serviceKey = SERVICE } = {})
         }
         return reply(409, { code: '23505', message: 'duplicate key value violates unique constraint "passes_payment_id_key"' });
       }
-      // passes_one_active: one active row per (user_id, exam, mode).
+      // passes_one_active: one active row per (user_id, exam, mode, valid_until).
       if (
         body.status === 'active' &&
         body.user_id &&
         w.passes.some(
-          (r) => r.status === 'active' && r.user_id === body.user_id && r.exam === body.exam && r.mode === body.mode,
+          (r) =>
+            r.status === 'active' &&
+            r.user_id === body.user_id &&
+            r.exam === body.exam &&
+            r.mode === body.mode &&
+            r.valid_until === body.valid_until,
         )
       ) {
         return reply(409, { code: '23505', message: 'duplicate key value violates unique constraint "passes_one_active"' });
@@ -594,56 +605,68 @@ test('confirm: signed out is 401', async (t) => {
   assert.equal(w.inserts().length, 0);
 });
 
-test("confirm: another user's order is 403 and inserts nothing", async (t) => {
-  const w = setup(t);
-  const { orderId, paymentId } = await buy(w, 'token-b');
-  const r = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
-  assert.equal(r.status, 403);
-  assert.equal(r.body.error, 'not_your_order');
-  assert.equal(w.inserts().length, 0);
-  assert.equal(w.passes.length, 0);
-});
+const captures = (w) => w.rzCalls().filter((c) => c.path.endsWith('/capture'));
 
-test('confirm: an order without our notes is 403 and inserts nothing', async (t) => {
-  const w = setup(t);
-  const orderId = w.addOrder({ notes: [] });
-  const paymentId = w.pay(orderId);
-  const r = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
-  assert.equal(r.status, 403);
-  assert.equal(w.inserts().length, 0);
-});
+for (const status of ['captured', 'authorized']) {
+  test(`confirm: another user's order is 403, inserts nothing and captures nothing (${status})`, async (t) => {
+    const w = setup(t);
+    const { orderId, paymentId } = await buy(w, 'token-b', { status });
+    const r = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
+    assert.equal(r.status, 403);
+    assert.equal(r.body.error, 'not_your_order');
+    assert.equal(w.inserts().length, 0);
+    assert.equal(w.passes.length, 0);
+    assert.equal(captures(w).length, 0);
+    assert.equal(w.payments.get(paymentId).status, status);
+  });
 
-test('confirm: a payment of the wrong amount, currency or order is 422 and inserts nothing', async (t) => {
-  const w = setup(t);
-  const a = await buy(w, 'token-a', { amount: 100 });
-  const r = await call(w, post('confirm', confirmBody(a.orderId, a.paymentId), 'token-a'));
-  assert.equal(r.status, 422);
-  assert.equal(r.body.error, 'payment_mismatch');
+  test(`confirm: an order without our notes is 403, inserts nothing and captures nothing (${status})`, async (t) => {
+    const w = setup(t);
+    const orderId = w.addOrder({ notes: [] });
+    const paymentId = w.pay(orderId, { status });
+    const r = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
+    assert.equal(r.status, 403);
+    assert.equal(w.inserts().length, 0);
+    assert.equal(captures(w).length, 0);
+  });
+}
 
-  const b = await buy(w, 'token-a', { currency: 'USD' });
-  assert.equal((await call(w, post('confirm', confirmBody(b.orderId, b.paymentId), 'token-a'))).status, 422);
+for (const status of ['captured', 'authorized']) {
+  test(`confirm: a payment of the wrong amount, currency or order is 422, inserts and captures nothing (${status})`, async (t) => {
+    const w = setup(t);
+    const a = await buy(w, 'token-a', { amount: 100, status });
+    const r = await call(w, post('confirm', confirmBody(a.orderId, a.paymentId), 'token-a'));
+    assert.equal(r.status, 422);
+    assert.equal(r.body.error, 'payment_mismatch');
 
-  // An order made for a different amount (not by us) fails too.
-  const cheap = w.addOrder({ amount: 100, notes: { user_id: UA, exam: 'upsc' } });
-  const cp = w.pay(cheap);
-  assert.equal((await call(w, post('confirm', confirmBody(cheap, cp), 'token-a'))).status, 422);
+    const b = await buy(w, 'token-a', { currency: 'USD', status });
+    assert.equal((await call(w, post('confirm', confirmBody(b.orderId, b.paymentId), 'token-a'))).status, 422);
 
-  // A payment that belongs to another order, signed as if it were this one.
-  const c = await buy(w);
-  const otherOrder = w.addOrder({ notes: { user_id: UA, exam: 'upsc' } });
-  const r2 = await call(w, post('confirm', confirmBody(otherOrder, c.paymentId), 'token-a'));
-  assert.equal(r2.status, 422);
+    // An order made for a different amount (not by us) fails too.
+    const cheap = w.addOrder({ amount: 100, notes: { user_id: UA, exam: 'upsc' } });
+    const cp = w.pay(cheap, { status });
+    assert.equal((await call(w, post('confirm', confirmBody(cheap, cp), 'token-a'))).status, 422);
 
-  assert.equal(w.inserts().length, 0);
-  assert.equal(w.rzCalls().filter((x) => x.path.endsWith('/capture')).length, 0);
-});
+    // A payment that belongs to another order, signed as if it were this one.
+    const c = await buy(w, 'token-a', { status });
+    const otherOrder = w.addOrder({ notes: { user_id: UA, exam: 'upsc' } });
+    const r2 = await call(w, post('confirm', confirmBody(otherOrder, c.paymentId), 'token-a'));
+    assert.equal(r2.status, 422);
 
-test('confirm: the exam in the body must match the order', async (t) => {
+    assert.equal(w.inserts().length, 0);
+    assert.equal(captures(w).length, 0);
+    for (const p of w.payments.values()) assert.equal(p.status, status);
+  });
+}
+
+test('confirm: an unknown exam in the body is refused before any Razorpay call', async (t) => {
   const w = setup(t);
   const { orderId, paymentId } = await buy(w);
+  const before = w.rzCalls().length;
   const r = await call(w, post('confirm', confirmBody(orderId, paymentId, 'nope'), 'token-a'));
   assert.equal(r.status, 400);
   assert.equal(r.body.error, 'unknown_exam');
+  assert.equal(w.rzCalls().length, before);
   assert.equal(w.inserts().length, 0);
 });
 
@@ -837,6 +860,96 @@ test('duplicate: confirm and webhook racing on a duplicate refund once and make 
   assert.equal(w.refunds.length, 1);
   assert.equal(w.passes.filter((p) => p.payment_id === two.paymentId).length, 1);
   assert.equal(w.passes.filter((p) => p.status === 'active').length, 1);
+});
+
+test('duplicate: an expired pass still marked active does not make a new purchase a duplicate', async (t) => {
+  const w = setup(t);
+  // Last cycle's pass: never switched off, but its valid_until has passed (IST).
+  w.passes.push({
+    id: 'row_old',
+    user_id: UA,
+    exam: 'upsc',
+    mode: 'live',
+    status: 'active',
+    valid_until: '2026-10-31',
+    payment_id: 'pay_OLDCYCLE',
+    order_id: 'order_OLDCYCLE',
+    amount_paise: 49900,
+    note: null,
+    refunded_at: null,
+  });
+  const one = await buy(w);
+  const r = await call(w, post('confirm', confirmBody(one.orderId, one.paymentId), 'token-a'));
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual(r.body, { pass: { exam: 'upsc', validUntil: '2027-05-24', status: 'active' } });
+  assert.equal(w.passes.filter((p) => p.status === 'active').length, 2);
+  assert.equal(w.passes.find((p) => p.payment_id === one.paymentId).status, 'active');
+  assert.equal(w.refunds.length, 0);
+  assert.equal(w.rzCalls().filter((c) => c.path.endsWith('/refund')).length, 0);
+});
+
+test('duplicate: an expired pass still marked active does not trigger a refund via the webhook either', async (t) => {
+  const w = setup(t);
+  w.passes.push({
+    id: 'row_old',
+    user_id: UA,
+    exam: 'upsc',
+    mode: 'live',
+    status: 'active',
+    valid_until: '2026-10-31',
+    payment_id: 'pay_OLDCYCLE',
+    order_id: 'order_OLDCYCLE',
+    amount_paise: 49900,
+    note: null,
+    refunded_at: null,
+  });
+  const { paymentId } = await buy(w);
+  assert.equal((await call(w, webhookReq(capturedEvent(w, paymentId)))).status, 200);
+  assert.equal(w.passes.find((p) => p.payment_id === paymentId).status, 'active');
+  assert.equal(w.refunds.length, 0);
+});
+
+test('duplicate: a clash with no active unexpired pass is never refunded; it is retried instead', async (t) => {
+  // After the pass's last day, an active row with the same valid_until still
+  // clashes in the index. That is not a duplicate purchase: no refund, and a
+  // server error so Razorpay retries (and the owner gets the alert email).
+  const w = setup(t, { now: new Date('2027-05-25T00:00:00Z') });
+  w.passes.push({
+    id: 'row_old',
+    user_id: UA,
+    exam: 'upsc',
+    mode: 'live',
+    status: 'active',
+    valid_until: '2027-05-24',
+    payment_id: 'pay_OLD',
+    order_id: 'order_OLD',
+    amount_paise: 49900,
+    note: null,
+    refunded_at: null,
+  });
+  const orderId = w.addOrder({ notes: { user_id: UA, exam: 'upsc' } });
+  const paymentId = w.pay(orderId);
+  const hook = await call(w, webhookReq(capturedEvent(w, paymentId)));
+  assert.equal(hook.status, 500);
+  const conf = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
+  assert.equal(conf.status, 500);
+  assert.deepEqual(conf.body, { error: 'server' });
+  assert.equal(w.rzCalls().filter((c) => c.path.endsWith('/refund')).length, 0);
+  assert.equal(w.passes.length, 1);
+  assert.equal(w.payments.get(paymentId).status, 'captured');
+  assert.ok(w.logs.some((l) => l.includes('no_active_pass')));
+});
+
+test('webhook: a payment whose user was deleted before settlement is 200, inserts nothing, refunds nothing', async (t) => {
+  const w = setup(t);
+  const { paymentId } = await buy(w);
+  w.users.delete(UA); // the account is deleted before the webhook arrives
+  const r = await call(w, webhookReq(capturedEvent(w, paymentId)));
+  assert.equal(r.status, 200);
+  assert.deepEqual(r.body, { ok: true });
+  assert.equal(w.passes.length, 0);
+  assert.equal(w.refunds.length, 0);
+  assert.ok(w.logs.some((l) => l.includes('user_gone')));
 });
 
 // --- webhook ---

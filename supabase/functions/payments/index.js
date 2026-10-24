@@ -338,7 +338,8 @@ async function settlePayment(deps, { paymentId, orderId, expectUserId, exam }) {
   }
 
   // 5. Insert. The database decides races: payment_id is unique, and
-  //    passes_one_active allows one active row per user, exam and mode.
+  //    passes_one_active allows one active row per user, exam, mode and
+  //    valid_until.
   const row = {
     user_id: userId,
     exam: noteExam,
@@ -354,10 +355,14 @@ async function settlePayment(deps, { paymentId, orderId, expectUserId, exam }) {
     const [saved] = await res.json();
     return { pass: saved };
   }
-  // PostgREST maps a unique violation (23505) to HTTP 409
-  // (https://docs.postgrest.org/en/v12/references/errors.html). Anything else
-  // is a failure.
+  // PostgREST maps a unique violation (23505) and a foreign-key violation
+  // (23503) to HTTP 409 (https://docs.postgrest.org/en/v12/references/errors.html).
+  // Anything else is a failure.
   const err = res.status === 409 ? await res.json().catch(() => null) : null;
+  // 23503: the order's user was deleted before the payment settled. There is
+  // no account to give a pass to; retrying cannot help. Ignored (the webhook
+  // logs the code and answers 200); the owner handles any refund by hand.
+  if (err && err.code === '23503') return { error: 'user_gone' };
   if (!err || err.code !== '23505') throw new UpstreamError('postgrest', res.status);
 
   // 6a. This payment is already recorded: idempotent.
@@ -367,6 +372,16 @@ async function settlePayment(deps, { paymentId, orderId, expectUserId, exam }) {
   // 6b. Otherwise the user already holds an active pass: refund this payment
   //     in full and record it. If the refund call fails because a parallel
   //     request already refunded it, carry on to record it.
+  //
+  //     Belt and braces before any refund: the clash must be with a pass that
+  //     is active and still valid today. If it is not (an expired row still
+  //     marked active with the same valid_until), this is not a duplicate
+  //     purchase: never refund, fail instead so the webhook is retried and the
+  //     owner is alerted.
+  if (!(await activePass(deps, userId, noteExam, row.mode))) {
+    console.error('payments: no_active_pass');
+    throw new UpstreamError('conflict', 409);
+  }
   try {
     await razorpay(deps, 'POST', `/payments/${paymentId}/refund`, {
       amount: facts.amountPaise,
@@ -445,6 +460,8 @@ async function createOrder(req, deps, cors) {
 }
 
 const CONFIRM_ERRORS = { not_your_order: 403, payment_mismatch: 422, not_captured: 409 };
+// user_gone cannot reach confirm (its caller just signed in), but if it ever
+// did, the account no longer exists, so it is answered as signed out.
 
 async function confirm(req, deps, cors) {
   try {
@@ -461,6 +478,7 @@ async function confirm(req, deps, cors) {
       (await verifyCheckoutSignature({ orderId, paymentId, signature }, deps.env.RAZORPAY_KEY_SECRET));
     if (!signed) return json(400, { error: 'bad_signature' }, cors);
     const out = await settlePayment(deps, { paymentId, orderId, expectUserId: user.id, exam });
+    if (out.error === 'user_gone') return json(401, { error: 'not_signed_in' }, cors);
     if (out.error) return json(CONFIRM_ERRORS[out.error], { error: out.error }, cors);
     if (out.duplicate) return json(200, { duplicate: true }, cors);
     const { exam: e, valid_until: validUntil, status } = out.pass;

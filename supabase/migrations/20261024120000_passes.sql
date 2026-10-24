@@ -30,11 +30,14 @@ create table public.passes (
   refunded_at  timestamptz
 );
 
--- The database itself refuses a second active pass for the same user, exam and
--- mode, so two payments racing each other cannot both switch a pass on. A
--- refunded row does not count, and rows detached from a deleted account
--- (user_id null) never clash.
-create unique index passes_one_active on public.passes (user_id, exam, mode)
+-- The database itself refuses a second active pass for the same user, exam,
+-- mode and validity date, so two payments racing each other cannot both switch
+-- the same pass on. valid_until is part of the key so that an expired pass
+-- (still status 'active' after its date) never blocks next cycle's pass for the
+-- same exam slug, which would otherwise be refunded as a "duplicate". A refunded
+-- row does not count, and rows detached from a deleted account (user_id null)
+-- never clash.
+create unique index passes_one_active on public.passes (user_id, exam, mode, valid_until)
   where status = 'active';
 
 alter table public.passes enable row level security;
