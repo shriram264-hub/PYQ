@@ -5,6 +5,7 @@ import { loadTests, saveTests } from '../lib/tests/store.js';
 import { rebaseTests } from '../lib/tests/merge.js';
 import { forgetListsPull, syncLists } from './sync-lists.js';
 import { forgetTestsPull, syncTests } from './sync-tests.js';
+import { refreshPass } from './pass-state.js';
 
 // No import of marks.js here, on purpose: it registers a click handler as a
 // side effect, so a second module instance would toggle every mark twice. It
@@ -158,7 +159,7 @@ function openSession(client, user) {
   let fullNext = false;
   let stopped = false;
 
-  // Progress, then lists, then tests. Each fails alone, and each keeps its own
+  // Progress, then lists, then tests, then the pass. Each fails alone, and each keeps its own
   // pull marker: a table that keeps refusing must neither hold the others back
   // nor make them pull everything again.
   async function syncOnce(full) {
@@ -184,6 +185,13 @@ function openSession(client, user) {
       await syncTests(client, user, { full });
     } catch (e) {
       console.warn('SawaalBox: will retry syncing tests', e);
+    }
+    if (stopped) return;
+    // Which passes this account holds: a cache for the access checks, a read only.
+    try {
+      await refreshPass(client, user);
+    } catch (e) {
+      console.warn('SawaalBox: will retry the pass', e);
     }
   }
 
