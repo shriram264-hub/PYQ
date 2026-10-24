@@ -5,11 +5,22 @@ insert into auth.users (id, email) values
   ('00000000-0000-0000-0000-0000000000aa', 'rls-a@example.test'),
   ('00000000-0000-0000-0000-0000000000bb', 'rls-b@example.test');
 
+-- Passes can only be written by the service role, so seed one active pass each
+-- for A and B here, as postgres, before any role is switched.
+insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+values
+  ('00000000-0000-0000-0000-0000000000aa', 'upsc', 'test', '2027-05-24', 'pay_rls_a1', 'order_rls_a1', 49900, 'active'),
+  ('00000000-0000-0000-0000-0000000000bb', 'upsc', 'test', '2027-05-24', 'pay_rls_b1', 'order_rls_b1', 49900, 'active');
+
 -- Signed-out visitors (anon) can reach none of the tables.
 set local role anon;
 do $$ begin
   perform 1 from public.question_progress;
   raise exception 'FAIL: anon can read question_progress';
+exception when insufficient_privilege then null; end $$;
+do $$ begin
+  perform 1 from public.passes;
+  raise exception 'FAIL: anon can read passes';
 exception when insufficient_privilege then null; end $$;
 reset role;
 
@@ -30,14 +41,29 @@ do $$ begin
   raise exception 'FAIL: A wrote a progress row owned by B';
 exception when insufficient_privilege then null; end $$;
 
+-- Nobody below the service role writes a pass, not even for themselves.
 do $$ begin
-  insert into public.entitlements (user_id, plan, valid_until, source)
-  values ('00000000-0000-0000-0000-0000000000aa', 'pass', now() + interval '1 year', 'test');
-  raise exception 'FAIL: a user wrote entitlements';
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+  values ('00000000-0000-0000-0000-0000000000aa', 'upsc', 'live', '2027-05-24', 'pay_rls_a2', 'order_rls_a2', 49900, 'active');
+  raise exception 'FAIL: a user wrote a pass';
+exception when insufficient_privilege then null; end $$;
+
+do $$ begin
+  update public.passes set valid_until = '2099-01-01';
+  raise exception 'FAIL: A updated a pass';
+exception when insufficient_privilege then null; end $$;
+
+do $$ begin
+  delete from public.passes;
+  raise exception 'FAIL: A deleted a pass';
 exception when insufficient_privilege then null; end $$;
 
 -- Positive control: A sees exactly 1 row in each table before switching to B.
 do $$ declare n int; begin
+  select count(*) into n from public.passes;
+  if n <> 1 then raise exception 'FAIL: A should see 1 pass, saw %', n; end if;
+  perform 1 from public.passes where payment_id = 'pay_rls_a1';
+  if not found then raise exception 'FAIL: A does not see its own pass'; end if;
   select count(*) into n from public.question_progress;
   if n <> 1 then raise exception 'FAIL: A should see 1 progress row, saw %', n; end if;
   select count(*) into n from public.bookmark_sets;
@@ -50,6 +76,12 @@ end $$;
 select set_config('request.jwt.claims', '{"sub":"00000000-0000-0000-0000-0000000000bb","role":"authenticated"}', true);
 
 do $$ declare n int; begin
+  -- B sees its own pass and none of A's.
+  select count(*) into n from public.passes;
+  if n <> 1 then raise exception 'FAIL: B should see 1 pass, saw %', n; end if;
+  perform 1 from public.passes where user_id = '00000000-0000-0000-0000-0000000000aa';
+  if found then raise exception 'FAIL: B can see A''s pass'; end if;
+
   select count(*) into n from public.question_progress;
   if n <> 0 then raise exception 'FAIL: B can see % progress rows of A', n; end if;
   select count(*) into n from public.bookmark_sets;
@@ -94,15 +126,21 @@ do $$ begin
   raise exception 'FAIL: B wrote a bookmark as A';
 exception when insufficient_privilege then null; end $$;
 
--- B cannot update or delete entitlements (write-protected).
+-- B cannot insert, update or delete passes (write-protected).
 do $$ begin
-  update public.entitlements set plan = 'x';
-  raise exception 'FAIL: B updated entitlements';
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+  values ('00000000-0000-0000-0000-0000000000bb', 'upsc', 'live', '2027-05-24', 'pay_rls_b2', 'order_rls_b2', 49900, 'active');
+  raise exception 'FAIL: B wrote a pass';
 exception when insufficient_privilege then null; end $$;
 
 do $$ begin
-  delete from public.entitlements;
-  raise exception 'FAIL: B deleted entitlements';
+  update public.passes set status = 'refunded';
+  raise exception 'FAIL: B updated a pass';
+exception when insufficient_privilege then null; end $$;
+
+do $$ begin
+  delete from public.passes;
+  raise exception 'FAIL: B deleted a pass';
 exception when insufficient_privilege then null; end $$;
 
 -- Owner-change attempts: B inserts its own data, then tries to change owners.
@@ -199,6 +237,43 @@ do $$ begin
   on conflict (id) do update set status = excluded.status;
   raise exception 'FAIL: B upserted over A''s attempt';
 exception when insufficient_privilege then null; end $$;
+
+-- The database refuses a second active pass for the same user, exam and mode
+-- (passes_one_active). Run as postgres so this tests the index, not row-level
+-- security. A different payment_id and order_id mean only the index can object,
+-- and the handler checks which constraint fired.
+reset role;
+do $$ declare c text; begin
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+  values ('00000000-0000-0000-0000-0000000000aa', 'upsc', 'test', '2027-05-24', 'pay_rls_a3', 'order_rls_a3', 49900, 'active');
+  raise exception 'FAIL: a second active pass for the same user, exam and mode was accepted';
+exception when unique_violation then
+  get stacked diagnostics c = constraint_name;
+  if c is distinct from 'passes_one_active' then
+    raise exception 'FAIL: second active pass refused by %, not passes_one_active', c;
+  end if;
+end $$;
+
+-- Positive controls for the index: it is partial and keyed on mode and exam,
+-- so a refunded row, a live-mode pass and another exam's pass are all allowed.
+-- Without these, an index that refused everything would pass the check above.
+do $$ declare n int; begin
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status, note, refunded_at)
+  values ('00000000-0000-0000-0000-0000000000aa', 'upsc', 'test', '2027-05-24', 'pay_rls_a4', 'order_rls_a4', 49900, 'refunded', 'duplicate', now());
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+  values ('00000000-0000-0000-0000-0000000000aa', 'upsc', 'live', '2027-05-24', 'pay_rls_a5', 'order_rls_a5', 49900, 'active');
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+  values ('00000000-0000-0000-0000-0000000000aa', 'ssc', 'test', '2027-05-24', 'pay_rls_a6', 'order_rls_a6', 49900, 'active');
+  select count(*) into n from public.passes where user_id = '00000000-0000-0000-0000-0000000000aa';
+  if n <> 4 then raise exception 'FAIL: expected 4 passes for A after controls, saw %', n; end if;
+end $$;
+
+-- The same payment can only be recorded once.
+do $$ begin
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+  values ('00000000-0000-0000-0000-0000000000bb', 'ssc', 'test', '2027-05-24', 'pay_rls_a1', 'order_rls_b9', 49900, 'active');
+  raise exception 'FAIL: a payment_id was recorded twice';
+exception when unique_violation then null; end $$;
 
 select 'All RLS checks passed' as result;
 rollback;

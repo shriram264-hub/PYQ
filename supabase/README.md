@@ -7,6 +7,11 @@ checks that run inside a transaction and roll back, so they leave no data.
 1. Supabase dashboard → your project → **SQL Editor** → **New query**.
 2. Paste the whole migration file, click **Run**. Expect "Success. No rows returned".
 
+### Apply the passes migration
+`migrations/20261024120000_passes.sql` drops the empty `entitlements` table and
+creates `passes`. Apply it as above, then run `tests/rls_test.sql` (next
+section) and expect `All RLS checks passed`.
+
 ## Run the row-level security test
 1. SQL Editor → New query → paste `tests/rls_test.sql` → **Run**.
 2. Expect one row: `All RLS checks passed`. Any `FAIL:` message is a security bug: stop and report it.
@@ -25,9 +30,11 @@ do it by hand.
 2. **Delete the user.** Supabase dashboard → **Authentication** → **Users** →
    search for the email → open the user → copy the **User UID** (you need it in
    step 3) → **Delete user**. Every table that holds their data
-   (`question_progress`, `bookmark_sets`, `bookmarks`, `entitlements`)
-   references `auth.users` with `on delete cascade`, so their marks and lists go
-   with it.
+   (`question_progress`, `bookmark_sets`, `bookmarks`, `test_attempts`)
+   references `auth.users` with `on delete cascade`, so their marks, lists and
+   test attempts go with it. `passes` rows are **kept**: `on delete set null`
+   detaches them from the user, as financial records; deleting an account does
+   not refund anything.
 3. **Remove their sign-in records.** Supabase's audit log
    (`auth.audit_log_entries`) has no foreign key to `auth.users`, so it outlives
    step 2. In the **SQL Editor**, with the UID from step 2:

@@ -121,8 +121,12 @@
 //     auth.users, so they outlive the cascade and are purged by hand as part
 //     of the same request: supabase/README.md "Deleting a student's account
 //     on request".
-// 12. `entitlements` exists (migration :32-38) but nothing reads or writes it
-//     (grep site/src, backend/app: no match). No payments exist anywhere.
+// 12. `entitlements` was dropped by supabase/migrations/20261024120000_passes.sql,
+//     which creates `passes` in its place: one row per payment, written only by
+//     the payments function with the service role, readable by its own user.
+//     A pass row is kept when the account is deleted (`user_id` is set to null,
+//     as a financial record), unlike the tables in item 11. The pages do not
+//     yet describe it; re-check them when payments go live.
 // 13. Supabase may also log each sign-in and each sync request (time, IP
 //     address, browser) as part of its standard Auth and API services, kept
 //     for its own log period. Not visible from this repo, so the pages say
