@@ -113,8 +113,8 @@
 //     read and change only their own rows, and nobody signed out can reach them
 //     (migration :40-77; test_attempts: 20261011120000_test_attempts.sql
 //     :25-44, select, insert and update of the user's own rows, no delete).
-// 11. Deleting the account deletes the data: every table references auth.users
-//     `on delete cascade` (migration :5, :14, :24, :33; test_attempts
+// 11. Deleting the account deletes the data: every table except passes (see 12)
+//     references auth.users `on delete cascade` (migration :5, :14, :24, :33; test_attempts
 //     20261011120000_test_attempts.sql:7). Deletion is done by the
 //     operator on request; the site has no self-serve delete. Supabase's
 //     sign-in audit rows (auth.audit_log_entries) have no foreign key to

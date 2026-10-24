@@ -4,7 +4,15 @@
 -- financial record, so it is kept when the account is deleted: user_id is set
 -- to null instead of the row cascading away.
 
--- Replaced by passes. It was empty and nothing read or wrote it.
+-- Replaced by passes. It was empty and nothing read or wrote it. Check that
+-- before dropping: if a row ever turns up, the whole migration aborts and
+-- nothing is applied.
+do $$ begin
+  if exists (select 1 from public.entitlements) then
+    raise exception 'entitlements is not empty: refusing to drop it';
+  end if;
+end $$;
+
 drop table public.entitlements;
 
 create table public.passes (
@@ -36,6 +44,11 @@ alter table public.passes enable row level security;
 -- role can write: there is no insert, update or delete grant or policy.
 revoke all on public.passes from anon, authenticated;
 grant select on public.passes to authenticated;
+
+-- The payments function writes through the Data API with the service role.
+-- That role skips row-level security but not table grants, and with
+-- "Automatically expose new tables" off it gets none by default. Never delete.
+grant select, insert, update on public.passes to service_role;
 
 create policy passes_select_own on public.passes
   for select to authenticated

@@ -268,12 +268,33 @@ do $$ declare n int; begin
   if n <> 4 then raise exception 'FAIL: expected 4 passes for A after controls, saw %', n; end if;
 end $$;
 
--- The same payment can only be recorded once.
-do $$ begin
+-- The same payment can only be recorded once. B has no pass for ssc, so only
+-- the payment_id constraint can object, and the handler checks it did.
+do $$ declare c text; begin
   insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
   values ('00000000-0000-0000-0000-0000000000bb', 'ssc', 'test', '2027-05-24', 'pay_rls_a1', 'order_rls_b9', 49900, 'active');
   raise exception 'FAIL: a payment_id was recorded twice';
-exception when unique_violation then null; end $$;
+exception when unique_violation then
+  get stacked diagnostics c = constraint_name;
+  if c is distinct from 'passes_payment_id_key' then
+    raise exception 'FAIL: duplicate payment_id refused by %, not passes_payment_id_key', c;
+  end if;
+end $$;
+
+-- Positive control for the grants: the payments function runs as service_role,
+-- which must be able to insert and update a pass (and so is not locked out by
+-- the revoke above). B gets a live-mode pass, which clashes with nothing.
+set local role service_role;
+do $$ declare n int; begin
+  insert into public.passes (user_id, exam, mode, valid_until, payment_id, order_id, amount_paise, status)
+  values ('00000000-0000-0000-0000-0000000000bb', 'upsc', 'live', '2027-05-24', 'pay_rls_b3', 'order_rls_b3', 49900, 'active');
+  update public.passes set note = 'service role update' where payment_id = 'pay_rls_b3';
+  get diagnostics n = row_count;
+  if n <> 1 then raise exception 'FAIL: service_role could not update a pass'; end if;
+exception when insufficient_privilege then
+  raise exception 'FAIL: service_role cannot write passes (missing grant)';
+end $$;
+reset role;
 
 select 'All RLS checks passed' as result;
 rollback;
