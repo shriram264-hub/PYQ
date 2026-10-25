@@ -5,9 +5,15 @@ import ThemeToggle from '../../components/ThemeToggle.astro';
 import AccountControl from '../../components/AccountControl.astro';
 import { CORPUS, SUBJECTS, YEARS } from '../../lib/corpus.js';
 import { PAPERS } from '../../lib/papers.js';
+import { currentPayments, paymentsCopy } from '../../lib/payments/switch.js';
 
 // Newest first, so [0] is the latest paper the take page can start.
 const latestPaper = PAPERS[0].year;
+// Tests are free during the beta, and only until the date once payments are
+// scheduled (lib/payments/switch.js paymentsCopy). Kept as short as the beta
+// line: the Practice tests panel must stay no taller than the instructions box.
+const payCopy = paymentsCopy(currentPayments());
+const testsFree = payCopy.phase === 'scheduled' ? `Free until ${payCopy.fromLabel}.` : 'Free during the beta.';
 
 const digits = (n) => String(n).split('');
 const API_BASE = process.env.PUBLIC_API_BASE || 'https://upsc-pyq-search-api.onrender.com';
@@ -105,7 +111,7 @@ const EXAMPLES = [
         </div>
         <div class="box-body">
           <p class="reading lede">
-            Sit any paper since {CORPUS.minYear}, timed and scored the way UPSC scores it today. Free during the beta.
+            Sit any paper since {CORPUS.minYear}, timed and scored the way UPSC scores it today. {testsFree}
           </p>
           <div class="tests-actions">
             <a class="tests-btn" href="/upsc/test">Start a test</a>
@@ -396,7 +402,7 @@ const EXAMPLES = [
 
   .tests .lede {
     margin-bottom: 0;
-    /* Keeps "beta." from standing alone on the last line. */
+    /* Keeps the last word ("beta.", or the year of the paywall date) from standing alone on the last line. */
     text-wrap: pretty;
   }
 

@@ -12,7 +12,7 @@ import Listing from '../layouts/Listing.astro';
 import { longDate } from '../lib/legal.js';
 import { passFor } from '../lib/passes.js';
 import { DROPPED, RELOAD } from '../lib/payments/plans-copy.js';
-import { currentPayments } from '../lib/payments/switch.js';
+import { currentPayments, paymentsCopy } from '../lib/payments/switch.js';
 
 const pass = passFor('upsc');
 const until = longDate(pass.validUntil);
@@ -21,6 +21,7 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
 
 const payments = currentPayments();
 const selling = payments.state !== 'off';
+const copy = paymentsCopy(payments);
 const needsFrom = selling ? `Tests and analytics need the pass from ${longDate(payments.from)}.` : '';
 const description = selling
   ? `The SawaalBox ${pass.name}: ${pass.priceLabel} once, valid until ${until}. ${needsFrom}`
@@ -50,7 +51,15 @@ const description = selling
       </ul>
 
       <h3 class="field-label">Free taster</h3>
-      <p class="plan-taster">Once payments start, a free account can try {taster}, before you buy.</p>
+      {
+        copy.phase === 'scheduled' ? (
+          <p class="plan-taster">
+            From {copy.fromLabel}, anyone can try this before buying, with or without an account: {taster}.
+          </p>
+        ) : (
+          <p class="plan-taster">Once payments start, a free account can try {taster}, before you buy.</p>
+        )
+      }
     </div>
 
     {

@@ -2,8 +2,24 @@
 import Listing from '../layouts/Listing.astro';
 import { authEnabled } from '../lib/accounts/config.js';
 import { LEGAL } from '../lib/legal.js';
-import { PASSES } from '../lib/passes.js';
+import { PASSES, passFor } from '../lib/passes.js';
+import { currentPayments, paymentsCopy } from '../lib/payments/switch.js';
 import UpgradePrompt from '../components/UpgradePrompt.astro';
+import PaywallNotice from '../components/PaywallNotice.astro';
+
+// The terms line under Sign in. While payments are off it is the owner's beta
+// terms, word for word. Once they are scheduled, "Free during the beta" stops
+// being true on the date, so the line says what changes and when instead
+// (spec 2026-10-24-payments-design.md, "Copy that depends on the switch").
+// Keep it no longer than the beta terms: until the script has run, the unseen
+// line sits beside "Kept on this device." at wide widths, and a third line of
+// it would push that text down for the first frame (a layout shift).
+const copy = paymentsCopy(currentPayments());
+const upscPass = passFor('upsc');
+const termsLine =
+  copy.phase === 'scheduled'
+    ? `From ${copy.fromLabel}, practice tests and analytics need the ${upscPass.name}, after a free taster.`
+    : LEGAL.betaTerms;
 ---
 
 <Listing
@@ -12,6 +28,7 @@ import UpgradePrompt from '../components/UpgradePrompt.astro';
   heading="Your progress"
   noindex={true}
 >
+  <PaywallNotice slot="notice" exam="upsc" />
   <div slot="meta" class="acct-where">
     {/* Until sign-in is switched on (see lib/accounts/config.js) this page says
         nothing about accounts: no wording, no button. progress-page.js changes
@@ -29,7 +46,7 @@ import UpgradePrompt from '../components/UpgradePrompt.astro';
     {
       authEnabled && (
         <p class="acct-terms" data-terms hidden>
-          {LEGAL.betaTerms} See the <a href="/terms">terms of use</a> and the <a href="/privacy">privacy policy</a>.
+          {termsLine} See the <a href="/terms">terms of use</a> and the <a href="/privacy">privacy policy</a>.
         </p>
       )
     }

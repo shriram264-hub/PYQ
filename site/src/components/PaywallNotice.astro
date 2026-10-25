@@ -1,0 +1,58 @@
+---
+import { passFor } from '../lib/passes.js';
+import { currentPayments, paymentsCopy, paywallStart } from '../lib/payments/switch.js';
+
+// The notice before the paywall (spec 2026-10-24-payments-design.md, "Notice
+// before the paywall"): one line at the top of the pages the paywall will
+// change, /upsc/test, /upsc/analytics and /account. The beta terms promise
+// "we'll tell you before anything you use changes"; this is that telling.
+//
+// It is in the server HTML only when payments are scheduled (notice or on at
+// build time), so with payments off the pages are exactly as they were. Once
+// the date arrives it has nothing left to announce: the inline script below,
+// run while the page is parsed and so before first paint, removes it when the
+// clock has passed 00:00 India time on that date. A page built before the date
+// and served after it therefore shows no notice and no shift. The start is
+// worked out here, at build, so the script only compares two numbers.
+//
+// exam   the exam whose pass this is ('upsc'); an exam with no pass renders nothing
+const { exam } = Astro.props;
+const pass = passFor(exam);
+const copy = paymentsCopy(currentPayments());
+const start = copy.phase === 'scheduled' ? paywallStart(copy.from) : NaN;
+---
+
+{
+  pass && copy.phase === 'scheduled' && (
+    <>
+      <p class="paywall-notice" data-paywall-notice data-start={String(start)}>
+        <span>{`From ${copy.fromLabel}, practice tests and analytics need the ${pass.name} (${pass.priceLabel}). You'll still get a free taster.`}</span>{' '}
+        <a href="/plans">See the pass</a>
+      </p>
+      <script is:inline>
+        (n => { if (Date.now() >= Number(n.dataset.start)) n.remove(); })(document.currentScript.previousElementSibling);
+      </script>
+    </>
+  )
+}
+
+<style>
+  /* A plain notice on paper in a hairline frame, as the legal pages' asides
+     are: it informs, it is not an action, so it takes no green and no heavy
+     frame. The words are the point, so they stay in Offset Ink. */
+  .paywall-notice {
+    max-width: 68ch;
+    margin: 0 0 1rem;
+    padding: 0.55rem 0.8rem;
+    background: var(--paper);
+    border: var(--rule-hair) solid var(--rule-strong);
+    font-size: 0.95rem;
+    color: var(--ink);
+  }
+
+  .paywall-notice a {
+    font-family: var(--font-structure);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+</style>

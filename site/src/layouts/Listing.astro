@@ -9,6 +9,8 @@ const { title, description, heading, standfirst, crumbs = [], noindex = false } 
 <Document title={title} description={description} noindex={noindex} breadcrumbs={crumbs}>
   <Masthead crumbs={crumbs} />
   <main class="sheet listing">
+    {/* A page-wide notice above the heading (components/PaywallNotice.astro), if the page has one. */}
+    <slot name="notice" />
     <div class="listing-head">
       <h1>{heading}</h1>
       {standfirst && <p class="standfirst">{standfirst}</p>}

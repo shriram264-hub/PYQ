@@ -6,9 +6,14 @@ import AccountControl from '../components/AccountControl.astro';
 import QuestionBlock from '../components/QuestionBlock.astro';
 import { EXAMS } from '../lib/exams.js';
 import { ALL_QUESTIONS } from '../lib/corpus.js';
+import { currentPayments, paymentsCopy } from '../lib/payments/switch.js';
 
 const upsc = EXAMS.find((e) => e.slug === 'upsc');
 const c = upsc.corpus;
+// Tests are free during the beta, and only until the date once payments are
+// scheduled (lib/payments/switch.js paymentsCopy).
+const payCopy = paymentsCopy(currentPayments());
+const testsFree = payCopy.phase === 'scheduled' ? `Free until ${payCopy.fromLabel}.` : 'Free during the beta.';
 
 // A real question whose own wording never names the civilisation it belongs
 // to: a text search of the paper for these words would not find it. Verified
@@ -41,7 +46,7 @@ const LIVE = [
   },
   {
     title: "Sit a full year's paper",
-    body: 'Every UPSC paper since 1995, timed, and scored with today’s negative marking. Free during the beta.',
+    body: `Every UPSC paper since 1995, timed, and scored with today’s negative marking. ${testsFree}`,
     href: '/upsc/test',
   },
   {

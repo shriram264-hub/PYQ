@@ -3,8 +3,10 @@
 // of address or reply time is one edit.
 //
 // FACTS INVENTORY (checked 2026-10-03; practice tests, items 1a and 9a and the
-// test parts of 8, 10 and 11, checked 2026-10-17). Every statement on /privacy,
-// /terms and /contact traces to an item below. When the code changes what is
+// test parts of 8, 10 and 11, checked 2026-10-17; passes and payments, items
+// 12 and 12a, checked 2026-10-25). Every statement on /privacy, /terms and
+// /contact, and the payment wording on /pricing, /refunds and /delivery,
+// traces to an item below. When the code changes what is
 // stored or sent, update this list and the pages together, and move `updated`.
 //
 // Signed out
@@ -114,7 +116,7 @@
 //     (migration :40-77; test_attempts: 20261011120000_test_attempts.sql
 //     :25-44, select, insert and update of the user's own rows, no delete).
 // 11. Deleting the account deletes the data: every table except passes (see 12)
-//     references auth.users `on delete cascade` (migration :5, :14, :24, :33; test_attempts
+//     references auth.users `on delete cascade` (migration :5, :14, :24; test_attempts
 //     20261011120000_test_attempts.sql:7). Deletion is done by the
 //     operator on request; the site has no self-serve delete. Supabase's
 //     sign-in audit rows (auth.audit_log_entries) have no foreign key to
@@ -125,8 +127,45 @@
 //     which creates `passes` in its place: one row per payment, written only by
 //     the payments function with the service role, readable by its own user.
 //     A pass row is kept when the account is deleted (`user_id` is set to null,
-//     as a financial record), unlike the tables in item 11. The pages do not
-//     yet describe it; re-check them when payments go live.
+//     as a financial record), unlike the tables in item 11; deleting an account
+//     refunds nothing (spec 2026-10-24-payments-design.md, "Deleting an
+//     account"; supabase/README.md "Deleting a student's account on request").
+//     A row holds (20261024120000_passes.sql:18-31): id, user_id, exam, mode
+//     ('test' | 'live'), valid_until, payment_id (Razorpay, unique), order_id
+//     (Razorpay), amount_paise, status ('active' | 'refunded'), note
+//     ('duplicate' when a second payment was refunded automatically,
+//     supabase/functions/payments/index.js:396), created_at and refunded_at.
+//     /privacy "How long we keep it" and "Your rights" say the record is kept,
+//     no longer linked to the account, in every phase (the table is in place
+//     whether payments are off or not); 2026-10-25.
+// 12a. Payments (only when lib/payments/switch.js paymentsCopy is
+//     'scheduled', i.e. the switch is notice or on; with it off the pages keep
+//     their earlier wording, checked by diffing the off build against the one
+//     before this change). Checked 2026-10-25:
+//     - Sign-in with Google is needed to buy (scripts/plans-page.js signed-out
+//       state; create-order refuses without a user, payments/index.js:426-427).
+//     - Payment is in Razorpay Checkout, loaded from checkout.razorpay.com only
+//       when Buy is pressed (plans-page.js), prefilled with the Google name and
+//       email (plans-page.js:336). The order's notes carry the account's user id
+//       and the exam (payments/index.js:443): /privacy says Razorpay receives
+//       both the name and email and the account ID.
+//     - Razorpay emails the receipt; the site issues no invoice (spec, "What
+//       the owner decided", Receipt).
+//     - The pass switches on once the payment is confirmed (confirm route), and
+//       the Razorpay webhook switches it on if the page never confirmed (spec,
+//       razorpay-webhook: "the safety net"): /delivery says "within minutes".
+//     - A refund made in Razorpay switches the pass off within minutes
+//       (webhook refund event, payments/index.js:521): /refunds.
+//     - The paywall date is PUBLIC_PAYMENTS_FROM, printed with longDate; the
+//       banner on /upsc/test, /upsc/analytics and /account
+//       (components/PaywallNotice.astro) removes itself from 00:00 IST on it.
+//     - The taster is open with or without an account (lib/tests/access.js,
+//       lib/payments/taster.js count this device's tests): /pricing, /plans.
+//     - /privacy names Razorpay as the processor in the present tense and lists
+//       a pass row's fields as in item 12; /terms keeps the beta terms and
+//       adds the date after them ("This is that notice"), /account's terms
+//       line gives the date in their place; /about, /upsc/test, /upsc and the
+//       homepage say "free until [date]".
 // 13. Supabase may also log each sign-in and each sync request (time, IP
 //     address, browser) as part of its standard Auth and API services, kept
 //     for its own log period. Not visible from this repo, so the pages say
@@ -184,7 +223,7 @@ export const LEGAL = Object.freeze({
   // The date on every legal page (/privacy, /terms, /contact and the pass
   // policies /pricing, /refunds, /delivery, whose facts live in lib/passes.js).
   // Move it whenever their wording changes.
-  updated: '2026-10-24',
+  updated: '2026-10-25',
   // The owner's words, used verbatim on /terms and /account.
   betaTerms: "Free during the beta. Some features may later need a paid pass; we'll tell you before anything you use changes.",
   minAge: 18,

@@ -4,8 +4,13 @@
 import Legal from '../layouts/Legal.astro';
 import { LEGAL, longDate } from '../lib/legal.js';
 import { passFor } from '../lib/passes.js';
+import { currentPayments, paymentsCopy } from '../lib/payments/switch.js';
 
 const pass = passFor('upsc');
+// While payments are off this page reads exactly as it did before them; once
+// they are scheduled it gives the date (lib/payments/switch.js paymentsCopy).
+const copy = paymentsCopy(currentPayments());
+const scheduled = copy.phase === 'scheduled';
 const mail = `mailto:${LEGAL.email}`;
 const until = longDate(pass.validUntil);
 ---
@@ -25,16 +30,34 @@ const until = longDate(pass.validUntil);
     </p>
   </section>
 
-  <p class="legal-aside">
-    Payments are not switched on yet, so no pass can be bought today. Until they are, tests and analytics are free for
-    everyone.
-  </p>
+  {
+    scheduled ? (
+      <p class="legal-aside">
+        From {copy.fromLabel}, practice tests and analytics need the pass. Until then they are free for everyone.
+      </p>
+    ) : (
+      <p class="legal-aside">
+        Payments are not switched on yet, so no pass can be bought today. Until they are, tests and analytics are free for
+        everyone.
+      </p>
+    )
+  }
 
   <section aria-labelledby="how">
     <h2 id="how">How you get it</h2>
     <ul>
       <li>You sign in with Google before you pay, so the pass is attached to that account and works on every device you sign in on.</li>
+      {scheduled && <li>You pay in Razorpay Checkout, which opens over the <a href="/plans">plans page</a>.</li>}
       <li>Once Razorpay confirms the payment, the pass switches on for that account. There is nothing to download or install.</li>
+      {
+        scheduled && (
+          <li>
+            If your page closes before it confirms, the pass still switches on within minutes: Razorpay tells us about the
+            payment directly.
+          </li>
+        )
+      }
+      {scheduled && <li>Razorpay emails you a receipt for the payment.</li>}
       <li>It stays on until the end of {until}.</li>
     </ul>
   </section>

@@ -4,8 +4,13 @@
 import Legal from '../layouts/Legal.astro';
 import { LEGAL, longDate } from '../lib/legal.js';
 import { passFor } from '../lib/passes.js';
+import { currentPayments, paymentsCopy } from '../lib/payments/switch.js';
 
 const pass = passFor('upsc');
+// While payments are off this page reads exactly as it did before them; once
+// they are scheduled it gives the date (lib/payments/switch.js paymentsCopy).
+const copy = paymentsCopy(currentPayments());
+const scheduled = copy.phase === 'scheduled';
 const mail = `mailto:${LEGAL.email}`;
 const until = longDate(pass.validUntil);
 // Stored as a heading-style line; mid-sentence it starts lower case.
@@ -27,9 +32,17 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
     </p>
   </section>
 
-  <p class="legal-aside">
-    Payments are not switched on yet, so there is nothing to refund today. This policy applies from the first purchase.
-  </p>
+  {
+    scheduled ? (
+      <p class="legal-aside">
+        From {copy.fromLabel}, practice tests and analytics need the pass. This policy applies to every purchase. The receipt Razorpay emails you when you pay has the payment details to quote.
+      </p>
+    ) : (
+      <p class="legal-aside">
+        Payments are not switched on yet, so there is nothing to refund today. This policy applies from the first purchase.
+      </p>
+    )
+  }
 
   <section aria-labelledby="who">
     <h2 id="who">Who can get a refund</h2>
@@ -53,6 +66,7 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
     <p>
       The refund goes back to the payment method you paid with (your UPI account, card or bank account), {pass.refundTiming}.
     </p>
+    {scheduled && <p>Once the refund is made, the pass switches off for your account within minutes.</p>}
   </section>
 
   <section aria-labelledby="cancel">

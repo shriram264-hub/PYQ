@@ -4,8 +4,16 @@
 import Legal from '../layouts/Legal.astro';
 import { LEGAL } from '../lib/legal.js';
 import { authEnabled } from '../lib/accounts/config.js';
+import { currentPayments, paymentsCopy } from '../lib/payments/switch.js';
 
 const mail = `mailto:${LEGAL.email}`;
+// While payments are off the Payments section describes them in the future, as
+// it did before them; once they are scheduled it is in the present tense and
+// names Razorpay as the processor (lib/payments/switch.js paymentsCopy). The
+// pass records' place in "How long we keep it" is said in both phases: the
+// passes table is in place either way (legal.js inventory, item 12).
+const copy = paymentsCopy(currentPayments());
+const scheduled = copy.phase === 'scheduled';
 ---
 
 <Legal
@@ -27,6 +35,14 @@ const mail = `mailto:${LEGAL.email}`;
         If you sign in with Google, we keep your name, email address, profile picture link, marks, revision lists and
         practice-test attempts, so they follow you to any device.{!authEnabled && ' Sign-in is not open yet.'}
       </li>
+      {
+        scheduled && (
+          <li>
+            If you buy the pass, you pay through Razorpay. We keep a record of the payment, never your card, UPI or bank
+            details.
+          </li>
+        )
+      }
       <li>We don't sell your data or share it with anyone except the services below that run the site.</li>
       <li>Email <a href={mail}>{LEGAL.email}</a> to see, correct or delete what we hold.</li>
     </ul>
@@ -115,6 +131,7 @@ const mail = `mailto:${LEGAL.email}`;
       <li>Your name: its first letter appears on the account button. We don't show your picture.</li>
       <li>Search text: to find the questions you asked for. Logs: to find and fix problems.</li>
       <li>Emails you send us: to answer you and act on what you ask.</li>
+      {scheduled && <li>Payment records: to switch your pass on, to handle refunds, and as a record of what was paid.</li>}
     </ul>
     <p>
       We rely on your consent, which you give when you sign in, and you can withdraw it at any time (see <a
@@ -125,10 +142,26 @@ const mail = `mailto:${LEGAL.email}`;
   <section data-numbered aria-labelledby="where">
     <h2 id="where">Where it is kept, and who handles it</h2>
     <ul>
-      <li>
-        <strong>Supabase</strong> runs sign-in and the database that holds accounts, marks, lists and practice-test
-        attempts, and stores them in Mumbai, India.
-      </li>
+      {
+        scheduled ? (
+          <li>
+            <strong>Supabase</strong> runs sign-in and the database that holds accounts, marks, lists, practice-test
+            attempts and pass records, and stores them in Mumbai, India.
+          </li>
+        ) : (
+          <li>
+            <strong>Supabase</strong> runs sign-in and the database that holds accounts, marks, lists and practice-test
+            attempts, and stores them in Mumbai, India.
+          </li>
+        )
+      }
+      {
+        scheduled && (
+          <li>
+            <strong>Razorpay</strong> processes payments for the pass (see <a href="#payments">Payments</a>).
+          </li>
+        )
+      }
       <li><strong>Render</strong> runs the website and the search service, on servers in the United States.</li>
       <li>
         <strong>Cloudflare</strong> carries the connections between your browser and the website, the search service and
@@ -153,18 +186,43 @@ const mail = `mailto:${LEGAL.email}`;
 
   <section data-numbered aria-labelledby="payments">
     <h2 id="payments">Payments</h2>
-    <p class="legal-aside">Payments are not switched on yet. This section describes how they will work once they are.</p>
-    <ul>
-      <li>
-        <strong>Razorpay</strong> will process payments. You will pay on its payment page, using UPI, a card or
-        netbanking.
-      </li>
-      <li>SawaalBox will never see your card, UPI or bank details.</li>
-      <li>
-        Your account will store only the payment ID, the amount, the date and the end date of your pass. We keep these to
-        switch the pass on and to handle refunds.
-      </li>
-    </ul>
+    {
+      scheduled ? (
+        <ul>
+          <li>
+            <strong>Razorpay</strong> processes payments for the pass. You pay in Razorpay Checkout, using UPI, a card or
+            netbanking, and Razorpay emails you a receipt. Checkout, which is Razorpay's own code, is loaded only when you
+            press Buy on the plans page.
+          </li>
+          <li>
+            To fill in its payment form for you, we pass Razorpay the name and email address from your Google sign-in. Each
+            order we create with Razorpay carries your SawaalBox account ID, so the payment can be matched to your account.
+          </li>
+          <li>SawaalBox never sees your card, UPI or bank details.</li>
+          <li>
+            For each pass, your account stores the Razorpay payment ID and order ID, the amount, the date you bought it, the
+            date it ends, whether it is active or refunded, and whether it was a test payment. It also records which exam
+            the pass is for, the date of any refund, and a note if a second payment was refunded automatically because you
+            had already paid. We keep these to switch the pass on and to handle refunds.
+          </li>
+        </ul>
+      ) : (
+        <>
+          <p class="legal-aside">Payments are not switched on yet. This section describes how they will work once they are.</p>
+          <ul>
+            <li>
+              <strong>Razorpay</strong> will process payments. You will pay on its payment page, using UPI, a card or
+              netbanking.
+            </li>
+            <li>SawaalBox will never see your card, UPI or bank details.</li>
+            <li>
+              Your account will store only the payment ID, the amount, the date and the end date of your pass. We keep these to
+              switch the pass on and to handle refunds.
+            </li>
+          </ul>
+        </>
+      )
+    }
     <p>
       What Razorpay does with the details you give it is covered by its own privacy policy. The pass itself is described
       on <a href="/pricing">Pricing</a>.
@@ -178,6 +236,12 @@ const mail = `mailto:${LEGAL.email}`;
         Your account, marks, lists and practice-test attempts: for as long as your account exists. When you ask us to
         delete your account, we delete it together with your marks, your lists, your practice-test attempts and Supabase's
         record of your sign-ins.
+      </li>
+      <li>
+        Payment records for a pass (see <a href="#payments">Payments</a>): kept as financial records, also after your
+        account is deleted, when they are no longer linked to it.{
+          scheduled && ' Deleting your account does not refund a pass; the refund policy decides that.'
+        }
       </li>
       <li>
         What is saved in your browser: until you remove it, or clear this site's data. Your browser keeps your 200 most
@@ -201,7 +265,8 @@ const mail = `mailto:${LEGAL.email}`;
       <li>ask us to correct, complete or update it;</li>
       <li>
         ask us to delete it: we delete your account, marks, lists and practice-test attempts, and the sign-in records we
-        can remove (logs kept by the services that run the site expire on their own schedule);
+        can remove (logs kept by the services that run the site expire on their own schedule, and payment records for a
+        pass are kept, no longer linked to your account);
       </li>
       <li>withdraw your consent at any time, after which we delete your account;</li>
       <li>nominate someone to use these rights for you if you die or become unable to;</li>

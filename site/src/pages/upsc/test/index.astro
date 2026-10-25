@@ -1,11 +1,14 @@
 ---
 import Listing from '../../../layouts/Listing.astro';
 import UpgradePrompt from '../../../components/UpgradePrompt.astro';
+import PaywallNotice from '../../../components/PaywallNotice.astro';
 import { PAPERS } from '../../../lib/papers.js';
 import { authEnabled } from '../../../lib/accounts/config.js';
 import { SUBJECTS, SUBTOPICS, YEARS } from '../../../lib/corpus.js';
 import { COUNTS } from '../../../lib/tests/attempt.js';
 import { defaultMinutes } from '../../../lib/tests/build.js';
+import { passFor } from '../../../lib/passes.js';
+import { currentPayments, paymentsCopy } from '../../../lib/payments/switch.js';
 
 // The Practice tests page (spec, "1. Starting a test"). Indexable: the list of
 // papers is server-rendered and works without JavaScript, each a plain link to
@@ -23,15 +26,27 @@ const SUBJECT_TOPICS = [...SUBJECTS]
     topics: SUBTOPICS.filter((t) => t.subject === s.name).sort((a, b) => byName(a.subtopic, b.subtopic)),
   }));
 const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
+
+// What the intro says about the price follows the payments switch: the beta
+// line while payments are off, the date and the taster once they are
+// scheduled (lib/payments/switch.js paymentsCopy).
+const copy = paymentsCopy(currentPayments());
+const pass = passFor('upsc');
+const priceLine =
+  copy.phase === 'scheduled'
+    ? `Free until ${copy.fromLabel}; after that you get a free taster, and the ${pass.name} unlocks the rest.`
+    : 'Free during the beta.';
+const priceClause = copy.phase === 'scheduled' ? `free until ${copy.fromLabel}` : 'free during the beta';
 ---
 
 <Listing
   title="UPSC Prelims Practice Tests"
-  description="Sit any UPSC Prelims paper from 1995 to 2026 against the clock, or build a practice set by subject, topic and year. Scored with today's negative marking, and free during the beta."
+  description={`Sit any UPSC Prelims paper from 1995 to 2026 against the clock, or build a practice set by subject, topic and year. Scored with today's negative marking, and ${priceClause}.`}
   heading="Practice tests"
-  standfirst="Every past paper, timed and scored the way UPSC scores it today: +2 for a right answer, minus two-thirds of a mark for a wrong one. Free during the beta."
+  standfirst={`Every past paper, timed and scored the way UPSC scores it today: +2 for a right answer, minus two-thirds of a mark for a wrong one. ${priceLine}`}
   crumbs={[{ name: 'Tests', href: '/upsc/test' }]}
 >
+  <PaywallNotice slot="notice" exam="upsc" />
   {/* In the intro, server-rendered and outside the gate below: it is there from
       the first paint, whatever this device holds. */}
   <p slot="meta" class="tp-analytics"><a href="/upsc/analytics">Your analytics</a></p>

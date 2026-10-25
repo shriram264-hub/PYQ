@@ -3,6 +3,7 @@ import Document from '../../layouts/Document.astro';
 import Masthead from '../../components/Masthead.astro';
 import Colophon from '../../components/Colophon.astro';
 import UpgradePrompt from '../../components/UpgradePrompt.astro';
+import PaywallNotice from '../../components/PaywallNotice.astro';
 import { authEnabled } from '../../lib/accounts/config.js';
 import { MIN_ANSWERED } from '../../lib/tests/analytics.js';
 
@@ -32,6 +33,8 @@ const crumbs = [{ name: 'Your analytics', href: '/upsc/analytics' }];
       the script while the catalogue is on its way, takes out the colophon, the
       only thing below the sections that arrive with it. */}
   <main class="sheet an" data-exam="upsc" data-pending data-sync-full={authEnabled ? '' : undefined}>
+    {/* Only while payments are scheduled; it is revealed with the rest of the page. */}
+    <PaywallNotice exam="upsc" />
     <div class="an-head">
       <h1 id="an-title" tabindex="-1">Your analytics</h1>
       <p class="an-standfirst" data-from hidden></p>

@@ -2,8 +2,11 @@
 // read it from here, and so will the payment build, so a change of price or
 // date is one edit. Keyed by exam slug (see lib/exams.js).
 //
-// Payments are not switched on yet. Until they are, tests and analytics stay
-// free for everyone; this module describes the pass as it will be sold.
+// Whether the pass is on sale is not decided here: the payments switch in
+// lib/payments/switch.js is off, notice or on. While it is off, tests and
+// analytics stay free for everyone and the pages describe the pass as it will
+// be sold; from the notice on, the pages give the date the paywall starts
+// (paymentsCopy). This module only describes the pass, in every state.
 //
 // Dates are ISO strings and are spelled out for readers with longDate() in
 // lib/legal.js, never by toLocaleDateString (see the note there).

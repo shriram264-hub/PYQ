@@ -16,6 +16,8 @@
 // Dates are India dates: Asia/Kolkata is UTC+05:30 all year (no daylight
 // saving), so a fixed 330-minute offset is exact and needs no Intl timezone data.
 
+import { longDate } from '../legal.js';
+
 // Under plain Node (the test runner) `import.meta.env` is undefined, so the
 // module has to import cleanly without it, as lib/accounts/config.js does.
 const env = import.meta.env ?? {};
@@ -68,6 +70,21 @@ export function paymentsState({ from, keyId, allowTest }, now) {
 /** paymentsState for this build's settings. */
 export function currentPayments(now = new Date()) {
   return paymentsState(PAYMENTS, now);
+}
+
+const COPY_OFF = Object.freeze({ phase: 'off', from: null, fromLabel: null });
+
+/**
+ * Which copy the pages print for a payments state. 'off' keeps the beta copy
+ * exactly as it was before payments. Notice and on are one phase, 'scheduled',
+ * whose sentences carry the date ("From 10 November 2026, …"), so a static
+ * page built before the date and one built after it both say true things.
+ * Anything that is not a notice or on state with a real date reads as off.
+ */
+export function paymentsCopy(payments) {
+  const { state, from } = payments ?? {};
+  if ((state !== 'notice' && state !== 'on') || Number.isNaN(paywallStart(from))) return { ...COPY_OFF };
+  return { phase: 'scheduled', from, fromLabel: longDate(from) };
 }
 
 /** Whether the pass can still be bought: open through the whole salesClose day, India time. */

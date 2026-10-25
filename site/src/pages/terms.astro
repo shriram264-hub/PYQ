@@ -5,10 +5,16 @@ import { LEGAL, longDate } from '../lib/legal.js';
 import { passFor } from '../lib/passes.js';
 import { EXAMS } from '../lib/exams.js';
 import { authEnabled } from '../lib/accounts/config.js';
+import { currentPayments, paymentsCopy } from '../lib/payments/switch.js';
 
 const mail = `mailto:${LEGAL.email}`;
 const pass = passFor('upsc');
 const passUntil = longDate(pass.validUntil);
+// While payments are off the beta and pass sections read exactly as they did
+// before them; once payments are scheduled they give the date, as the beta
+// terms promise (lib/payments/switch.js paymentsCopy).
+const copy = paymentsCopy(currentPayments());
+const scheduled = copy.phase === 'scheduled';
 // The same credit the footer prints.
 const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.maxYear}`).join('; ');
 ---
@@ -34,16 +40,37 @@ const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.
   <section data-numbered aria-labelledby="beta">
     <h2 id="beta">The beta</h2>
     <p>SawaalBox is in beta. {LEGAL.betaTerms}</p>
+    {
+      scheduled && (
+        <p>
+          This is that notice: from {copy.fromLabel}, practice tests and analytics need the {pass.name}, after a free taster.
+          Reading, searching, marks and revision lists stay free.
+        </p>
+      )
+    }
   </section>
 
   <section data-numbered aria-labelledby="pass">
     <h2 id="pass">The UPSC Prelims pass</h2>
-    <p>
-      Some features will need a paid pass: the {pass.name}, {pass.priceLabel} once, valid until the end of {passUntil}. It is a
-      one-time payment, not a subscription. What it includes and what stays free is on <a href="/pricing">Pricing</a>; a
-      full refund within {pass.refundDays} days is on <a href="/refunds">Refunds and cancellation</a>; and how access
-      reaches you is on <a href="/delivery">Delivery</a>. Payments are not switched on yet.
-    </p>
+    {
+      scheduled ? (
+        <p>
+          From {copy.fromLabel}, practice tests and analytics need a paid pass: the {pass.name}, {pass.priceLabel} once, valid
+          until the end of {passUntil}. It is a one-time payment, not a subscription. What it includes and what stays free is
+          on <a href="/pricing">Pricing</a>; a full refund within {pass.refundDays} days is on <a href="/refunds">Refunds and
+          cancellation</a>; and how access reaches you is on <a href="/delivery">Delivery</a>. You buy it signed in with
+          Google, paying through Razorpay Checkout. The pass switches on for your account once the payment is confirmed, and
+          Razorpay emails you a receipt.
+        </p>
+      ) : (
+        <p>
+          Some features will need a paid pass: the {pass.name}, {pass.priceLabel} once, valid until the end of {passUntil}. It is a
+          one-time payment, not a subscription. What it includes and what stays free is on <a href="/pricing">Pricing</a>; a
+          full refund within {pass.refundDays} days is on <a href="/refunds">Refunds and cancellation</a>; and how access
+          reaches you is on <a href="/delivery">Delivery</a>. Payments are not switched on yet.
+        </p>
+      )
+    }
   </section>
 
   <section data-numbered aria-labelledby="accounts">
@@ -59,7 +86,10 @@ const sources = EXAMS.map((e) => `${e.source}, ${e.corpus.minYear}–${e.corpus.
       <li>Keep your Google account secure: anyone who can sign in to it can use your SawaalBox account.</li>
       <li>
         You can ask us to delete your account at any time by emailing <a href={mail}>{LEGAL.email}</a>. Your marks, lists
-        and practice-test attempts are deleted with it.
+        and practice-test attempts are deleted with it.{
+          scheduled &&
+            ' The payment record of a pass is kept as a financial record, no longer linked to the account, and deleting an account does not refund a pass: the refund policy decides that.'
+        }
       </li>
       <li>We may suspend or delete an account that breaks these terms.</li>
     </ul>

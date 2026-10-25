@@ -4,8 +4,13 @@
 import Legal from '../layouts/Legal.astro';
 import { LEGAL, longDate } from '../lib/legal.js';
 import { passFor } from '../lib/passes.js';
+import { currentPayments, paymentsCopy } from '../lib/payments/switch.js';
 
 const pass = passFor('upsc');
+// While payments are off this page reads exactly as it did before them; once
+// they are scheduled it gives the date (lib/payments/switch.js paymentsCopy).
+const copy = paymentsCopy(currentPayments());
+const scheduled = copy.phase === 'scheduled';
 const mail = `mailto:${LEGAL.email}`;
 const until = longDate(pass.validUntil);
 const prelims = longDate(pass.prelimsDate);
@@ -28,10 +33,19 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
     </p>
   </section>
 
-  <p class="legal-aside">
-    Payments are not switched on yet. Until they are, tests and analytics are free for everyone, and nobody can buy the
-    pass. This page describes it as it will be sold.
-  </p>
+  {
+    scheduled ? (
+      <p class="legal-aside">
+        From {copy.fromLabel}, practice tests and analytics need the pass. Until then they are free for everyone. The pass
+        is bought on the <a href="/plans">plans page</a>.
+      </p>
+    ) : (
+      <p class="legal-aside">
+        Payments are not switched on yet. Until they are, tests and analytics are free for everyone, and nobody can buy the
+        pass. This page describes it as it will be sold.
+      </p>
+    )
+  }
 
   <section aria-labelledby="includes">
     <h2 id="includes">What the pass includes</h2>
@@ -50,9 +64,17 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
 
   <section aria-labelledby="taster">
     <h2 id="taster">The free taster</h2>
-    <p>
-      Once payments start, a free account can try the paid parts before buying: {taster}.
-    </p>
+    {
+      scheduled ? (
+        <p>
+          From {copy.fromLabel}, anyone can try the paid parts before buying, with or without an account: {taster}.
+        </p>
+      ) : (
+        <p>
+          Once payments start, a free account can try the paid parts before buying: {taster}.
+        </p>
+      )
+    }
   </section>
 
   <section aria-labelledby="validity">
@@ -72,6 +94,7 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
       </li>
       <li>Payment goes through Razorpay, which accepts UPI, cards and netbanking.</li>
       <li>You pay {pass.priceLabel} once. Nothing is charged again later.</li>
+      {scheduled && <li>Razorpay emails you a receipt for the payment. SawaalBox does not issue a separate invoice.</li>}
       <li>
         Access switches on as soon as the payment is confirmed. The <a href="/delivery">delivery policy</a> has the
         details.
