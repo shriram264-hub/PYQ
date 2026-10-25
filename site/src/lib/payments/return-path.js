@@ -40,5 +40,10 @@ export function safeReturn(raw) {
     return null;
   }
   if (url.origin !== BASE) return null;
-  return url.pathname + url.search + url.hash;
+  // The parser resolves dot segments, so '/.//evil.example' comes out as
+  // '//evil.example': a protocol-relative address to another site once it is
+  // used as an href or passed to location.assign. What is returned must pass
+  // the same checks as what came in.
+  const out = url.pathname + url.search + url.hash;
+  return looksLocal(out) ? out : null;
 }

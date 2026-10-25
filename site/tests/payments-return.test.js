@@ -9,6 +9,8 @@ test('safeReturn keeps a path on this site, with its query and hash', () => {
   assert.equal(safeReturn('/upsc/test/take?paper=2019'), '/upsc/test/take?paper=2019');
   // An escaped space in a search stays as it was.
   assert.equal(safeReturn('/upsc/search?q=river%20dams'), '/upsc/search?q=river%20dams');
+  // A harmless dot segment is resolved, and the result is still on this site.
+  assert.equal(safeReturn('/upsc/./test'), '/upsc/test');
 });
 
 test('safeReturn refuses anything that could leave the site', () => {
@@ -22,6 +24,11 @@ test('safeReturn refuses anything that could leave the site', () => {
     '\\\\evil.example',
     '/\t/evil.example',
     'upsc/test',
+    // Dot segments collapse in the URL parser into a leading '//'.
+    '/.//evil.example',
+    '/..//evil.example',
+    '/a/..//evil.example/x',
+    '/./\\evil.example',
   ]) {
     assert.equal(safeReturn(raw), null, raw);
   }

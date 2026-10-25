@@ -2,6 +2,7 @@ import { SUPABASE_URL } from '../lib/accounts/config.js';
 import { LEGAL, longDate } from '../lib/legal.js';
 import { passFor } from '../lib/passes.js';
 import { savePassCache } from '../lib/payments/pass-cache.js';
+import { DROPPED, RELOAD } from '../lib/payments/plans-copy.js';
 import { safeReturn } from '../lib/payments/return-path.js';
 import { currentPayments, paywallStart, salesOpen } from '../lib/payments/switch.js';
 import { hasPass } from '../lib/tests/access.js';
@@ -28,7 +29,6 @@ const BACK_AFTER_MS = 1500;
 
 const PENDING = 'Payment received. Switching on your pass…';
 const FAILED = "Payment didn't go through. You haven't been charged for this attempt.";
-const DROPPED = `If you were charged, your pass will switch on within a few minutes. If it hasn't after an hour, email ${LEGAL.email}.`;
 const DUPLICATE = 'You already had the pass, so this second payment is being refunded in full.';
 const REFUNDED = `This payment was refunded, so it doesn't switch on a pass. Questions: ${LEGAL.email}.`;
 const NO_START = "Couldn't start the payment, and nothing was charged. Try again in a moment.";
@@ -119,9 +119,25 @@ if (root && pass) {
   // The server said this account holds the pass (confirm, a duplicate, or
   // already_active): shown as active even if this device could not save it.
   let known = false;
+  // The pending timers (the return after paying, the checks after a dropped
+  // confirmation), so signing out can stop them.
+  const timers = new Set();
+  const later = (fn, ms) => {
+    const id = setTimeout(() => {
+      timers.delete(id);
+      fn();
+    }, ms);
+    timers.add(id);
+  };
+  const stopTimers = () => {
+    for (const id of timers) clearTimeout(id);
+    timers.clear();
+  };
 
-  const say = (text) => {
-    status.textContent = text;
+  /** The status line: `text`, and an optional second line under it. Plain text only. */
+  const say = (text, more = '') => {
+    if (more) status.replaceChildren(text, document.createElement('br'), more);
+    else status.textContent = text;
   };
   const show = (state) => {
     states.dataset.state = state;
@@ -177,24 +193,33 @@ if (root && pass) {
     backLink.href = to;
     links.hidden = true;
     back.hidden = false;
-    if (leave) setTimeout(() => location.assign(to), BACK_AFTER_MS);
+    if (leave) later(() => location.assign(to), BACK_AFTER_MS);
   }
 
   /** After a confirmation that did not come back: the webhook will usually settle it. */
   function dropped() {
     say(DROPPED);
+    // Signed out while the confirmation was under way: there is no account
+    // here to check for, so nothing is scheduled.
+    if (!user) return;
     // Buy stays busy: the student was very likely charged, and a second order
-    // now would only be a second payment to refund.
-    for (const ms of RETRIES_MS) {
-      setTimeout(async () => {
+    // now would only be a second payment to refund. A reload re-enables it,
+    // and create-order then answers already_active if the pass has landed.
+    RETRIES_MS.forEach((ms, i) => {
+      later(async () => {
         if (known) return;
         await refresh();
+        // Signed out while the check ran: it was for an account no longer here.
+        if (known || !user) return;
         if (await hasPass(pass.exam)) {
           say(done(pass.validUntil));
           activated({ leave: false });
+        } else if (i === RETRIES_MS.length - 1) {
+          // The page has stopped checking by itself; say how to check again.
+          say(DROPPED, RELOAD);
         }
       }, ms);
-    }
+    });
   }
 
   async function token() {
@@ -333,6 +358,10 @@ if (root && pass) {
   signinBtn.addEventListener('click', () => signIn().catch(() => say(NO_SIGNIN)));
   onPassChange(() => redraw());
   document.addEventListener('sawaalbox:signed-out', () => {
+    // Nothing started for the account that left may run on: no return
+    // navigation, no further checks for its pass.
+    stopTimers();
+    setBusy(false);
     user = null;
     known = false;
     redraw();

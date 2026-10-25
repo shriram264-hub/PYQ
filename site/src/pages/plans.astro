@@ -9,8 +9,9 @@
 // share one grid cell, so the cell is as tall as the tallest of them from the
 // first paint and choosing one moves nothing below it.
 import Listing from '../layouts/Listing.astro';
-import { LEGAL, longDate } from '../lib/legal.js';
+import { longDate } from '../lib/legal.js';
 import { passFor } from '../lib/passes.js';
+import { DROPPED, RELOAD } from '../lib/payments/plans-copy.js';
 import { currentPayments } from '../lib/payments/switch.js';
 
 const pass = passFor('upsc');
@@ -24,9 +25,9 @@ const needsFrom = selling ? `Tests and analytics need the pass from ${longDate(p
 const description = selling
   ? `The SawaalBox ${pass.name}: ${pass.priceLabel} once, valid until ${until}. ${needsFrom}`
   : `The SawaalBox ${pass.name}: ${pass.priceLabel} once, valid until ${until}. Payments are not open yet; tests and analytics are free during the beta.`;
-// The longest thing the status line can say. It sits, invisible, in the status
-// line's cell so that line holds its room before any message arrives.
-const longestStatus = `If you were charged, your pass will switch on within a few minutes. If it hasn't after an hour, email ${LEGAL.email}.`;
+// The longest thing the status line can say (the dropped confirmation, then
+// the reload line under it). It sits, invisible, in the status line's cell so
+// that line holds its room before any message arrives.
 ---
 
 <Listing
@@ -90,7 +91,7 @@ const longestStatus = `If you were charged, your pass will switch on within a fe
           <p class="plan-beta">{needsFrom}</p>
           <div class="plan-status-cell">
             <p class="plan-status plan-sizer" aria-hidden="true">
-              {longestStatus}
+              {DROPPED}<br />{RELOAD}
             </p>
             <p class="plan-status" role="status" data-plan-status></p>
           </div>
