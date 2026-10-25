@@ -1,20 +1,37 @@
 ---
-// The plan card. This is the page an Upgrade prompt will link to once payments
-// are on: the pass facts come from lib/passes.js, and the one thing to change
-// then is the .plan-buy control below. Everything else already reads the data.
+// The plan card, and where a student buys the pass. Upgrade prompts link here
+// (/plans?return=<path>). The pass facts come from lib/passes.js.
+//
+// With payments off (lib/payments/switch.js) the card is exactly as it was
+// before payments: an inert Coming soon and the beta line. Otherwise the action
+// area serves every state's markup at once and scripts/plans-page.js picks one:
+// pending (nothing yet), signed out, buy, active, or sales closed. The states
+// share one grid cell, so the cell is as tall as the tallest of them from the
+// first paint and choosing one moves nothing below it.
 import Listing from '../layouts/Listing.astro';
-import { longDate } from '../lib/legal.js';
+import { LEGAL, longDate } from '../lib/legal.js';
 import { passFor } from '../lib/passes.js';
+import { currentPayments } from '../lib/payments/switch.js';
 
 const pass = passFor('upsc');
 const until = longDate(pass.validUntil);
 // Stored as a heading-style line; mid-sentence it starts lower case.
 const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
+
+const payments = currentPayments();
+const selling = payments.state !== 'off';
+const needsFrom = selling ? `Tests and analytics need the pass from ${longDate(payments.from)}.` : '';
+const description = selling
+  ? `The SawaalBox ${pass.name}: ${pass.priceLabel} once, valid until ${until}. ${needsFrom}`
+  : `The SawaalBox ${pass.name}: ${pass.priceLabel} once, valid until ${until}. Payments are not open yet; tests and analytics are free during the beta.`;
+// The longest thing the status line can say. It sits, invisible, in the status
+// line's cell so that line holds its room before any message arrives.
+const longestStatus = `If you were charged, your pass will switch on within a few minutes. If it hasn't after an hour, email ${LEGAL.email}.`;
 ---
 
 <Listing
   title="Plans"
-  description={`The SawaalBox ${pass.name}: ${pass.priceLabel} once, valid until ${until}. Payments are not open yet; tests and analytics are free during the beta.`}
+  description={description}
   heading="Plans"
   standfirst="One pass for the UPSC Prelims. Pay once, no subscription."
 >
@@ -35,13 +52,56 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
       <p class="plan-taster">Once payments start, a free account can try {taster}, before you buy.</p>
     </div>
 
-    <div class="plan-action">
-      {/* When payments open, this becomes the Buy control for this pass (a link
-          to checkout, or a button the payment script handles). Keep it the
-          outlined secondary style; /plans carries no filled-green action. */}
-      <button type="button" class="plan-buy" data-pass={pass.exam} disabled>Coming soon</button>
-      <p class="plan-beta">Tests and analytics are free during the beta.</p>
-    </div>
+    {
+      selling ? (
+        <div class="plan-action plan-selling" data-plan data-pass={pass.exam}>
+          <div class="plan-states" data-plan-states data-state="pending">
+            <div class="plan-state" data-state-panel="pending"></div>
+            <div class="plan-state" data-state-panel="signed-out">
+              <button type="button" class="plan-btn" data-plan-signin>
+                Sign in with Google to buy
+              </button>
+            </div>
+            <div class="plan-state plan-row" data-state-panel="buy">
+              {/* The page's one filled-green action (DESIGN.md Primary). */}
+              <button type="button" class="plan-btn plan-primary" data-plan-buy>
+                Buy for {pass.priceLabel}
+              </button>
+              <p class="plan-note">One payment, valid until {until}. Paid through Razorpay.</p>
+            </div>
+            <div class="plan-state" data-state-panel="active">
+              <p class="plan-active">
+                Your {pass.name} is active until {until}
+              </p>
+              <p class="plan-links" data-plan-links>
+                <a href={`/${pass.exam}/test`}>Practice tests</a>
+                <a href={`/${pass.exam}/analytics`}>Your analytics</a>
+              </p>
+              <p class="plan-links" data-plan-back hidden>
+                <a href="/" data-plan-back-link>
+                  Go back to where you were
+                </a>
+              </p>
+            </div>
+            <div class="plan-state" data-state-panel="closed">
+              <p class="plan-closed">Sales of this pass have closed. Next year's pass is coming.</p>
+            </div>
+          </div>
+          <p class="plan-beta">{needsFrom}</p>
+          <div class="plan-status-cell">
+            <p class="plan-status plan-sizer" aria-hidden="true">
+              {longestStatus}
+            </p>
+            <p class="plan-status" role="status" data-plan-status></p>
+          </div>
+        </div>
+      ) : (
+        <div class="plan-action">
+          <button type="button" class="plan-buy" data-pass={pass.exam} disabled>Coming soon</button>
+          <p class="plan-beta">Tests and analytics are free during the beta.</p>
+        </div>
+      )
+    }
   </section>
 
   <section class="free" aria-labelledby="free-h">
@@ -57,6 +117,14 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
     <a href="/delivery">Delivery</a>
   </nav>
 </Listing>
+
+{
+  selling && (
+    <script>
+      import '../scripts/plans-page.js';
+    </script>
+  )
+}
 
 <style>
   .plan {
@@ -144,6 +212,114 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
     color: var(--ink-soft);
   }
 
+  /* Selling: the states, the beta line and the status line, one under another. */
+  .plan-selling {
+    display: block;
+  }
+
+  /* Every state in one cell: the cell takes the tallest one's height from the
+     first paint, and only the chosen one is seen (visibility, not display, so
+     the others keep holding the room and are out of the tab order and the
+     accessibility tree). Pending shows nothing: an empty row of that height. */
+  .plan-states {
+    display: grid;
+  }
+  .plan-state {
+    grid-area: 1 / 1;
+    visibility: hidden;
+    align-self: center;
+  }
+  .plan-states[data-state='signed-out'] > [data-state-panel='signed-out'],
+  .plan-states[data-state='buy'] > [data-state-panel='buy'],
+  .plan-states[data-state='active'] > [data-state-panel='active'],
+  .plan-states[data-state='closed'] > [data-state-panel='closed'] {
+    visibility: visible;
+  }
+
+  .plan-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.6rem 1.25rem;
+  }
+
+  /* DESIGN.md Secondary (Sign in), and Primary (Buy) on top of it. */
+  .plan-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.25rem;
+    font: 700 0.95rem/1.2 var(--font-structure);
+    color: var(--field-text);
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+    cursor: pointer;
+  }
+  .plan-btn:hover {
+    background: var(--ground);
+  }
+  .plan-primary {
+    padding: 0.85rem 1.6rem;
+    color: var(--field-ink);
+    background: var(--field);
+    border-color: var(--field);
+  }
+  .plan-primary:hover {
+    background: var(--field-deep);
+    border-color: var(--field-deep);
+  }
+  /* Busy while an order is made or Checkout is open: still focusable (so focus
+     is not dropped to the page), pressing it does nothing. */
+  .plan-btn[aria-disabled='true'] {
+    cursor: progress;
+  }
+
+  .plan-note,
+  .plan-closed {
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--ink-soft);
+  }
+
+  .plan-active {
+    margin: 0;
+    font-weight: 600;
+  }
+
+  .plan-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1.4rem;
+    margin: 0.45rem 0 0;
+    font-family: var(--font-structure);
+    font-size: 0.92rem;
+    font-weight: 600;
+  }
+  .plan-links[hidden] {
+    display: none;
+  }
+
+  .plan-selling .plan-beta {
+    margin-top: 0.8rem;
+  }
+
+  /* The status line holds the room of its longest message (the sizer, unseen),
+     so a message arriving moves nothing below the card. */
+  .plan-status-cell {
+    display: grid;
+    margin-top: 0.5rem;
+  }
+  .plan-status {
+    grid-area: 1 / 1;
+    margin: 0;
+    font-size: 0.92rem;
+    color: var(--ink);
+  }
+  .plan-sizer {
+    visibility: hidden;
+  }
+
   .free {
     max-width: 38rem;
     margin-top: clamp(1.75rem, 4vw, 2.5rem);
@@ -170,9 +346,13 @@ const taster = pass.taster.charAt(0).toLowerCase() + pass.taster.slice(1);
   }
 
   @media (pointer: coarse) {
-    .policies a {
+    .policies a,
+    .plan-links a {
       display: inline-block;
       padding-block: 0.45rem;
+    }
+    .plan-btn {
+      min-height: 2.75rem;
     }
   }
 </style>
