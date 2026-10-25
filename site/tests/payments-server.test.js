@@ -410,14 +410,19 @@ function webhookReq(event, signature) {
   });
 }
 
-const capturedEvent = (w, paymentId) => ({
+const paymentEvent = (w, paymentId, event) => ({
   entity: 'event',
   account_id: 'acc_FAKE',
-  event: 'payment.captured',
+  event,
   contains: ['payment'],
   payload: { payment: { entity: structuredClone(w.payments.get(paymentId)) } },
   created_at: 1793512800,
 });
+const capturedEvent = (w, paymentId) => paymentEvent(w, paymentId, 'payment.captured');
+// payment.authorized carries payload.payment.entity like payment.captured
+// (https://razorpay.com/docs/webhooks/payments/). It is the only event that
+// arrives when automatic capture is off in the Razorpay dashboard.
+const authorizedEvent = (w, paymentId) => paymentEvent(w, paymentId, 'payment.authorized');
 
 const refundEvent = (paymentId) => ({
   entity: 'event',
@@ -970,10 +975,59 @@ test('webhook: a bad signature is 400 and touches nothing', async (t) => {
 
 test('webhook: an unknown event is 200 with no calls', async (t) => {
   const w = setup(t);
-  const r = await call(w, webhookReq({ entity: 'event', event: 'payment.authorized', payload: {} }));
-  assert.equal(r.status, 200);
-  assert.deepEqual(r.body, { ok: true });
+  for (const event of ['payment.failed', 'order.paid']) {
+    const r = await call(w, webhookReq({ entity: 'event', event, payload: {} }));
+    assert.equal(r.status, 200, event);
+    assert.deepEqual(r.body, { ok: true });
+  }
   assert.equal(w.calls.length, 0);
+});
+
+test('webhook: payment.authorized captures the payment once and switches the pass on', async (t) => {
+  const w = setup(t);
+  const { paymentId } = await buy(w, 'token-a', { status: 'authorized' });
+  const r = await call(w, webhookReq(authorizedEvent(w, paymentId)));
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual(r.body, { ok: true });
+  const cap = captures(w);
+  assert.equal(cap.length, 1);
+  assert.equal(cap[0].path, `/v1/payments/${paymentId}/capture`);
+  assert.deepEqual(cap[0].body, { amount: 49900, currency: 'INR' });
+  assert.equal(w.payments.get(paymentId).status, 'captured');
+  assert.equal(w.passes.length, 1);
+  assert.equal(w.passes[0].status, 'active');
+  assert.equal(w.passes[0].user_id, UA);
+  assert.equal(w.passes[0].payment_id, paymentId);
+});
+
+test('webhook: the payment.captured that follows payment.authorized makes no second row or capture', async (t) => {
+  const w = setup(t);
+  const { paymentId } = await buy(w, 'token-a', { status: 'authorized' });
+  const authorized = authorizedEvent(w, paymentId); // the payload as authorised
+  assert.equal((await call(w, webhookReq(authorized))).status, 200);
+  assert.equal(captures(w).length, 1);
+  assert.equal(w.passes.length, 1);
+  assert.equal((await call(w, webhookReq(capturedEvent(w, paymentId)))).status, 200);
+  // At-least-once delivery: the authorized event again, payload still 'authorized'.
+  assert.equal((await call(w, webhookReq(authorized))).status, 200);
+  assert.equal(captures(w).length, 1);
+  assert.equal(w.passes.length, 1);
+  assert.equal(w.passes[0].status, 'active');
+  assert.equal(w.refunds.length, 0);
+});
+
+test('webhook: a rejected authorized payment is 200 and is never captured', async (t) => {
+  const w = setup(t);
+  const wrongAmount = await buy(w, 'token-a', { amount: 100, status: 'authorized' });
+  const noNotes = w.pay(w.addOrder({ notes: [] }), { status: 'authorized' });
+  for (const paymentId of [wrongAmount.paymentId, noNotes]) {
+    const r = await call(w, webhookReq(authorizedEvent(w, paymentId)));
+    assert.equal(r.status, 200, paymentId);
+    assert.equal(w.payments.get(paymentId).status, 'authorized');
+  }
+  assert.equal(captures(w).length, 0);
+  assert.equal(w.inserts().length, 0);
+  assert.equal(w.refunds.length, 0);
 });
 
 test('webhook: a captured payment whose order has no notes is 200 and inserts nothing', async (t) => {

@@ -133,6 +133,7 @@ export function corsHeaders(origin, mode) {
 //     400 bad_signature | 403 not_your_order | 422 payment_mismatch
 //     409 not_captured | 401 | 502 razorpay | 500 server
 //   POST /webhook       X-Razorpay-Signature over the raw body
+//     Handles payment.authorized, payment.captured and refund.created.
 //     400 bad signature; otherwise 200 { ok: true } (ignored events too, so
 //     Razorpay does not retry them), or 500 on an upstream failure so it does.
 //   OPTIONS anything → 204 with CORS. Every JSON reply carries CORS headers.
@@ -490,8 +491,17 @@ async function confirm(req, deps, cors) {
 
 /**
  * Razorpay webhooks (https://razorpay.com/docs/webhooks/payments/ and
- * /docs/webhooks/refunds/): payment.captured carries payload.payment.entity,
- * refund.created carries payload.refund.entity. Delivery is at-least-once and
+ * /docs/webhooks/refunds/): payment.authorized and payment.captured carry
+ * payload.payment.entity, refund.created carries payload.refund.entity.
+ *
+ * payment.authorized is settled exactly like payment.captured. If automatic
+ * capture is off in the Razorpay dashboard, it is the only event that arrives,
+ * and /delivery promises the pass switches on even when the page closed before
+ * /confirm ran. settlePayment captures an authorized payment only after the
+ * order notes, user and amounts check out, and re-fetches the status, so the
+ * payment.captured that follows finds the row already there (idempotent).
+ *
+ * Delivery is at-least-once and
  * any non-2xx is retried with backoff for 24 hours, after which the webhook is
  * disabled (https://razorpay.com/docs/webhooks/faqs/), so only real upstream
  * failures return non-2xx. The payload is only a pointer: settlePayment
@@ -508,7 +518,7 @@ async function webhook(req, deps, cors) {
     return json(400, { error: 'bad_request' }, cors);
   }
   try {
-    if (event && event.event === 'payment.captured') {
+    if (event && (event.event === 'payment.captured' || event.event === 'payment.authorized')) {
       const p = event.payload && event.payload.payment && event.payload.payment.entity;
       if (p && PAYMENT_ID.test(String(p.id)) && ORDER_ID.test(String(p.order_id))) {
         const out = await settlePayment(deps, { paymentId: p.id, orderId: p.order_id, expectUserId: null, exam: null });
