@@ -11,7 +11,8 @@ const mail = `mailto:${LEGAL.email}`;
 // it did before them; once they are scheduled it is in the present tense and
 // names Razorpay as the processor (lib/payments/switch.js paymentsCopy). The
 // pass records' place in "How long we keep it" is said in both phases: the
-// passes table is in place either way (legal.js inventory, item 12).
+// passes table holds once its migration is applied, whatever the switch says
+// (legal.js inventory, item 12).
 const copy = paymentsCopy(currentPayments());
 const scheduled = copy.phase === 'scheduled';
 ---
@@ -198,7 +199,11 @@ const scheduled = copy.phase === 'scheduled';
             To fill in its payment form for you, we pass Razorpay the name and email address from your Google sign-in. Each
             order we create with Razorpay carries your SawaalBox account ID, so the payment can be matched to your account.
           </li>
-          <li>SawaalBox never sees your card, UPI or bank details.</li>
+          <li>
+            SawaalBox never stores your card, UPI or bank details. Your card number, UPI PIN and bank login go only to
+            Razorpay. Razorpay's record of a payment, which we read to confirm it, includes the UPI ID or bank used and the
+            phone number you gave; we don't keep them.
+          </li>
           <li>
             For each pass, your account stores the Razorpay payment ID and order ID, the amount, the date you bought it, the
             date it ends, whether it is active or refunded, and whether it was a test payment. It also records which exam
@@ -214,10 +219,16 @@ const scheduled = copy.phase === 'scheduled';
               <strong>Razorpay</strong> will process payments. You will pay on its payment page, using UPI, a card or
               netbanking.
             </li>
-            <li>SawaalBox will never see your card, UPI or bank details.</li>
             <li>
-              Your account will store only the payment ID, the amount, the date and the end date of your pass. We keep these to
-              switch the pass on and to handle refunds.
+              SawaalBox will never store your card, UPI or bank details. Your card number, UPI PIN and bank login will go only
+              to Razorpay. Razorpay's record of a payment, which we will read to confirm it, includes the UPI ID or bank used
+              and the phone number you gave; we won't keep them.
+            </li>
+            <li>
+              For each pass, your account will store the Razorpay payment ID and order ID, the amount, the date you bought it,
+              the date it ends, whether it is active or refunded, and whether it was a test payment. It will also record which
+              exam the pass is for, the date of any refund, and a note if a second payment was refunded automatically because
+              you had already paid. We will keep these to switch the pass on and to handle refunds.
             </li>
           </ul>
         </>
@@ -239,7 +250,7 @@ const scheduled = copy.phase === 'scheduled';
       </li>
       <li>
         Payment records for a pass (see <a href="#payments">Payments</a>): kept as financial records, also after your
-        account is deleted, when they are no longer linked to it.{
+        account is deleted, because records of payments must be kept; they are then no longer linked to your account.{
           scheduled && ' Deleting your account does not refund a pass; the refund policy decides that.'
         }
       </li>

@@ -136,8 +136,15 @@
 //     ('duplicate' when a second payment was refunded automatically,
 //     supabase/functions/payments/index.js:396), created_at and refunded_at.
 //     /privacy "How long we keep it" and "Your rights" say the record is kept,
-//     no longer linked to the account, in every phase (the table is in place
-//     whether payments are off or not); 2026-10-25.
+//     no longer linked to the account, because records of payments must be
+//     kept, in every phase: this holds once 20261024120000_passes.sql is
+//     applied (the owner applies it in the SQL editor, supabase/README.md),
+//     whether the payments switch is off or not. /privacy's Payments list
+//     names a row's fields as above in both phases (future tense while off).
+//     The payments function reads Razorpay's payment entity to confirm a
+//     payment (UPI ID or bank, card id, wallet, contact phone, email among its
+//     fields) and stores none of those fields and logs only the service name
+//     and HTTP status (index.js:413); /privacy says so. 2026-10-25.
 // 12a. Payments (only when lib/payments/switch.js paymentsCopy is
 //     'scheduled', i.e. the switch is notice or on; with it off the pages keep
 //     their earlier wording, checked by diffing the off build against the one
@@ -224,7 +231,9 @@ export const LEGAL = Object.freeze({
   // policies /pricing, /refunds, /delivery, whose facts live in lib/passes.js).
   // Move it whenever their wording changes.
   updated: '2026-10-25',
-  // The owner's words, used verbatim on /terms and /account.
+  // The owner's words, used verbatim on /terms (in every phase) and on
+  // /account while payments are off; once they are scheduled /account's terms
+  // line gives the paywall date in their place (account.astro termsLine).
   betaTerms: "Free during the beta. Some features may later need a paid pass; we'll tell you before anything you use changes.",
   minAge: 18,
   // How long a reply to an email (a data request, a grievance) may take.
