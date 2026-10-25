@@ -316,7 +316,10 @@ function weakOf(view) {
   if (!view.attempts.length) return null;
   if (catalogue.status === 'failed') return { state: 'failed' };
   if (catalogue.status !== 'loaded') return { state: 'loading' };
-  const weak = weakestOf(breakdownOf(view).topics[0], EXAM);
+  // Without analytics (analyticsOk false) the card names the topic and its
+  // Practise link, without the accuracy line. The card holds that line's room
+  // either way (.acct-pick-weak), so a pass arriving moves nothing.
+  const weak = weakestOf(breakdownOf(view).topics[0], EXAM, { accuracy: analyticsOk !== false });
   return weak ? { state: 'topic', ...weak } : { state: 'none' };
 }
 
@@ -776,7 +779,8 @@ function render({ lists = true, restore = true } = {}) {
   part('pick', { plan, resume: resume && { id: resume.id, name: resume.name }, review }, drawPick);
   if (resume) drawResumeDetail(resume);
   const weak = weakOf(view);
-  if (weak) part('weak', weak, drawWeak);
+  // analyticsOk is in its data so a pass change redraws it (the line comes or goes).
+  if (weak) part('weak', { ...weak, analyticsOk }, drawWeak);
 
   const h = view.attempts.length ? headline(view.attempts, RULES) : null;
   part(

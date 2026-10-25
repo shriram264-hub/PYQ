@@ -32,14 +32,21 @@ export function showUpgrade(el) {
 
 /**
  * Calls `fn` whenever what this device knows of the student's passes may have
- * changed, so a gate can ask again. Two ways: this tab's sync refreshed the
- * cache (pass-state.js says so with `sawaalbox:pass`), or another tab did, the
- * one a purchase was made in, which this tab hears only as a storage event: its
- * own sync then finds the cache already up to date and says nothing.
+ * changed, so a gate can ask again. Three ways:
+ *   - this tab's sync refreshed the cache (pass-state.js says so with
+ *     `sawaalbox:pass`);
+ *   - another tab did, the one a purchase was made in, which this tab hears
+ *     only as a storage event: its own sync then finds the cache already up to
+ *     date and says nothing;
+ *   - the page came back from the back/forward cache (Back after buying in this
+ *     tab), having heard nothing while it was away.
  */
 export function onPassChange(fn) {
   document.addEventListener('sawaalbox:pass', () => fn());
   window.addEventListener('storage', (event) => {
     if (event.key === PASS_KEY || event.key === null) fn();
+  });
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) fn();
   });
 }

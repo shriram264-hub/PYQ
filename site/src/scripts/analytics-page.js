@@ -639,6 +639,9 @@ Promise.all([fontsReady(), firstSync]).then(async () => {
     requestAnimationFrame(() => {
       framed = true;
       settle();
+      // A pass that arrived between the ask above and now was not acted on
+      // (see unlock): ask once more.
+      if (!ok) unlock();
     })
   );
   if (ok) watchChart();
@@ -646,14 +649,16 @@ Promise.all([fontsReady(), firstSync]).then(async () => {
 
 // A pass bought here or in another tab, with the prompt up: the analytics take
 // its place without a reload. Only once the first draw has been on screen
-// (`framed`); before that, the first draw asks for itself.
-onPassChange(async () => {
-  if (shown || !framed || !(await askAllowed())) return;
+// (`framed`); before that, the first draw asks for itself, and asks again as
+// `framed` is set, so a change landing in between is not lost.
+async function unlock() {
+  if (shown || !framed || !(await askAllowed()) || shown) return;
   if (upgrade) upgrade.hidden = true;
   shown = true;
   render();
   watchChart();
-});
+}
+onPassChange(unlock);
 
 // Storage changed under the page: a sync landed, another tab wrote, or the page
 // came back from the back/forward cache. Each part is drawn again only if its

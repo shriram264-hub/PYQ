@@ -56,13 +56,18 @@ export function oldestLine(days) {
 export const practisePath = (exam, subject, topic) =>
   `/${exam}/test?subject=${slugify(subject)}${topic === undefined ? '' : `&topic=${slugify(topic)}`}#practice`;
 
-/** The weakest topic card, from breakdown().topics[0], or null when there is none. */
-export function weakestOf(topic, exam) {
+/**
+ * The weakest topic card, from breakdown().topics[0], or null when there is none.
+ * `accuracy: false` (no pass, once payments are on): naming the topic to
+ * practise is a basic, but its "X of Y right so far" is analytics, so the line
+ * is left empty, as the subject and topic pages leave it out.
+ */
+export function weakestOf(topic, exam, { accuracy = true } = {}) {
   if (!topic) return null;
   return {
     topic: topic.topic,
     subject: topic.subject,
-    line: `${topic.right} of ${topic.answered} right so far`,
+    line: accuracy ? `${topic.right} of ${topic.answered} right so far` : '',
     href: practisePath(exam, topic.subject, topic.topic),
   };
 }

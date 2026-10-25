@@ -71,6 +71,18 @@ test('weakestOf and practisePath: the practice form opened on the topic', () => 
   assert.equal(practisePath('upsc', 'Geography'), '/upsc/test?subject=geography#practice');
 });
 
+test('weakestOf without accuracy (no pass): the topic and its Practise link, no right-of-answered line', () => {
+  const topic = { subject: 'Indian Polity', topic: 'Parliament & Laws', right: 2, answered: 7 };
+  assert.deepEqual(weakestOf(topic, 'upsc', { accuracy: false }), {
+    topic: 'Parliament & Laws',
+    subject: 'Indian Polity',
+    line: '',
+    href: '/upsc/test?subject=indian-polity&topic=parliament-and-laws#practice',
+  });
+  assert.equal(weakestOf(topic, 'upsc', { accuracy: true }).line, '2 of 7 right so far');
+  assert.equal(weakestOf(undefined, 'upsc', { accuracy: false }), null);
+});
+
 test('pickPlan: the cards that apply, the starter only when none do, and one primary', () => {
   const plan = (o) => pickPlan({ resume: null, review: null, tests: 0, marked: false, ...o });
   assert.deepEqual(plan({}), { cards: [], starter: true, hint: true, primary: 'starter' });

@@ -163,7 +163,7 @@ form.addEventListener('submit', async (event) => {
     if (!(await mayStart())) {
       // Start, which had focus, goes with its row: land on the prompt instead.
       gate(false);
-      prompt.querySelector('.upgrade-h')?.focus();
+      prompt?.querySelector('.upgrade-h')?.focus();
       return;
     }
     const attempt = newAttempt({
