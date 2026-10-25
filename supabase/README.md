@@ -3,6 +3,9 @@
 Schema changes live in `migrations/` and are applied in order. `tests/` holds
 checks that run inside a transaction and roll back, so they leave no data.
 
+Payments (the `payments` function, its secrets, the Razorpay webhook, going
+live, refunds): see [PAYMENTS.md](PAYMENTS.md).
+
 ## Apply a migration
 1. Supabase dashboard → your project → **SQL Editor** → **New query**.
 2. Paste the whole migration file, click **Run**. Expect "Success. No rows returned".
