@@ -214,11 +214,17 @@ export function breakdown(attempts, marks, catalogue, rules, exam) {
   return { subjects, topics, wrong, bySubject, byTopic };
 }
 
-/** The line under a subject or topic's heading, or null when the student has nothing there yet. */
-export function statsLine(stats) {
+/**
+ * The line under a subject or topic's heading, or null when the student has
+ * nothing there yet. `accuracy: false` (no pass, once payments are on) leaves
+ * the accuracy out: coverage is free, so the line is "Covered X of Y" alone,
+ * or nothing when nothing is covered.
+ */
+export function statsLine(stats, { accuracy = true } = {}) {
   if (!stats) return null;
   const { answered, right, covered, total } = stats;
   const coverage = `Covered ${covered} of ${total}`;
+  if (!accuracy) return covered > 0 ? coverage : null;
   if (answered >= MIN_ANSWERED) {
     return `Your accuracy here: ${Math.round((100 * right) / answered)}% (${answered} answered) · ${coverage}`;
   }

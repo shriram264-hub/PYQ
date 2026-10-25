@@ -7,6 +7,7 @@ import { canStartTest } from '../lib/tests/access.js';
 import { STORAGE_KEY, loadState } from '../lib/accounts/progress-store.js';
 // A uuid v4 maker; attempts need the same kind of id lists do.
 import { newListId as newId } from '../lib/accounts/lists.js';
+import { onPassChange, showUpgrade, upgradeFor } from './upgrade.js';
 
 // The practice-set form on /upsc/test (spec, "Build a practice set"). The
 // form is the page's markup; this enables it, counts what matches as the
@@ -23,6 +24,8 @@ const poolEl = form.querySelector('[data-pool]');
 const retryRow = form.querySelector('[data-pool-retry]');
 const startBtn = form.querySelector('[data-practice-start]');
 const minutesInput = form.elements.minutes;
+const actions = form.querySelector('[data-practice-actions]');
+const prompt = upgradeFor('upsc', 'tests', form);
 
 let catalogue = null;
 let loading = null; // the fetch in flight, if any
@@ -113,6 +116,34 @@ window.addEventListener('online', () => {
   if (failed) ensureCatalogue();
 });
 
+// --- The gate: a new set may start (canStartTest, kind 'custom'), or the
+// Upgrade prompt stands in place of the Start row. ---
+
+// A check that fails says no, as the other gates' do.
+const mayStart = () =>
+  canStartTest('upsc', 'custom').then(
+    (ok) => ok === true,
+    () => false
+  );
+
+function gate(ok) {
+  actions.hidden = !ok;
+  if (!ok) showUpgrade(prompt);
+  else if (prompt) prompt.hidden = true;
+}
+
+/**
+ * Decides the gate. tests-page.js calls this once the first sync is in (it can
+ * bring this account's sets and its pass) and before it shows the page, so the
+ * prompt is in place at first sight.
+ */
+export async function gatePractice() {
+  gate(await mayStart());
+}
+
+// A pass bought (here or in another tab) opens the form without a reload.
+onPassChange(gatePractice);
+
 // A press while a start is under way does nothing (`starting`), so Start is
 // not disabled meanwhile, which would show it as unavailable for the moment a
 // start takes. A start that does not go ahead says why in the pool line, and
@@ -129,8 +160,10 @@ form.addEventListener('submit', async (event) => {
       update();
       return;
     }
-    if (!(await canStartTest('upsc'))) {
-      poolEl.textContent = "Tests aren't open to this account.";
+    if (!(await mayStart())) {
+      // Start, which had focus, goes with its row: land on the prompt instead.
+      gate(false);
+      prompt.querySelector('.upgrade-h')?.focus();
       return;
     }
     const attempt = newAttempt({

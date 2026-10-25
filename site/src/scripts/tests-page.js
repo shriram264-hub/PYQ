@@ -4,6 +4,9 @@ import { formatDate, formatScore } from '../lib/tests/score.js';
 import { formatClock } from '../lib/tests/clock.js';
 import { SUPABASE_URL, firstSyncHere, sessionHint, storageKeyFor, storedUserId } from '../lib/accounts/config.js';
 import { deviceOwner } from '../lib/accounts/pull.js';
+import { canStartTest } from '../lib/tests/access.js';
+import { onPassChange, showUpgrade, upgradeFor } from './upgrade.js';
+import { gatePractice } from './practice-form.js';
 
 // /upsc/test: this device's unfinished attempts (Carry on) and submitted ones
 // (Past results). The papers list is the page's own markup; the practice-set
@@ -23,6 +26,7 @@ const resultsList = $('[data-results]');
 const more = $('[data-more]');
 const moreButton = $('[data-more-button]');
 const dialog = $('[data-abandon-dialog]');
+const papersPrompt = upgradeFor('upsc', 'tests', $('#papers'));
 
 let showAll = false;
 let abandoning = null; // the id the open dialog is about
@@ -209,6 +213,19 @@ const firstSync = held
     })
   : null;
 
+// The papers' gate: once the paper taster is used, without a pass, the Upgrade
+// prompt stands above the list. The links stay; the take page's Start asks
+// canStartTest again, and enforces. A check that fails says no, as the other
+// gates' do.
+async function gatePapers() {
+  const ok = await canStartTest('upsc', 'paper').then(
+    (yes) => yes === true,
+    () => false
+  );
+  if (!ok) showUpgrade(papersPrompt);
+  else if (papersPrompt) papersPrompt.hidden = true;
+}
+
 // The element the address's #fragment names, if it is on the page.
 function hashTarget() {
   try {
@@ -218,7 +235,11 @@ function hashTarget() {
   }
 }
 
-Promise.all([fontsReady(), firstSync]).then(() => {
+// The gates are decided after the first sync, which can bring this account's
+// attempts and its pass, and before the page shows, so neither prompt moves
+// anything anyone has seen.
+Promise.all([fontsReady(), firstSync]).then(async () => {
+  await Promise.all([gatePapers(), gatePractice()]);
   draw();
   // A Practise link (/upsc/test?…#practice) scrolled to the form while the page
   // was hidden, and Carry on has just been drawn above it. A browser with scroll
@@ -227,6 +248,9 @@ Promise.all([fontsReady(), firstSync]).then(() => {
   hashTarget()?.scrollIntoView();
   delete wrap.dataset.pending;
 });
+
+// A pass bought here or in another tab takes the prompt away without a reload.
+onPassChange(gatePapers);
 
 document.addEventListener('sawaalbox:synced', () => {
   if (!wrap.dataset.pending) refresh();

@@ -16,6 +16,7 @@ import { TESTS_KEY, getAttempt, inProgressPaper, loadTests, putAttempt, saveTest
 import { officialAnswer, resultLine, scoreAttempt } from '../lib/tests/score.js';
 import { paperKeys } from '../lib/tests/build.js';
 import { canStartTest } from '../lib/tests/access.js';
+import { onPassChange, showUpgrade, upgradeFor } from './upgrade.js';
 import { SAVE_EVERY_MS, TICK_CAP_MS, announcementFor, formatClock, keyAction } from '../lib/tests/clock.js';
 import { fullEntry, fullPath, fullPathsFor, serialOf } from '../lib/accounts/summary.js';
 // A uuid v4 maker; attempts need the same kind of id lists do.
@@ -61,6 +62,7 @@ const gridSummary = $('[data-grid-summary]');
 const announcer = $('[data-announce]');
 const submitDialog = $('[data-submit-dialog]');
 const abandonDialog = $('[data-abandon-dialog]');
+const upgrade = upgradeFor('upsc', 'tests', startEl);
 
 let attempt = null; // the attempt on screen: as last saved, or held here when storage refuses
 const files = new Map(); // year-file path -> its data, once loaded
@@ -553,7 +555,23 @@ function offerPaper(year) {
     // clears it once the test is up; stopStarting puts what went wrong there.
     say('Loading the paper…');
     const path = `/upsc/full/${year}.json`;
-    if (!(await canStartTest('upsc'))) return stopStarting("Tests aren't open to this account.");
+    // A check that fails says no, as the other gates' do.
+    const ok = await canStartTest('upsc', 'paper').then(
+      (yes) => yes === true,
+      () => false
+    );
+    if (!ok) {
+      // The paper taster is used and there is no pass: the Upgrade prompt,
+      // under Start, in place of a line in the note. Focus lands on it, so a
+      // screen reader hears why nothing started.
+      say('');
+      delete page.dataset.starting;
+      startBtn.disabled = false;
+      showUpgrade(upgrade);
+      upgrade?.querySelector('.upgrade-h')?.focus();
+      return;
+    }
+    if (upgrade) upgrade.hidden = true;
     if (!files.has(path) && !(await fetchYear(path))) {
       return stopStarting("The paper didn't load. Check your connection, then try again.");
     }
@@ -572,6 +590,13 @@ function offerPaper(year) {
     begin();
   });
 }
+
+// A pass bought here or in another tab, while the prompt is up: Start is open
+// again, so the prompt goes.
+onPassChange(async () => {
+  if (!upgrade || upgrade.hidden) return;
+  if (await canStartTest('upsc', 'paper').catch(() => false)) upgrade.hidden = true;
+});
 
 // The questions and the bar are set in Courier Prime in part; drawn before the
 // face is ready they would move when it swaps in. The same goes for Literata

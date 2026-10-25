@@ -79,11 +79,13 @@ test("another exam's attempt has no effect", async () => {
   assert.equal(await canStartTest('upsc', 'paper', d), true);
 });
 
-test('an unspecified kind counts as custom (callers pass one argument until Task 6)', async () => {
+test('the kind is taken as given: no kind falls back to another', async () => {
+  // Every caller names its kind ('paper' or 'custom'). A missing one is not
+  // read as 'custom' (the stopgap before every caller passed it): it matches no
+  // attempt, so no taster of another kind can count against it.
   const used = deps({ tests: testsOf(attempt({ kind: 'custom' })) });
-  assert.equal(await canStartTest('upsc', undefined, used), false);
-  const paperOnly = deps({ tests: testsOf(attempt()) });
-  assert.equal(await canStartTest('upsc', undefined, paperOnly), true);
+  assert.equal(await canStartTest('upsc', undefined, used), true);
+  assert.equal(await canStartTest('upsc', 'custom', used), false);
 });
 
 test('tasterUsed reads the exam, the kind and the start time', () => {

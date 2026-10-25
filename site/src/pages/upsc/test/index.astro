@@ -1,5 +1,6 @@
 ---
 import Listing from '../../../layouts/Listing.astro';
+import UpgradePrompt from '../../../components/UpgradePrompt.astro';
 import { PAPERS } from '../../../lib/papers.js';
 import { authEnabled } from '../../../lib/accounts/config.js';
 import { SUBJECTS, SUBTOPICS, YEARS } from '../../../lib/corpus.js';
@@ -49,6 +50,10 @@ const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
 
     <section class="tp-section" id="papers" aria-labelledby="tp-papers-h">
       <h2 id="tp-papers-h" tabindex="-1">Sit a past paper</h2>
+      {/* Shown above the papers once the paper taster is used (tests-page.js),
+          decided before the page is on screen. The links stay: the take page's
+          Start asks again. */}
+      <UpgradePrompt exam="upsc" feature="tests" level={3} class="tp-upgrade" />
       <ol class="tp-papers">
         {
           PAPERS.map((p) => (
@@ -143,10 +148,13 @@ const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
           </fieldset>
           <p class="tp-pool" role="status" data-pool></p>
           {/* Try again comes after Start, on its row: appearing there it moves nothing. */}
-          <div class="tp-actions">
+          <div class="tp-actions" data-practice-actions>
             <button type="submit" class="tp-primary" data-practice-start>Start practice set</button>
             <span class="tp-pool-retry" data-pool-retry hidden><button type="button" class="tp-btn">Try again</button></span>
           </div>
+          {/* In place of the Start row once the custom taster is used
+              (practice-form.js), at load or when Start is pressed. */}
+          <UpgradePrompt exam="upsc" feature="tests" level={3} />
         </fieldset>
       </form>
       <noscript><p class="tp-lede">Building a practice set needs JavaScript.</p></noscript>
@@ -176,7 +184,9 @@ const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
 {/* One script, not two: one module graph runs in one go, so a Practise link's
     ticks and open topic list (practice-form.js) are always in place before
     tests-page.js can lift the gate. As two scripts, a late second file could
-    land after the gate and move what is already on screen. */}
+    land after the gate and move what is already on screen. tests-page.js also
+    imports practice-form.js itself, to decide the form's Upgrade prompt before
+    the gate lifts; the import here is the same module, run once. */}
 <script>
   import '../../../scripts/tests-page.js';
   import '../../../scripts/practice-form.js';
@@ -229,6 +239,11 @@ const YEARS_UP = YEARS.map((y) => y.year).sort((a, b) => a - b);
   .tp-papers,
   .tp-rows {
     max-width: 50rem;
+  }
+
+  /* The Upgrade prompt above the papers (UpgradePrompt.astro). */
+  .tp-upgrade {
+    margin-bottom: 1.1rem;
   }
 
   /* --- the papers: one row each, hairline rules between --- */

@@ -438,6 +438,18 @@ test('statsLine says what the student has', () => {
   assert.equal(statsLine(undefined), null);
 });
 
+test('statsLine without accuracy says coverage only (no pass)', () => {
+  assert.equal(statsLine({ answered: 10, right: 7, covered: 12, total: 422 }, { accuracy: false }), 'Covered 12 of 422');
+  assert.equal(statsLine({ answered: 3, right: 2, covered: 3, total: 10 }, { accuracy: false }), 'Covered 3 of 10');
+  assert.equal(statsLine({ answered: 10, right: 7, covered: 0, total: 422 }, { accuracy: false }), null);
+  assert.equal(statsLine(undefined, { accuracy: false }), null);
+  // Asked for, accuracy is there as before.
+  assert.equal(
+    statsLine({ answered: 25, right: 12, covered: 60, total: 422 }, { accuracy: true }),
+    'Your accuracy here: 48% (25 answered) · Covered 60 of 422'
+  );
+});
+
 test('statsLine: a bare percentage starts at five answers', () => {
   assert.equal(statsLine({ answered: 4, right: 4, covered: 4, total: 9 }), '4 of 4 right so far · Covered 4 of 9');
   assert.equal(statsLine({ answered: 5, right: 5, covered: 5, total: 9 }), 'Your accuracy here: 100% (5 answered) · Covered 5 of 9');

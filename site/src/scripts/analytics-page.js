@@ -8,6 +8,7 @@ import { STORAGE_KEY, loadState } from '../lib/accounts/progress-store.js';
 import { slugify } from '../lib/question-html.js';
 import { SUPABASE_URL, firstSyncHere, sessionHint, storageKeyFor, storedUserId } from '../lib/accounts/config.js';
 import { deviceOwner } from '../lib/accounts/pull.js';
+import { onPassChange, showUpgrade, upgradeFor } from './upgrade.js';
 
 // "Your analytics" (spec 2026-10-18-analytics-design.md, section 1): this
 // device's submitted tests and marks, in the agreed order. The headline numbers
@@ -49,7 +50,7 @@ const practisePath = (subject, topic) =>
 const title = $('#an-title');
 const fromEl = $('[data-from]');
 const cappedEl = $('[data-capped]');
-const lockedEl = $('[data-locked]');
+const upgrade = upgradeFor(exam, 'analytics');
 const emptyEl = $('[data-empty]');
 const emptyText = $('[data-empty-text]');
 const headlineSection = $('[data-headline-section]');
@@ -594,27 +595,44 @@ const firstSync = held
     })
   : null;
 
-// And the access check: analytics is free during the beta (canSeeAnalytics),
-// and is drawn only once the check says yes. A check that fails says no.
-const allowed = canSeeAnalytics(exam).then(
-  (ok) => ok === true,
-  () => false
-);
+// And the access check (canSeeAnalytics): the analytics are drawn only once it
+// says yes; otherwise the Upgrade prompt stands in their place. A check that
+// fails says no.
+const askAllowed = () =>
+  canSeeAnalytics(exam).then(
+    (ok) => ok === true,
+    () => false
+  );
 
 // The catalogue does not wait for the faces or the sync: asked for after them
 // it would add its own time to theirs. When this device has something it is
 // needed for, it is asked for as soon as the check allows.
-allowed.then((ok) => {
+askAllowed().then((ok) => {
   if (ok && read().state !== 'nothing') startLoading();
 });
 
-Promise.all([fontsReady(), firstSync, allowed]).then(([, , ok]) => {
+// A new width (a turned phone, a resized window) redraws the chart to fit.
+// Its height is fixed, so nothing around it moves.
+let watching = false;
+function watchChart() {
+  if (watching) return;
+  watching = true;
+  new ResizeObserver(() => {
+    if (chartHistory.length && chart.clientWidth !== chartWidth) drawChart();
+  }).observe(chart);
+}
+
+// The check is asked again once the first sync is in, since that sync can bring
+// this account's pass, and is decided before the page shows, so the prompt or
+// the numbers are in place at first sight.
+Promise.all([fontsReady(), firstSync]).then(async () => {
+  const ok = await askAllowed();
   sheet.toggleAttribute('data-settling', true);
   if (ok) {
     shown = true;
     render();
   } else {
-    show(lockedEl, true);
+    showUpgrade(upgrade);
   }
   sheet.removeAttribute('data-pending');
   requestAnimationFrame(() =>
@@ -623,12 +641,18 @@ Promise.all([fontsReady(), firstSync, allowed]).then(([, , ok]) => {
       settle();
     })
   );
-  if (!ok) return;
-  // A new width (a turned phone, a resized window) redraws the chart to fit.
-  // Its height is fixed, so nothing around it moves.
-  new ResizeObserver(() => {
-    if (chartHistory.length && chart.clientWidth !== chartWidth) drawChart();
-  }).observe(chart);
+  if (ok) watchChart();
+});
+
+// A pass bought here or in another tab, with the prompt up: the analytics take
+// its place without a reload. Only once the first draw has been on screen
+// (`framed`); before that, the first draw asks for itself.
+onPassChange(async () => {
+  if (shown || !framed || !(await askAllowed())) return;
+  if (upgrade) upgrade.hidden = true;
+  shown = true;
+  render();
+  watchChart();
 });
 
 // Storage changed under the page: a sync landed, another tab wrote, or the page

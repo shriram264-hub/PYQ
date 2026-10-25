@@ -24,6 +24,8 @@ import { examRules } from '../lib/exam-rules.js';
 import { parseCatalogue } from '../lib/tests/catalogue.js';
 import { MIN_ANSWERED, breakdown, headline, submittedFor } from '../lib/tests/analytics.js';
 import { TESTS_KEY, loadTests } from '../lib/tests/store.js';
+import { canSeeAnalytics } from '../lib/tests/access.js';
+import { onPassChange, showUpgrade, upgradeFor } from './upgrade.js';
 
 // The /account page, My progress. Everything it shows comes from this device's
 // storage (a sync keeps that in step with the account), plus the exam's question
@@ -79,6 +81,10 @@ const coverageBox = $('[data-coverage]');
 const listsBox = $('[data-lists]');
 const listsNote = $('[data-lists-note]');
 const whereNote = $('[data-where-note]');
+const upgrade = upgradeFor(EXAM, 'analytics');
+// What analytics' access check last said: null until it has answered (the
+// first reveal waits for it; see askAnalytics at the foot of this file).
+let analyticsOk = null;
 
 const el = (tag, className, ...children) => {
   const node = document.createElement(tag);
@@ -341,8 +347,17 @@ function recentRow(r) {
   );
 }
 
-function drawTests({ figures: cells, recent, primary }) {
-  const tests = action('Practice tests', PATHS.tests, { primary: primary === 'tests', focus: 'tests' });
+// `locked`: the access check said no to analytics. The figures and the way to
+// the analytics page give way to the Upgrade prompt, which the page serves
+// above this box; Practice tests and the latest results stay (results are
+// always viewable). Practice tests then takes the filled green that Your
+// analytics would have had, so the page keeps its one primary action.
+function drawTests({ figures: cells, recent, primary, locked }) {
+  const gated = Boolean(cells) && locked;
+  if (gated) showUpgrade(upgrade);
+  else if (upgrade) upgrade.hidden = true;
+  const testsPrimary = primary === 'tests' || (gated && primary === 'analytics');
+  const tests = action('Practice tests', PATHS.tests, { primary: testsPrimary, focus: 'tests' });
   if (!cells) {
     keepFocus(testsBox, () =>
       testsBox.replaceChildren(
@@ -352,11 +367,15 @@ function drawTests({ figures: cells, recent, primary }) {
     );
     return;
   }
-  const analytics = action('Your analytics', PATHS.analytics, { primary: primary === 'analytics', focus: 'analytics' });
   const list = el('ul', 'acct-recent', ...recent.map(recentRow));
   list.setAttribute('aria-labelledby', 'acct-recent-h');
   const heading = text('h3', 'acct-recent-h', 'Latest results');
   heading.id = 'acct-recent-h';
+  if (gated) {
+    keepFocus(testsBox, () => testsBox.replaceChildren(el('p', 'acct-tests-actions', tests), heading, list));
+    return;
+  }
+  const analytics = action('Your analytics', PATHS.analytics, { primary: primary === 'analytics', focus: 'analytics' });
   keepFocus(testsBox, () =>
     testsBox.replaceChildren(
       el('dl', 'acct-cells', ...cells.map(figureCell)),
@@ -658,7 +677,9 @@ function drawLists(lists) {
 const FIRST_SYNC_HOLD_MS = 2500;
 const FONT_WAIT_MS = 3000;
 const FACES = ['400 1em "Courier Prime"', '700 1em "Courier Prime"', '400 1em Literata', '700 1em "Archivo Variable"'];
-const holds = new Set(['fonts']);
+// 'access': the analytics check below, so the figures or the Upgrade prompt
+// are in place at the first reveal.
+const holds = new Set(['fonts', 'access']);
 let shown = false; // the first reveal is done
 let framed = false; // and has been on screen for a frame (see settle)
 let colophonHeld = true; // until the first load has settled
@@ -760,7 +781,12 @@ function render({ lists = true, restore = true } = {}) {
   const h = view.attempts.length ? headline(view.attempts, RULES) : null;
   part(
     'tests',
-    { figures: h && figures(h), recent: h ? recentTests(view.tests, EXAM) : [], primary: plan.primary },
+    {
+      figures: h && figures(h),
+      recent: h ? recentTests(view.tests, EXAM) : [],
+      primary: plan.primary,
+      locked: analyticsOk === false,
+    },
     drawTests
   );
 
@@ -1041,3 +1067,25 @@ window.addEventListener('online', () => {
 
 render();
 fontsReady().then(() => release('fonts'));
+
+// Whether the figures may be shown: analytics' one access check. Asked at load
+// (the first reveal waits for it, as 'access'), and again whenever what this
+// device knows of the passes changes: a first sync that brings this account's
+// pass (before the reveal, which is held for that sync), or a pass bought in
+// this tab or another, which then unlocks the figures without a reload. A
+// check that fails says no.
+const askAnalytics = () =>
+  canSeeAnalytics(EXAM).then(
+    (ok) => ok === true,
+    () => false
+  );
+askAnalytics().then((ok) => {
+  analyticsOk = ok;
+  release('access');
+});
+onPassChange(async () => {
+  const ok = await askAnalytics();
+  if (ok === analyticsOk) return;
+  analyticsOk = ok;
+  render();
+});

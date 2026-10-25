@@ -2,6 +2,8 @@
 import Listing from '../layouts/Listing.astro';
 import { authEnabled } from '../lib/accounts/config.js';
 import { LEGAL } from '../lib/legal.js';
+import { PASSES } from '../lib/passes.js';
+import UpgradePrompt from '../components/UpgradePrompt.astro';
 ---
 
 <Listing
@@ -56,6 +58,10 @@ import { LEGAL } from '../lib/legal.js';
 
     <section class="acct-section" aria-labelledby="acct-tests-h">
       <h2 id="acct-tests-h" tabindex="-1">Your tests and analytics</h2>
+      {/* In place of the figures when the access check says no to analytics
+          (progress-page.js); Practice tests and the latest results stay. One
+          per pass, each served hidden; the page shows its exam's. */}
+      {Object.keys(PASSES).map((exam) => <UpgradePrompt exam={exam} feature="analytics" level={3} />)}
       <div class="acct-tests" data-tests></div>
     </section>
 

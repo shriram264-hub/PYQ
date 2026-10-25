@@ -2,6 +2,7 @@
 import Document from '../../../layouts/Document.astro';
 import Masthead from '../../../components/Masthead.astro';
 import Colophon from '../../../components/Colophon.astro';
+import UpgradePrompt from '../../../components/UpgradePrompt.astro';
 import { PAPERS } from '../../../lib/papers.js';
 
 // An app page, like /revise: what it shows is one attempt on this device, so it
@@ -40,6 +41,9 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
         <li>Your answers are saved on this device as you go. Answers and your score stay hidden until you submit.</li>
       </ul>
       <p><button type="button" class="tk-primary" data-start-button>Start the test</button></p>
+      {/* Shown when Start is pressed and the paper taster is used, without a
+          pass (take-page.js). Resuming a test already begun never asks. */}
+      <UpgradePrompt exam="upsc" feature="tests" level={3} class="tk-upgrade" />
       <p class="tk-back"><a href="/upsc/test">All practice tests</a></p>
     </section>
 
@@ -265,6 +269,9 @@ const OPTIONS = ['a', 'b', 'c', 'd'];
   }
   .tk-retry {
     margin: 0 0 1rem;
+  }
+  .tk-upgrade {
+    margin-bottom: 1rem;
   }
   .tk-empty {
     margin: 0;

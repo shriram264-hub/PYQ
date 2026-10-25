@@ -15,6 +15,7 @@ import { canSeeAnalytics } from '../lib/tests/access.js';
 import { breakdown, submittedFor } from '../lib/tests/analytics.js';
 import { parseCatalogue } from '../lib/tests/catalogue.js';
 import { TESTS_KEY, loadTests } from '../lib/tests/store.js';
+import { onPassChange, showUpgrade, upgradeFor } from './upgrade.js';
 
 // The /revise page: one revision list (?list=<id>), the Needs review pile
 // (?review) or the questions last answered wrong in practice tests
@@ -493,14 +494,37 @@ function showMissing() {
   sheet.removeAttribute('data-settling');
 }
 
-// The access check said no (see openWrong): one line, and nothing fetched.
+// The access check said no (see openWrong): the exam's Upgrade prompt (one per
+// pass is served, revise.astro), and nothing fetched. An exam with no pass has
+// no prompt, and keeps a plain line.
 function showLocked() {
   locked = true;
   missing = true;
   sheet.toggleAttribute('data-missing', true);
   titleEl.textContent = WRONG_TITLE;
   document.title = `${WRONG_TITLE} | SawaalBox`;
-  items.replaceChildren(text('p', 'rv-empty', 'Revising the questions you got wrong needs a pass for this exam.'));
+  const upgrade = upgradeFor(target.exam, 'analytics');
+  if (upgrade) {
+    items.replaceChildren();
+    showUpgrade(upgrade);
+  } else {
+    items.replaceChildren(text('p', 'rv-empty', 'Revising the questions you got wrong needs a pass for this exam.'));
+  }
+}
+
+// A pass bought here or in another tab, with the prompt up: the wrong answers
+// open without a reload.
+async function unlock() {
+  if (!locked) return;
+  const ok = await canSeeAnalytics(target.exam).then(
+    (yes) => yes === true,
+    () => false
+  );
+  if (!ok || !locked) return;
+  locked = false;
+  const upgrade = upgradeFor(target.exam, 'analytics');
+  if (upgrade) upgrade.hidden = true;
+  start();
 }
 
 // The wrong answers before the catalogue is in. While it loads: the head with
@@ -726,8 +750,9 @@ function reveal() {
 }
 
 // The wrong answers come from the same numbers as the analytics page, so they
-// are shown only once analytics' one access check (canSeeAnalytics) says yes:
-// free during the beta. A check that fails says no. The page is shown once the
+// are shown only once analytics' one access check (canSeeAnalytics) says yes
+// (always, with payments off); otherwise the Upgrade prompt stands in their
+// place (showLocked). A check that fails says no. The page is shown once the
 // catalogue has settled, so the count, the first questions' room or the empty
 // line are in place at first sight; or after PILE_WAIT_MS, saying it is still
 // loading, rather than hold the page for it (under revise.astro's 4 s way out).
@@ -766,8 +791,10 @@ async function openWrong() {
   reveal();
 }
 
-if (target.mode === 'wrong') openWrong();
-else {
+if (target.mode === 'wrong') {
+  openWrong();
+  onPassChange(unlock);
+} else {
   start();
   reveal();
 }

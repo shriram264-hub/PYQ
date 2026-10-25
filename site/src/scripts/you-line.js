@@ -4,11 +4,13 @@ import { parseCatalogue } from '../lib/tests/catalogue.js';
 import { breakdown, statsLine, submittedFor } from '../lib/tests/analytics.js';
 import { TESTS_KEY, loadTests } from '../lib/tests/store.js';
 import { STORAGE_KEY, loadState } from '../lib/accounts/progress-store.js';
+import { onPassChange } from './upgrade.js';
 
 // The line about this student on a subject or topic page (YouLine.astro; spec
 // 2026-10-18-analytics-design.md, section 2): their accuracy and coverage in
 // this subject or topic, from this device's submitted tests and marks and the
-// exam's catalogue, or nothing.
+// exam's catalogue, or nothing. Without the pass (once payments are on) it is
+// coverage alone, which is free: statsLine with accuracy off.
 //
 // YouLine.astro loads this only for a line whose room it held before first
 // paint, and this draws into no other: a line that was not held stays empty,
@@ -30,12 +32,15 @@ if (line && rules) {
   // A question key names its exam first (questionKey in lib/accounts/qkey.js).
   const ofExam = (key) => key.startsWith(`${exam}-`);
 
-  // Analytics is free during the beta; the line shows only once the one access
-  // check says yes, and a check that fails says no.
-  const allowed = canSeeAnalytics(exam).then(
-    (ok) => ok === true,
-    () => false
-  );
+  // Coverage is free; accuracy is analytics, so it is in the line only when
+  // the one access check says yes (always, with payments off). Asked on every
+  // fill, so a pass bought meanwhile shows at the next one. A check that fails
+  // says no.
+  const accuracyAllowed = () =>
+    canSeeAnalytics(exam).then(
+      (ok) => ok === true,
+      () => false
+    );
 
   // One request per page view, never retried: a held line whose catalogue does
   // not come (offline, too slow, not a catalogue) stays empty. A controller and
@@ -104,11 +109,11 @@ if (line && rules) {
     // Nothing of this exam's on the device (an unfinished test, another exam's
     // marks): nothing to say, and nothing fetched.
     if (!view.any) return show('');
-    const parsed = (await allowed) ? await loadCatalogue() : null;
+    const [accuracy, parsed] = await Promise.all([accuracyAllowed(), loadCatalogue()]);
     if (mine !== latest || !parsed) return;
     const b = breakdownOf(view, parsed);
     const stats = topic === undefined ? b.bySubject.get(subject) : b.byTopic.get(`${subject}\u0000${topic}`);
-    show(statsLine(stats) ?? '');
+    show(statsLine(stats, { accuracy }) ?? '');
   };
 
   fill();
@@ -119,6 +124,8 @@ if (line && rules) {
   // back/forward cache. The line is redrawn only if its text changed.
   document.addEventListener('sawaalbox:synced', fill);
   document.addEventListener('sawaalbox:mark', fill);
+  // A pass bought here or in another tab: the accuracy joins the line.
+  onPassChange(fill);
   window.addEventListener('storage', (event) => {
     if (event.key === TESTS_KEY || event.key === STORAGE_KEY || event.key === null) fill();
   });

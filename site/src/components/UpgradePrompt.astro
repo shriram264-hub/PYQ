@@ -1,0 +1,109 @@
+---
+import { longDate } from '../lib/legal.js';
+import { passFor } from '../lib/passes.js';
+
+// The Upgrade prompt: inline, never a modal, shown where a test or analytics
+// needs the pass. It is served hidden on every page that may need it, and that
+// page's script shows it (showUpgrade in scripts/upgrade.js) only once the one
+// access check in lib/tests/access.js says no, so with payments off it never
+// appears. Whatever it says comes from lib/passes.js.
+//
+// exam     the exam whose pass this is ('upsc'); an exam with no pass renders nothing
+// feature  'tests' | 'analytics': which heading it carries
+// level    2 or 3: the heading's level in the page's outline (default 2)
+// class    the host page's spacing, if any
+//
+// See the pass is an outlined secondary link: the page keeps its own one
+// filled-green action. Its href is /plans until showUpgrade points it at
+// /plans?return=… for the page as it is.
+const { exam, feature, level = 2, class: className } = Astro.props;
+const pass = passFor(exam);
+const Heading = level === 3 ? 'h3' : 'h2';
+const title = pass && (feature === 'analytics' ? `Your analytics needs the ${pass.name}` : `Unlimited tests need the ${pass.name}`);
+---
+
+{
+  pass && (
+    <div class:list={['upgrade', 'ruled', className]} data-upgrade data-exam={exam} data-feature={feature} hidden>
+      {/* tabindex -1: a page may land focus here when the prompt answers a press. */}
+      <Heading class="upgrade-h" tabindex="-1">
+        {title}
+      </Heading>
+      <ul class="upgrade-list">
+        {pass.unlocks.map((item) => (
+          <li>{item}</li>
+        ))}
+      </ul>
+      <p class="upgrade-price">
+        {pass.priceLabel} once, valid until {longDate(pass.validUntil)}.
+      </p>
+      <p class="upgrade-action">
+        <a class="upgrade-link" href="/plans" data-upgrade-link>
+          See the pass
+        </a>
+      </p>
+    </div>
+  )
+}
+
+<style>
+  /* A ruled box (paper in a heavy frame), as the plan card on /plans is. */
+  .upgrade {
+    max-width: 38rem;
+    padding: 1rem 1.1rem 1.1rem;
+  }
+  /* The hidden attribute wins over any display a host page gives the box. */
+  .upgrade[hidden] {
+    display: none;
+  }
+
+  /* Subtitle scale whatever its level: a prompt, not a section of the page. */
+  .upgrade-h {
+    margin: 0 0 0.6rem;
+    font-size: 1.05rem;
+    outline-offset: 4px;
+  }
+
+  .upgrade-list {
+    margin: 0 0 0.8rem;
+    padding-left: 1.25rem;
+  }
+  .upgrade-list li {
+    margin-bottom: 0.3rem;
+  }
+  .upgrade-list li::marker {
+    color: var(--ink-faint);
+  }
+
+  .upgrade-price {
+    margin: 0 0 1rem;
+    color: var(--ink-soft);
+  }
+
+  .upgrade-action {
+    margin: 0;
+  }
+
+  /* DESIGN.md's Secondary button: paper, a heavy frame, Green Text Ink. Never
+     the filled green: that stays the host page's own action. */
+  .upgrade-link {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.7rem 1.25rem;
+    font: 700 0.95rem/1.2 var(--font-structure);
+    color: var(--field-text);
+    text-decoration: none;
+    background: var(--paper);
+    border: var(--rule-heavy) solid var(--rule-strong);
+    border-radius: 0;
+  }
+  .upgrade-link:hover {
+    background: var(--ground);
+  }
+  @media (pointer: coarse) {
+    .upgrade-link {
+      min-height: 2.75rem;
+    }
+  }
+</style>

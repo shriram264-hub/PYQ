@@ -2,6 +2,7 @@
 import Document from '../../layouts/Document.astro';
 import Masthead from '../../components/Masthead.astro';
 import Colophon from '../../components/Colophon.astro';
+import UpgradePrompt from '../../components/UpgradePrompt.astro';
 import { authEnabled } from '../../lib/accounts/config.js';
 import { MIN_ANSWERED } from '../../lib/tests/analytics.js';
 
@@ -41,7 +42,8 @@ const crumbs = [{ name: 'Your analytics', href: '/upsc/analytics' }];
       <p class="an-lede">Your analytics is worked out in your browser from the tests you take, so it needs JavaScript.</p>
     </noscript>
 
-    <p class="an-lede an-first" data-locked hidden>Your analytics needs a pass for this exam.</p>
+    {/* In place of the analytics when the access check says no (analytics-page.js). */}
+    <UpgradePrompt exam="upsc" feature="analytics" />
 
     <div class="an-first" data-empty hidden>
       <p class="an-lede" data-empty-text></p>

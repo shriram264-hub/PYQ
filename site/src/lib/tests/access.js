@@ -53,14 +53,14 @@ export async function hasPass(exam, deps = defaultDeps()) {
 }
 
 /**
- * Whether a new test of `kind` ('paper' or 'custom') may start.
- * `kind` undefined is treated as 'custom': TEMPORARY, because callers still
- * pass only the exam until Task 6 passes the kind everywhere.
+ * Whether a new test of `kind` may start. `kind` is required: 'paper' (the
+ * take page's Start) or 'custom' (the practice-set form). Each kind has its own
+ * taster, so it is taken as given and never stands in for the other.
  */
 export async function canStartTest(exam, kind, deps = defaultDeps()) {
   if (deps.payments.state !== 'on') return true;
   if (passOf(exam, deps)) return true;
-  return !tasterUsed(deps.tests, { exam, kind: kind ?? 'custom', from: deps.payments.from, now: deps.now });
+  return !tasterUsed(deps.tests, { exam, kind, from: deps.payments.from, now: deps.now });
 }
 
 /** Whether analytics for `exam` may be shown. */

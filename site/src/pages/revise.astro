@@ -2,6 +2,8 @@
 import Document from '../layouts/Document.astro';
 import Masthead from '../components/Masthead.astro';
 import Colophon from '../components/Colophon.astro';
+import UpgradePrompt from '../components/UpgradePrompt.astro';
+import { PASSES } from '../lib/passes.js';
 
 // An app page, like /account: what it shows is this device's own lists, marks
 // and tests, so it is not indexed, and it is not in the sitemap
@@ -31,6 +33,11 @@ import Colophon from '../components/Colophon.astro';
 
     <p class="rv-note" role="status" data-note></p>
     <noscript><p class="rv-empty">Revising a list needs JavaScript.</p></noscript>
+
+    {/* The wrong answers need analytics: without it, the exam's Upgrade
+        prompt stands in their place (revise-page.js). This page serves every
+        exam, so it carries one prompt per pass, each served hidden. */}
+    {Object.keys(PASSES).map((exam) => <UpgradePrompt exam={exam} feature="analytics" />)}
 
     <div id="revise-items" class="rv-items"></div>
 
