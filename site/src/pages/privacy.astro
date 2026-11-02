@@ -207,8 +207,8 @@ const scheduled = copy.phase === 'scheduled';
           <li>
             For each pass, your account stores the Razorpay payment ID and order ID, the amount, the date you bought it, the
             date it ends, whether it is active or refunded, and whether it was a test payment. It also records which exam
-            the pass is for, the date of any refund, and a note if a second payment was refunded automatically because you
-            had already paid. We keep these to switch the pass on and to handle refunds.
+            the pass is for, the date of any refund, and a note if a payment was refunded automatically, because you had
+            already paid or because the pass had already ended. We keep these to switch the pass on and to handle refunds.
           </li>
         </ul>
       ) : (
@@ -227,8 +227,9 @@ const scheduled = copy.phase === 'scheduled';
             <li>
               For each pass, your account will store the Razorpay payment ID and order ID, the amount, the date you bought it,
               the date it ends, whether it is active or refunded, and whether it was a test payment. It will also record which
-              exam the pass is for, the date of any refund, and a note if a second payment was refunded automatically because
-              you had already paid. We will keep these to switch the pass on and to handle refunds.
+              exam the pass is for, the date of any refund, and a note if a payment was refunded automatically, because you
+              had already paid or because the pass had already ended. We will keep these to switch the pass on and to handle
+              refunds.
             </li>
           </ul>
         </>
@@ -249,8 +250,8 @@ const scheduled = copy.phase === 'scheduled';
         record of your sign-ins.
       </li>
       <li>
-        Payment records for a pass (see <a href="#payments">Payments</a>): kept as financial records, also after your
-        account is deleted, because records of payments must be kept; they are then no longer linked to your account.{
+        Payment records for a pass (see <a href="#payments">Payments</a>): also after your account is deleted, they are
+        kept as financial records of what was paid; they are then no longer linked to your account.{
           scheduled && ' Deleting your account does not refund a pass; the refund policy decides that.'
         }
       </li>
@@ -277,7 +278,7 @@ const scheduled = copy.phase === 'scheduled';
       <li>
         ask us to delete it: we delete your account, marks, lists and practice-test attempts, and the sign-in records we
         can remove (logs kept by the services that run the site expire on their own schedule, and payment records for a
-        pass are kept, no longer linked to your account);
+        pass are kept as financial records of what was paid, no longer linked to your account);
       </li>
       <li>withdraw your consent at any time, after which we delete your account;</li>
       <li>nominate someone to use these rights for you if you die or become unable to;</li>

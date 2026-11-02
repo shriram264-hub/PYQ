@@ -4,7 +4,8 @@
 //
 // FACTS INVENTORY (checked 2026-10-03; practice tests, items 1a and 9a and the
 // test parts of 8, 10 and 11, checked 2026-10-17; passes and payments, items
-// 12 and 12a, checked 2026-10-25). Every statement on /privacy, /terms and
+// 12 and 12a, checked 2026-10-25, item 12 again 2026-11-02). Every statement
+// on /privacy, /terms and
 // /contact, and the payment wording on /pricing, /refunds and /delivery,
 // traces to an item below. When the code changes what is
 // stored or sent, update this list and the pages together, and move `updated`.
@@ -133,28 +134,31 @@
 //     A row holds (20261024120000_passes.sql:18-31): id, user_id, exam, mode
 //     ('test' | 'live'), valid_until, payment_id (Razorpay, unique), order_id
 //     (Razorpay), amount_paise, status ('active' | 'refunded'), note
-//     ('duplicate' when a second payment was refunded automatically,
-//     supabase/functions/payments/index.js:396), created_at and refunded_at.
-//     /privacy "How long we keep it" and "Your rights" say the record is kept,
-//     no longer linked to the account, because records of payments must be
-//     kept, in every phase: this holds once 20261024120000_passes.sql is
-//     applied (the owner applies it in the SQL editor, supabase/README.md),
+//     ('duplicate' when a second payment was refunded automatically, 'expired'
+//     when one that settled after the pass had ended was,
+//     supabase/functions/payments/index.js:299), created_at and refunded_at.
+//     /privacy "How long we keep it" and "Your rights" say the record is kept
+//     as a financial record of what was paid, no longer linked to the account,
+//     in every phase, as a fact of what we do and not as a duty the law sets
+//     (no such duty has been confirmed): this holds once
+//     20261024120000_passes.sql is applied (the owner applies it in the SQL
+//     editor, supabase/README.md),
 //     whether the payments switch is off or not. /privacy's Payments list
 //     names a row's fields as above in both phases (future tense while off).
 //     The payments function reads Razorpay's payment entity to confirm a
 //     payment (UPI ID or bank, card id, wallet, contact phone, email among its
 //     fields) and stores none of those fields and logs only the service name
-//     and HTTP status (index.js:413); /privacy says so. 2026-10-25.
+//     and HTTP status (index.js:453); /privacy says so. 2026-11-02.
 // 12a. Payments (only when lib/payments/switch.js paymentsCopy is
 //     'scheduled', i.e. the switch is notice or on; with it off the pages keep
 //     their earlier wording, checked by diffing the off build against the one
 //     before this change). Checked 2026-10-25:
 //     - Sign-in with Google is needed to buy (scripts/plans-page.js signed-out
-//       state; create-order refuses without a user, payments/index.js:426-427).
+//       state; create-order refuses without a user, payments/index.js:467-468).
 //     - Payment is in Razorpay Checkout, loaded from checkout.razorpay.com only
 //       when Buy is pressed (plans-page.js), prefilled with the Google name and
-//       email (plans-page.js:336). The order's notes carry the account's user id
-//       and the exam (payments/index.js:443): /privacy says Razorpay receives
+//       email (plans-page.js:360). The order's notes carry the account's user id
+//       and the exam (payments/index.js:484): /privacy says Razorpay receives
 //       both the name and email and the account ID.
 //     - Razorpay emails the receipt; the site issues no invoice (spec, "What
 //       the owner decided", Receipt).
@@ -162,7 +166,7 @@
 //       the Razorpay webhook switches it on if the page never confirmed (spec,
 //       razorpay-webhook: "the safety net"): /delivery says "within minutes".
 //     - A refund made in Razorpay switches the pass off within minutes
-//       (webhook refund event, payments/index.js:521): /refunds.
+//       (webhook refund event, payments/index.js:568): /refunds.
 //     - The paywall date is PUBLIC_PAYMENTS_FROM, printed with longDate; the
 //       banner on /upsc/test, /upsc/analytics and /account
 //       (components/PaywallNotice.astro) removes itself from 00:00 IST on it.
@@ -230,7 +234,7 @@ export const LEGAL = Object.freeze({
   // The date on every legal page (/privacy, /terms, /contact and the pass
   // policies /pricing, /refunds, /delivery, whose facts live in lib/passes.js).
   // Move it whenever their wording changes.
-  updated: '2026-10-25',
+  updated: '2026-11-02',
   // The owner's words, used verbatim on /terms (in every phase) and on
   // /account while payments are off; once they are scheduled /account's terms
   // line gives the paywall date in their place (account.astro termsLine).
