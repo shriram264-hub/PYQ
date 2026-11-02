@@ -20,7 +20,14 @@ Supabase, Razorpay and Render dashboards. You never need a terminal.
   Secrets page.
 - **Never paste a secret into chat** (Claude doesn't need it, and must never
   see it), into an email, into the repo, or into Render.
-- If one leaks, generate a new one in Razorpay and replace it in Supabase.
+- If the **Key Secret** leaks: generate a new key in Razorpay (**Account &
+  Settings** → **API Keys**) and replace `RAZORPAY_KEY_SECRET` (and
+  `RAZORPAY_KEY_ID`, if it changed) in Supabase. **Never paste this secret into
+  chat.**
+- If the **Webhook Secret** leaks: Razorpay doesn't generate this one. Make up
+  a new one yourself, set it in the Razorpay webhook's edit form (the webhook →
+  **Edit** → Secret → **Save Webhook**), and set the same value as
+  `RAZORPAY_WEBHOOK_SECRET` in Supabase. **Never paste this secret into chat.**
 
 **The order of work:**
 - **Now, in test mode:** sections 1 to 5. Nothing changes for students:
@@ -296,6 +303,12 @@ button and takes real payments.
      commit**, so the site is freshly built on or after the date. The pages
      already read correctly before and after the date without it.
 
+**Buying during the notice week.** A student who buys before the paywall starts
+has their 7-day refund window counted from the purchase, as always. So it may
+end before the paywall starts, while everything is still free for them. Section
+8's check goes by `bought_india_time`, so it needs no change, but be ready for
+the question.
+
 **To switch payments off again:** delete `PUBLIC_PAYMENTS_FROM` in Render
 (Environment) and **Save, rebuild, and deploy**. Passes already bought stay in
 the database.
@@ -322,6 +335,13 @@ the database.
 5. Put the new live webhook secret into Supabase:
    `RAZORPAY_WEBHOOK_SECRET` → **Save**. **Never paste this secret into chat.**
 6. Check **Automatic Capture** is on in Live mode (section 4).
+7. **Disable the test-mode webhook.** Switch the mode at the top to **Test** →
+   **Accounts & Settings** → **Webhooks** → click the test webhook → set its
+   status to **Disabled**, then switch back to **Live**.
+   - **Why:** it points at the same function, which now holds the live webhook
+     secret. Any test-mode event would fail its signature check and answer 400,
+     and repeated failures send you alert emails. If a test-mode run is ever
+     needed again, enable it again along with the test values.
 
 **What changes:**
 - The function now works in live mode: passes it writes are marked `live`.
@@ -330,7 +350,8 @@ the database.
 
 ### Part B: one real purchase (once the notice is up, section 6)
 
-/plans sells from the moment the notice is up, so do this the same day.
+/plans sells to real students from the moment the notice deploy finishes. So do
+this right after that deploy finishes, before you announce anything.
 
 1. On https://sawaalbox.in/plans, sign in with your own Google account and buy
    the pass with real money: **₹499**.
@@ -384,7 +405,7 @@ Payment emails get an answer within 2 working days.
    7 days, or after more than the taster").
 5. **Refund in Razorpay**, in **Live** mode:
    1. **Transactions** → **Payments** → open the payment with that id.
-   2. Choose to refund it. The **amount** is filled in with the full ₹499;
+   2. Click **Refund Payment**. The **amount** is filled in with the full ₹499;
       leave it.
    3. Leave **Refund Instantly** unticked (a normal refund, free, typically
       5–7 working days to reach them).
@@ -432,6 +453,10 @@ Payment emails get an answer within 2 working days.
    - **`refunded` with note `duplicate`:** they already had a pass. This
      second payment was refunded automatically, and their first pass is
      active.
+   - **`refunded` with note `expired`:** the payment settled after the pass's
+     last day (24 May 2027), so the function refunded it in full by itself and
+     no pass was switched on. Nothing more to do; tell them the refund is on
+     its way.
    - **No row:** the function never settled it. Go to step 4.
 4. **Check the webhook delivery log.** Razorpay → **Accounts & Settings** →
    **Webhooks** (or **Developers** → **Webhooks**) → click the live webhook.
@@ -467,11 +492,11 @@ Payment emails get an answer within 2 working days.
 
    | You see | Cause and fix |
    |---|---|
-   | Deliveries answered **400** `bad_signature` | `RAZORPAY_WEBHOOK_SECRET` in Supabase doesn't match this webhook's Secret. Set the same new secret in both (Razorpay: the webhook → **Edit** → Secret → **Save Webhook**). |
+   | Deliveries answered **400** `bad_signature` | `RAZORPAY_WEBHOOK_SECRET` in Supabase doesn't match this webhook's Secret. Make up a new secret yourself and set the same value in both (Razorpay: the webhook → **Edit** → Secret → **Save Webhook**; Supabase: **Edge Functions** → **Secrets**). **Never paste this secret into chat.** This is separate from the Key Secret, which stays as it is. |
    | Deliveries answered **401** with a JWT message | JWT verification got turned back on. Section 2, step 6. |
    | Log line `razorpay 401` | The Key Id and Key Secret in Supabase are not a pair, or are from the other mode. Section 3, or section 7 part A. |
    | Log line `postgrest 401` (or another `postgrest` status) | The function can't write to the database. Check section 3's default secret key, then tell Claude. |
-   | Log line `no_active_pass` | **On purpose.** A student who already had a pass paid again, and that payment reached us only after the pass's last day (24 May 2027). The function won't treat it as a duplicate with no active pass to compare against, so it answers with an error. **Refund that payment by hand** (section 8, step 5). |
+   | Log line `no_active_pass` | **On purpose, and very rare.** A student who already had a pass paid again, just as the pass's last day (24 May 2027) ended. The function won't treat it as a duplicate with no active pass to compare against, so it answers with an error and Razorpay retries. The next retry normally refunds it by itself as `expired`. **If the line keeps appearing:** find the payment in the webhook's delivery log, where the failing delivery's payload shows its `pay_` id (logs are kept only a short time, section 9 step 4), and **refund it by hand** (section 8, step 5). Refunding it stops the retries. Left alone for about 24 hours, the failures **disable the webhook for every student**. |
 
 3. **Re-enable the webhook after fixing:** Razorpay → **Accounts & Settings**
    → **Webhooks** → click it → in the right-hand panel set the status to
@@ -484,5 +509,22 @@ payments not made through /plans, and the function leaves them alone.
 **`user_gone`** means the student deleted their account before the payment
 settled. There is no account to give the pass to: refund it by hand.
 
-**Any payment dated after 23 May 2027** (sales close on Prelims day) should be
-refunded by hand. The pass it bought would already have ended.
+**Payments that settle after the pass has ended** (after 24 May 2027, India
+time) are refunded in full by the function itself: nothing to do. The log line
+is `refunded a payment made after the pass ended`, and the row has note
+`expired`. A payment settled on 24 May itself still switches on a pass that
+lasts only until the end of that day; sales close on 23 May, so this is rare.
+
+**Check once, after 24 May 2027,** that nothing slipped through. This lists any
+payment recorded as active that was settled after its pass had ended:
+
+```sql
+select payment_id, created_at at time zone 'Asia/Kolkata' as bought_india_time, valid_until
+from passes
+where status = 'active' and mode = 'live'
+  and valid_until < (now() at time zone 'Asia/Kolkata')::date
+  and (created_at at time zone 'Asia/Kolkata')::date > valid_until;
+```
+
+**Expect** no rows. Any row is a payment to refund by hand (section 8, step 5);
+then tell Claude.
