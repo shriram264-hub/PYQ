@@ -914,11 +914,20 @@ test('duplicate: an expired pass still marked active does not trigger a refund v
   assert.equal(w.refunds.length, 0);
 });
 
+// 23:59:59 IST on 24 May 2027, the pass's last day, and 00:00 IST the day after.
+const LAST_MOMENT = new Date('2027-05-24T18:29:59Z');
+const AFTER_END = new Date('2027-05-24T18:30:00Z');
+
 test('duplicate: a clash with no active unexpired pass is never refunded; it is retried instead', async (t) => {
-  // After the pass's last day, an active row with the same valid_until still
-  // clashes in the index. That is not a duplicate purchase: no refund, and a
-  // server error so Razorpay retries (and the owner gets the alert email).
-  const w = setup(t, { now: new Date('2027-05-25T00:00:00Z') });
+  // An active row with the same valid_until clashes in the index. If the day
+  // turns between the late-payment check (still the last day) and the clash
+  // check (the day after), the old pass is no longer active today. That is
+  // not a duplicate purchase: no refund, and a server error so Razorpay
+  // retries (and the owner gets the alert email).
+  const w = setup(t);
+  let reads = 0;
+  // Each request reads the clock twice: the late check, then the clash check.
+  w.deps.now = () => new Date((reads++ % 2 === 0 ? LAST_MOMENT : AFTER_END).getTime());
   w.passes.push({
     id: 'row_old',
     user_id: UA,
@@ -943,6 +952,172 @@ test('duplicate: a clash with no active unexpired pass is never refunded; it is 
   assert.equal(w.passes.length, 1);
   assert.equal(w.payments.get(paymentId).status, 'captured');
   assert.ok(w.logs.some((l) => l.includes('no_active_pass')));
+
+  // The next retry, now plainly after the pass's last day, settles it as late.
+  w.deps.now = () => new Date(AFTER_END.getTime());
+  assert.equal((await call(w, webhookReq(capturedEvent(w, paymentId)))).status, 200);
+  assert.equal(w.refunds.length, 1);
+  assert.equal(w.payments.get(paymentId).status, 'refunded');
+  const late = w.passes.find((p) => p.payment_id === paymentId);
+  assert.equal(late.status, 'refunded');
+  assert.equal(late.note, 'expired');
+  assert.equal(w.passes.find((p) => p.payment_id === 'pay_OLD').status, 'active');
+});
+
+// --- late: a payment that settles after the pass has ended ---
+
+// An order made by create-order before sales closed (the route itself is
+// closed by now, so the fake order is added directly).
+const lateOrder = (w) => w.addOrder({ notes: { user_id: UA, exam: 'upsc' } });
+const refundCalls = (w) => w.rzCalls().filter((c) => c.path.endsWith('/refund'));
+
+function assertRefundedAsExpired(w, paymentId, { attempts = 1 } = {}) {
+  const calls = refundCalls(w);
+  assert.equal(calls.length, attempts);
+  assert.ok(calls.every((c) => c.path === `/v1/payments/${paymentId}/refund`));
+  assert.ok(calls.every((c) => c.body.amount === 49900));
+  for (const c of calls) assert.deepEqual(c.body.notes, { reason: 'expired' });
+  assert.equal(w.refunds.length, 1);
+  assert.equal(w.payments.get(paymentId).status, 'refunded');
+  assert.equal(w.passes.length, 1);
+  const row = w.passes[0];
+  assert.equal(row.payment_id, paymentId);
+  assert.equal(row.user_id, UA);
+  assert.equal(row.exam, 'upsc');
+  assert.equal(row.mode, 'live');
+  assert.equal(row.valid_until, '2027-05-24');
+  assert.equal(row.amount_paise, 49900);
+  assert.equal(row.status, 'refunded');
+  assert.equal(row.note, 'expired');
+  assert.equal(row.refunded_at, AFTER_END.toISOString());
+  assert.equal(w.passes.filter((p) => p.status === 'active').length, 0);
+}
+
+test('late: a payment confirmed after the pass has ended is refunded in full, recorded, and switches nothing on', async (t) => {
+  const w = setup(t, { now: AFTER_END });
+  const orderId = lateOrder(w);
+  const paymentId = w.pay(orderId);
+  const r = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual(r.body, { expired: true });
+  assertRefundedAsExpired(w, paymentId);
+  const last = w.inserts().at(-1);
+  assert.match(last.search, /on_conflict=payment_id/);
+  assert.match(last.headers.get('prefer'), /resolution=ignore-duplicates/);
+
+  // Seen again (a confirm retry, then the webhook): no second refund or row.
+  const again = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
+  assert.equal(again.status, 200, again.text);
+  assert.deepEqual(again.body, { expired: true });
+  const hook = await call(w, webhookReq(capturedEvent(w, paymentId)));
+  assert.equal(hook.status, 200);
+  assert.deepEqual(hook.body, { ok: true });
+  assertRefundedAsExpired(w, paymentId);
+});
+
+test('late: the webhook after the pass has ended refunds once, records it, and answers 200', async (t) => {
+  const w = setup(t, { now: AFTER_END });
+  const orderId = lateOrder(w);
+  const paymentId = w.pay(orderId);
+  const captured = capturedEvent(w, paymentId); // the payload as captured
+  const r = await call(w, webhookReq(captured));
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual(r.body, { ok: true });
+  assertRefundedAsExpired(w, paymentId);
+
+  // At-least-once delivery, then the student's page confirms late.
+  assert.equal((await call(w, webhookReq(captured))).status, 200);
+  const conf = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
+  assert.equal(conf.status, 200, conf.text);
+  assert.deepEqual(conf.body, { expired: true });
+  assertRefundedAsExpired(w, paymentId);
+});
+
+test('late: an authorized payment after the pass has ended is captured once, then refunded in full', async (t) => {
+  const w = setup(t, { now: AFTER_END });
+  const paymentId = w.pay(lateOrder(w), { status: 'authorized' });
+  const authorized = authorizedEvent(w, paymentId);
+  assert.equal((await call(w, webhookReq(authorized))).status, 200);
+  assert.equal(captures(w).length, 1);
+  assertRefundedAsExpired(w, paymentId);
+  assert.equal((await call(w, webhookReq(authorized))).status, 200);
+  assert.equal((await call(w, webhookReq(capturedEvent(w, paymentId)))).status, 200);
+  assert.equal(captures(w).length, 1);
+  assertRefundedAsExpired(w, paymentId);
+});
+
+test('late: confirm and webhook racing after the pass has ended refund once and make one record', async (t) => {
+  const w = setup(t, { now: AFTER_END });
+  const orderId = lateOrder(w);
+  const paymentId = w.pay(orderId);
+  const [a, b] = await Promise.all([
+    call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a')),
+    call(w, webhookReq(capturedEvent(w, paymentId))),
+  ]);
+  assert.equal(a.status, 200, a.text);
+  assert.deepEqual(a.body, { expired: true });
+  assert.equal(b.status, 200, b.text);
+  assert.equal(w.refunds.length, 1);
+  assert.equal(w.passes.length, 1);
+  assert.equal(w.passes[0].note, 'expired');
+  assert.equal(w.passes[0].status, 'refunded');
+});
+
+test('late: a failed refund is 500 so Razorpay retries, and the retry refunds once', async (t) => {
+  const w = setup(t, { now: AFTER_END });
+  const orderId = lateOrder(w);
+  const paymentId = w.pay(orderId);
+  w.failRazorpay = (method, path) => (path.endsWith('/refund') ? 502 : null);
+  const hook = await call(w, webhookReq(capturedEvent(w, paymentId)));
+  assert.equal(hook.status, 500);
+  assert.ok(!hook.text.includes(UPSTREAM_DETAIL));
+  const conf = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
+  assert.equal(conf.status, 502);
+  assert.equal(w.passes.length, 0);
+  assert.equal(w.refunds.length, 0);
+  w.failRazorpay = null;
+  assert.equal((await call(w, webhookReq(capturedEvent(w, paymentId)))).status, 200);
+  // Two failed attempts, then the one refund that went through.
+  assertRefundedAsExpired(w, paymentId, { attempts: 3 });
+});
+
+test('late: a late payment whose account was deleted is refunded and recorded with no user, once', async (t) => {
+  const w = setup(t, { now: AFTER_END });
+  const paymentId = w.pay(lateOrder(w));
+  w.users.delete(UA);
+  const captured = capturedEvent(w, paymentId);
+  const r = await call(w, webhookReq(captured));
+  assert.equal(r.status, 200, r.text);
+  assert.equal((await call(w, webhookReq(captured))).status, 200);
+  assert.equal(refundCalls(w).length, 1);
+  assert.equal(w.payments.get(paymentId).status, 'refunded');
+  assert.equal(w.passes.length, 1);
+  assert.equal(w.passes[0].user_id, null);
+  assert.equal(w.passes[0].status, 'refunded');
+  assert.equal(w.passes[0].note, 'expired');
+});
+
+test('late: at 23:59:59 IST on the last valid day a payment still switches the pass on', async (t) => {
+  const w = setup(t, { now: LAST_MOMENT });
+  const orderId = lateOrder(w);
+  const paymentId = w.pay(orderId);
+  const r = await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'));
+  assert.equal(r.status, 200, r.text);
+  assert.deepEqual(r.body, { pass: { exam: 'upsc', validUntil: '2027-05-24', status: 'active' } });
+  assert.equal(w.refunds.length, 0);
+});
+
+test('late: a pass switched on before it ended is never refunded when its payment is seen again after', async (t) => {
+  const w = setup(t, { now: LAST_MOMENT });
+  const orderId = lateOrder(w);
+  const paymentId = w.pay(orderId);
+  assert.equal((await call(w, post('confirm', confirmBody(orderId, paymentId), 'token-a'))).status, 200);
+  w.deps.now = () => new Date(AFTER_END.getTime());
+  assert.equal((await call(w, webhookReq(capturedEvent(w, paymentId)))).status, 200);
+  assert.equal(refundCalls(w).length, 0);
+  assert.equal(w.passes.length, 1);
+  assert.equal(w.passes[0].status, 'active');
+  assert.equal(w.passes[0].note, null);
 });
 
 test('webhook: a payment whose user was deleted before settlement is 200, inserts nothing, refunds nothing', async (t) => {

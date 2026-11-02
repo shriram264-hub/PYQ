@@ -30,6 +30,7 @@ const BACK_AFTER_MS = 1500;
 const PENDING = 'Payment received. Switching on your pass…';
 const FAILED = "Payment didn't go through. You haven't been charged for this attempt.";
 const DUPLICATE = 'You already had the pass, so this second payment is being refunded in full.';
+const EXPIRED = 'Sales of this pass have closed, so this payment is being refunded in full.';
 const REFUNDED = `This payment was refunded, so it doesn't switch on a pass. Questions: ${LEGAL.email}.`;
 const NO_START = "Couldn't start the payment, and nothing was charged. Try again in a moment.";
 const NO_CHECKOUT = "Razorpay's payment window didn't load, and nothing was charged. Check your connection and try again.";
@@ -253,14 +254,31 @@ if (root && pass) {
     }
     if (res.status !== 200) return dropped();
     const body = await res.json().catch(() => null);
+    // The payment settled only after the pass had ended: the function refunded
+    // it in full and switched nothing on.
+    if (body?.expired === true) {
+      say(EXPIRED);
+      setBusy(false);
+      show('closed');
+      return;
+    }
     if (body?.duplicate === true) {
       say(DUPLICATE);
+      // Signed out while this was under way: the page now shows the signed-out
+      // state, and the pass belongs to an account no longer here.
+      if (!user) return;
       activated({ leave: false });
       refresh().catch(() => {});
       return;
     }
     const got = body?.pass;
     if (got && got.status === 'active' && got.exam === pass.exam && isDay(got.validUntil)) {
+      // Signed out while the confirmation was under way: say it worked, but
+      // keep no pass on this device for an account that has left, and stay.
+      if (!user) {
+        say(done(got.validUntil));
+        return;
+      }
       savePassCache({ userId: user.id, mode: payments.mode, passes: [{ exam: got.exam, validUntil: got.validUntil }] });
       document.dispatchEvent(new CustomEvent('sawaalbox:pass'));
       say(done(got.validUntil));
@@ -303,6 +321,8 @@ if (root && pass) {
       await refresh();
       setBusy(false);
       say(isDay(body.validUntil) ? done(body.validUntil) : '');
+      // Signed out meanwhile: the signed-out state stands.
+      if (!user) return;
       return activated({ leave: false });
     }
     if (res.status === 410) {
@@ -323,6 +343,10 @@ if (root && pass) {
     } catch {
       return stop(NO_CHECKOUT);
     }
+    // Signed out while the order was made or Checkout loaded: Checkout needs
+    // the account (its name and email), and the page already shows the
+    // signed-out state. Nothing was charged.
+    if (!user) return stop(SIGNED_OUT);
 
     let paid = false;
     const theme = green();

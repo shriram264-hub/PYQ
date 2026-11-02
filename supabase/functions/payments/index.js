@@ -130,6 +130,7 @@ export function corsHeaders(origin, mode) {
 //     409 { error: 'already_active', validUntil } | 502 razorpay
 //   POST /confirm       Bearer <user token>, { exam, orderId, paymentId, signature }
 //     200 { pass: { exam, validUntil, status } } | 200 { duplicate: true }
+//     200 { expired: true } (settled after the pass ended: refunded in full)
 //     400 bad_signature | 403 not_your_order | 422 payment_mismatch
 //     409 not_captured | 401 | 502 razorpay | 500 server
 //   POST /webhook       X-Razorpay-Signature over the raw body
@@ -270,15 +271,51 @@ async function passByPayment(deps, paymentId) {
 }
 
 /** What settlePayment returns for a row it found or wrote. */
-const settled = (row) => (row.note === 'duplicate' ? { duplicate: true } : { pass: row });
+function settled(row) {
+  if (row.note === 'duplicate') return { duplicate: true };
+  if (row.note === 'expired') return { expired: true };
+  return { pass: row };
+}
+
+/**
+ * Refunds a captured payment in full and records it as a refunded row with
+ * `note` ('duplicate' or 'expired'), so seeing it again reports the same
+ * outcome. If the refund call fails because a parallel request already
+ * refunded it, carry on to record it; the record is idempotent on payment_id.
+ */
+async function refundAndRecord(deps, row, facts, note) {
+  try {
+    await razorpay(deps, 'POST', `/payments/${row.payment_id}/refund`, {
+      amount: facts.amountPaise,
+      notes: { reason: note },
+    });
+  } catch (e) {
+    if (!(e instanceof UpstreamError)) throw e;
+    const again = await razorpay(deps, 'GET', `/payments/${row.payment_id}`);
+    if (again.status !== 'refunded') throw e;
+  }
+  const record = (userId) =>
+    passesApi(deps, 'POST', '?on_conflict=payment_id', {
+      body: { ...row, user_id: userId, status: 'refunded', note, refunded_at: deps.now().toISOString() },
+      prefer: 'resolution=ignore-duplicates,return=minimal',
+    });
+  let rec = await record(row.user_id);
+  if (rec.status === 409) {
+    // 23503: the account was deleted before this settled. The money has gone
+    // back, so keep the record detached, as deleting an account leaves one.
+    const err = await rec.json().catch(() => null);
+    if (err && err.code === '23503') rec = await record(null);
+  }
+  if (!rec.ok) throw new UpstreamError('postgrest', rec.status);
+}
 
 /**
  * Turns a Razorpay payment into a pass row, exactly once. Shared by /confirm
  * (expectUserId and exam set) and /webhook (both null). The caller has already
  * verified a signature over (orderId, paymentId) or over the webhook body.
  *
- * Returns { pass: row } | { duplicate: true } | { error: code }; throws
- * UpstreamError when Razorpay or the database fails.
+ * Returns { pass: row } | { duplicate: true } | { expired: true } |
+ * { error: code }; throws UpstreamError when Razorpay or the database fails.
  *
  * The order of checks differs from the plan's sketch in one place: the order
  * notes and amounts are checked BEFORE an authorized payment is captured, so we
@@ -338,9 +375,6 @@ async function settlePayment(deps, { paymentId, orderId, expectUserId, exam }) {
     return existing ? settled(existing) : { error: 'not_captured' };
   }
 
-  // 5. Insert. The database decides races: payment_id is unique, and
-  //    passes_one_active allows one active row per user, exam, mode and
-  //    valid_until.
   const row = {
     user_id: userId,
     exam: noteExam,
@@ -351,6 +385,26 @@ async function settlePayment(deps, { paymentId, orderId, expectUserId, exam }) {
     amount_paise: facts.amountPaise,
     status: 'active',
   };
+
+  // 5. Too late: the pass has already ended (its validUntil day is over,
+  //    India time). Sales close before that, so this is an order made in time
+  //    whose payment settled only now. A pass that is already over is worth
+  //    nothing, so refund in full, record it with note 'expired', and switch
+  //    nothing on. A row already recorded for this payment (switched on in
+  //    time, or refunded here before) is reported as it stands, so a payment
+  //    is never refunded twice and a pass that was switched on is never taken
+  //    back.
+  if (istDate(deps.now()) > facts.validUntil) {
+    const existing = await passByPayment(deps, paymentId);
+    if (existing) return settled(existing);
+    await refundAndRecord(deps, row, facts, 'expired');
+    console.error('payments: refunded a payment made after the pass ended: expired');
+    return { expired: true };
+  }
+
+  // 6. Insert. The database decides races: payment_id is unique, and
+  //    passes_one_active allows one active row per user, exam, mode and
+  //    valid_until.
   const res = await passesApi(deps, 'POST', '', { body: row, prefer: 'return=representation' });
   if (res.ok) {
     const [saved] = await res.json();
@@ -366,38 +420,24 @@ async function settlePayment(deps, { paymentId, orderId, expectUserId, exam }) {
   if (err && err.code === '23503') return { error: 'user_gone' };
   if (!err || err.code !== '23505') throw new UpstreamError('postgrest', res.status);
 
-  // 6a. This payment is already recorded: idempotent.
+  // 7a. This payment is already recorded: idempotent.
   const existing = await passByPayment(deps, paymentId);
   if (existing) return settled(existing);
 
-  // 6b. Otherwise the user already holds an active pass: refund this payment
-  //     in full and record it. If the refund call fails because a parallel
-  //     request already refunded it, carry on to record it.
+  // 7b. Otherwise the user already holds an active pass: refund this payment
+  //     in full and record it.
   //
   //     Belt and braces before any refund: the clash must be with a pass that
-  //     is active and still valid today. If it is not (an expired row still
-  //     marked active with the same valid_until), this is not a duplicate
-  //     purchase: never refund, fail instead so the webhook is retried and the
+  //     is active and still valid today. If it is not (the day turned after
+  //     step 5, so the clashing row with the same valid_until has just
+  //     ended), this is not a duplicate purchase: never refund, fail instead
+  //     so the webhook is retried (step 5 then refunds it as expired) and the
   //     owner is alerted.
   if (!(await activePass(deps, userId, noteExam, row.mode))) {
     console.error('payments: no_active_pass');
     throw new UpstreamError('conflict', 409);
   }
-  try {
-    await razorpay(deps, 'POST', `/payments/${paymentId}/refund`, {
-      amount: facts.amountPaise,
-      notes: { reason: 'duplicate' },
-    });
-  } catch (e) {
-    if (!(e instanceof UpstreamError)) throw e;
-    const again = await razorpay(deps, 'GET', `/payments/${paymentId}`);
-    if (again.status !== 'refunded') throw e;
-  }
-  const dup = await passesApi(deps, 'POST', '?on_conflict=payment_id', {
-    body: { ...row, status: 'refunded', note: 'duplicate', refunded_at: deps.now().toISOString() },
-    prefer: 'resolution=ignore-duplicates,return=minimal',
-  });
-  if (!dup.ok) throw new UpstreamError('postgrest', dup.status);
+  await refundAndRecord(deps, row, facts, 'duplicate');
   return { duplicate: true };
 }
 
@@ -482,6 +522,7 @@ async function confirm(req, deps, cors) {
     if (out.error === 'user_gone') return json(401, { error: 'not_signed_in' }, cors);
     if (out.error) return json(CONFIRM_ERRORS[out.error], { error: out.error }, cors);
     if (out.duplicate) return json(200, { duplicate: true }, cors);
+    if (out.expired) return json(200, { expired: true }, cors);
     const { exam: e, valid_until: validUntil, status } = out.pass;
     return json(200, { pass: { exam: e, validUntil, status } }, cors);
   } catch (e) {
