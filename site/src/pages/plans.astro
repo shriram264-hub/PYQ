@@ -96,6 +96,10 @@ const description = selling
             <div class="plan-state" data-state-panel="closed">
               <p class="plan-closed">Sales of this pass have closed. Next year's pass is coming.</p>
             </div>
+            {/* Without JavaScript the state stays pending (no panel shows), so
+                say why there is no button. It shares the states' cell, so it
+                adds no height; with JavaScript on it is never rendered. */}
+            <noscript class="plan-noscript">Buying the pass needs JavaScript. Turn it on to continue.</noscript>
           </div>
           <p class="plan-beta">{needsFrom}</p>
           <div class="plan-status-cell">
@@ -286,10 +290,16 @@ const description = selling
   }
 
   .plan-note,
-  .plan-closed {
+  .plan-closed,
+  .plan-states > :global(.plan-noscript) {
     margin: 0;
     font-size: 0.92rem;
     color: var(--ink-soft);
+  }
+  /* :global because Astro does not mark a noscript element as scoped. */
+  .plan-states > :global(.plan-noscript) {
+    grid-area: 1 / 1;
+    align-self: center;
   }
 
   .plan-active {

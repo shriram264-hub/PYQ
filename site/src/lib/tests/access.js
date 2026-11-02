@@ -40,6 +40,9 @@ export function defaultDeps() {
   };
 }
 
+// The kinds of test that each have a free taster once payments are on.
+const TASTER_KINDS = Object.freeze(['paper', 'custom']);
+
 const passOf = (exam, { payments, cache, userId, now }) =>
   activePassFor(cache, { userId, mode: payments.mode, exam, now });
 
@@ -55,11 +58,16 @@ export async function hasPass(exam, deps = defaultDeps()) {
 /**
  * Whether a new test of `kind` may start. `kind` is required: 'paper' (the
  * take page's Start) or 'custom' (the practice-set form). Each kind has its own
- * taster, so it is taken as given and never stands in for the other.
+ * taster, so it is taken as given and never stands in for the other. With
+ * payments on and no pass, any other kind is refused.
  */
 export async function canStartTest(exam, kind, deps = defaultDeps()) {
   if (deps.payments.state !== 'on') return true;
   if (passOf(exam, deps)) return true;
+  // Only these two kinds have a free taster. Any other kind (missing,
+  // misspelt, or added later) would match no attempt and so look unspent:
+  // refuse it instead of letting it past the paywall.
+  if (!TASTER_KINDS.includes(kind)) return false;
   return !tasterUsed(deps.tests, { exam, kind, from: deps.payments.from, now: deps.now });
 }
 

@@ -79,13 +79,28 @@ test("another exam's attempt has no effect", async () => {
   assert.equal(await canStartTest('upsc', 'paper', d), true);
 });
 
-test('the kind is taken as given: no kind falls back to another', async () => {
-  // Every caller names its kind ('paper' or 'custom'). A missing one is not
-  // read as 'custom' (the stopgap before every caller passed it): it matches no
-  // attempt, so no taster of another kind can count against it.
+test('only the two taster kinds may start without a pass: any other kind is refused', async () => {
+  // Every caller names its kind ('paper' or 'custom'). Anything else (missing,
+  // misspelt, a kind added later) has no free taster, so with payments on and
+  // no pass it may not start, rather than slipping past the paywall.
+  const others = [undefined, null, '', 'Paper', 'mock', 'revise', 42];
+  for (const tests of [testsOf(), testsOf(attempt({ kind: 'custom' })), testsOf(attempt(), attempt({ kind: 'custom' }))]) {
+    for (const kind of others) {
+      assert.equal(await canStartTest('upsc', kind, deps({ tests })), false, String(kind));
+    }
+  }
+  // No kind falls back to another: a used custom taster leaves the paper one.
   const used = deps({ tests: testsOf(attempt({ kind: 'custom' })) });
-  assert.equal(await canStartTest('upsc', undefined, used), true);
   assert.equal(await canStartTest('upsc', 'custom', used), false);
+  assert.equal(await canStartTest('upsc', 'paper', used), true);
+  // With a pass, or with payments not on, the kind does not matter.
+  for (const kind of others) {
+    assert.equal(await canStartTest('upsc', kind, deps({ cache: cacheOf() })), true, `pass ${String(kind)}`);
+    const off = deps({ payments: paymentsState({ from: '', keyId: '', allowTest: false }, LATER) });
+    assert.equal(await canStartTest('upsc', kind, off), true, `off ${String(kind)}`);
+    const notice = new Date(START - 1);
+    assert.equal(await canStartTest('upsc', kind, deps({ payments: stateAt(notice), now: notice })), true, `notice ${String(kind)}`);
+  }
 });
 
 test('tasterUsed reads the exam, the kind and the start time', () => {
